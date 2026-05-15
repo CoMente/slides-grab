@@ -119,6 +119,27 @@ slides-grab image --slides-dir decks/my-deck --prompt "Editorial hero image of a
 
 > 경고: 일부 이미지 생성 경로는 지원되지 않는 비공개 백엔드 또는 계정 권한에 의존할 수 있으므로, 실패하면 웹 검색과 로컬 다운로드 방식으로 대체하세요.
 
+내보내기 전에는 항상 `slides-grab validate --slides-dir <path>`를 실행해 누락된 로컬 에셋과 권장하지 않는 경로 형식을 먼저 확인하세요.
+
+`slides-grab pdf`는 이제 기본적으로 `--mode capture`를 사용합니다. 이 모드는 렌더링된 각 슬라이드를 PDF 안에 래스터 이미지로 캡처해 시각적 충실도를 높입니다. 브라우저 텍스트를 검색하거나 선택할 수 있는 PDF가 더 중요하다면 `--mode print`를 사용하세요.
+
+슬라이드에 `<video>`가 포함되어 있으면 PDF 내보내기는 라이브 자동 재생 프레임 대신 동영상의 poster/썸네일 정지 이미지를 사용합니다. 안정적인 출력이 필요하면 `poster="./assets/<file>"`를 지정하는 방식을 권장합니다.
+
+`slides-grab pdf`와 `slides-grab convert`는 더 선명한 결과물을 위해 기본적으로 `2160p` / `4k` 래스터 출력을 사용합니다. 더 작거나 빠른 산출물이 필요하면 `--resolution <preset>`으로 `720p`, `1080p`, `1440p`, `2160p`, `4k` 중 하나를 지정할 수 있습니다.
+
+### 웹 동영상을 덱 에셋으로 다운로드
+
+원본 동영상이 YouTube 또는 `yt-dlp`가 지원하는 다른 페이지에 있다면 먼저 덱의 assets 폴더로 다운로드하세요.
+
+```bash
+slides-grab fetch-video \
+  --url https://www.youtube.com/watch?v=EXAMPLE \
+  --slides-dir decks/my-deck \
+  --output-name hero-video
+```
+
+이 명령은 저장된 파일 경로와 슬라이드 HTML에 붙여 넣을 `./assets/<file>` 참조를 출력합니다. `PATH`에서 동작하는 `yt-dlp` 바이너리가 필요합니다.
+
 ## 여러 덱 작업 흐름
 
 먼저 `decks/my-deck/`에 덱을 만들거나 생성한 뒤 다음처럼 작업할 수 있습니다.
@@ -147,12 +168,57 @@ slides-grab pdf      --slides-dir decks/my-cards --slide-mode card-news --output
 slides-grab convert  --slides-dir decks/my-cards --mode card-news --output decks/my-cards.pptx
 ```
 
+## Tldraw 다이어그램 에셋
+
+정확한 슬라이드 영역에 맞고 내보내기에 안전한 로컬 SVG 다이어그램을 새로 만들고 싶다면 `slides-grab tldraw`를 사용하세요. 이 명령은 현재 형식의 `.tldr` 파일과 store-snapshot JSON을 지원합니다. 오래된 pre-records `.tldr` 파일은 먼저 최신 `tldraw` 빌드에서 다시 열고 저장해야 합니다.
+
+```bash
+slides-grab tldraw \
+  --input decks/my-deck/assets/system.tldr \
+  --output decks/my-deck/assets/system.svg \
+  --width 640 \
+  --height 320 \
+  --padding 16
+```
+
+생성된 SVG는 일반 로컬 이미지처럼 슬라이드 HTML에서 참조하세요.
+
+```html
+<img src="./assets/system.svg" alt="System architecture diagram">
+```
+
+내장 `diagram-tldraw` 템플릿은 이 작업 흐름을 시작하기 위한 간단한 출발점입니다.
+
+## Figma 작업 흐름
+
+```bash
+slides-grab figma --slides-dir decks/my-deck --output decks/my-deck-figma.pptx
+```
+
+이 명령은 HTML→PPTX 파이프라인을 재사용해 Figma Slides의 `Import`로 수동 가져오기 할 수 있는 `.pptx` 덱을 만듭니다. Figma에 직접 업로드하지 않습니다. Figma 내보내기 경로는 **실험적/불안정**하며 최선의 결과만 기대해야 합니다.
+
 ## 설치 가이드
 
 자세한 에이전트별 설치 안내는 아래 문서를 참고하세요.
 
 - [Claude 상세 가이드](docs/installation/claude.md)
 - [Codex 상세 가이드](docs/installation/codex.md)
+
+## npm 패키지
+
+독립 실행형 CLI와 스킬 사용을 위해 npm 패키지로도 사용할 수 있습니다.
+
+```bash
+npm install slides-grab
+```
+
+Vercel Agent Skills로 공유 에이전트 스킬을 설치하려면 다음을 실행하세요.
+
+```bash
+npx skills add ./node_modules/slides-grab -g -a codex -a claude-code --yes --copy
+```
+
+이 npm 설치 경로는 일반적인 사용에 충분합니다. slides-grab 자체를 수정하거나 기여하려는 경우에만 저장소를 클론하세요.
 
 ## 프로젝트 구조
 
