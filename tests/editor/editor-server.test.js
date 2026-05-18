@@ -184,6 +184,69 @@ test('/api/models exposes claude-opus-4-7 so the bbox editor can route edits to 
   }
 });
 
+test('/api/apply injects DESIGN.slides.md from the active --slides-dir, not launch cwd', async () => {
+  const workspace = await createWorkspace();
+  await writeFile(join(workspace, 'DESIGN.md'), [
+    '---',
+    'name: Wrong Root Design',
+    '---',
+    '',
+    '## Overview',
+    'This root design should not be used.',
+  ].join('\n'), 'utf8');
+  await writeFile(join(workspace, 'slides', 'DESIGN.slides.md'), [
+    '---',
+    'name: Deck Local Design',
+    '---',
+    '',
+    '## Overview',
+    'This deck-local design should be injected.',
+  ].join('\n'), 'utf8');
+  const mockCodex = await writeMockCli(workspace, 'mock-codex.js');
+  const port = await getAvailablePort();
+  const server = spawnEditorServer(workspace, port, {
+    env: {
+      PPT_AGENT_CODEX_BIN: mockCodex,
+    },
+  });
+
+  try {
+    await waitForServerReady(port, server.child, server.output);
+
+    const applyRes = await fetch(`http://localhost:${port}/api/apply`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        slide: 'slide-01.html',
+        prompt: 'Use the active deck style.',
+        selections: [
+          {
+            x: 40,
+            y: 60,
+            width: 320,
+            height: 180,
+            targets: [],
+          },
+        ],
+      }),
+    });
+
+    const applyBody = await applyRes.json();
+    assert.equal(applyRes.status, 200, JSON.stringify(applyBody));
+    assert.equal(applyBody.success, true);
+
+    const logRes = await fetch(`http://localhost:${port}/api/runs/${applyBody.runId}/log`);
+    assert.equal(logRes.status, 200);
+    const log = await logRes.text();
+
+    assert.match(log, /Deck Local Design/);
+    assert.doesNotMatch(log, /Wrong Root Design/);
+  } finally {
+    await stopChild(server.child);
+    await rm(workspace, { recursive: true, force: true });
+  }
+});
+
 test('/api/apply routes claude-opus-4-7 through the claude CLI with --model claude-opus-4-7 (issue #69)', async () => {
   const workspace = await createWorkspace();
   const mockClaude = await writeMockCli(workspace, 'mock-claude.js');

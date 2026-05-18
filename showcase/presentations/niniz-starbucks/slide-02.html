@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>NiNiZ — The Pair</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  html, body { margin: 0; padding: 0; }
+  body {
+    width: 720pt;
+    height: 405pt;
+    background: #f2f0eb;
+    font-family: 'Inter', 'Pretendard', -apple-system, sans-serif;
+    color: rgba(0,0,0,0.87);
+    position: relative;
+    overflow: hidden;
+    letter-spacing: -0.01em;
+  }
+  .frame {
+    position: absolute;
+    inset: 0;
+    padding: 18pt 28pt 14pt 28pt;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+  }
+  .top {
+    display: flex;
+    align-items: center;
+    gap: 10pt;
+    margin-bottom: 14pt;
+  }
+  .siren { width: 14pt; height: 14pt; }
+  .eyebrow {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 10pt;
+    font-weight: 500;
+    letter-spacing: 1.5pt;
+    text-transform: uppercase;
+    color: rgba(0,0,0,0.6);
+    margin: 0;
+  }
+  .lede-row {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr;
+    gap: 20pt;
+    align-items: end;
+    margin-bottom: 12pt;
+  }
+  .h2 {
+    font-size: 26pt;
+    font-weight: 600;
+    line-height: 1.3;
+    letter-spacing: -0.6pt;
+    color: #006241;
+    margin: 0 0 6pt 0;
+  }
+  .h2 .ink { color: rgba(0,0,0,0.87); font-weight: 500; }
+  .lede {
+    font-size: 13pt;
+    color: rgba(0,0,0,0.6);
+    line-height: 1.55;
+    margin: 0;
+    max-width: 360pt;
+  }
+  .right-stat {
+    text-align: right;
+  }
+  .right-stat .num {
+    font-family: 'Inter', sans-serif;
+    font-size: 30pt;
+    font-weight: 700;
+    color: #1E3932;
+    margin: 0;
+    line-height: 1.25;
+    letter-spacing: -0.8pt;
+  }
+  .right-stat .num-label {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 9pt;
+    color: rgba(0,0,0,0.45);
+    letter-spacing: 0.6pt;
+    text-transform: uppercase;
+    margin: 4pt 0 0 0;
+  }
+  .members {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16pt;
+    flex: 1;
+  }
+  .member-card {
+    background: #ffffff;
+    border-radius: 12pt;
+    padding: 10pt;
+    box-shadow: 0 2pt 12pt rgba(0,0,0,0.06);
+    display: grid;
+    grid-template-columns: 84pt 1fr;
+    gap: 12pt;
+    align-items: stretch;
+    overflow: hidden;
+  }
+  .member-card img {
+    width: 84pt;
+    height: 100%;
+    max-height: 160pt;
+    object-fit: cover;
+    object-position: top center;
+    border-radius: 8pt;
+    display: block;
+  }
+  .member-card .info {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 4pt;
+  }
+  .member-card .name {
+    font-size: 19pt;
+    font-weight: 600;
+    color: rgba(0,0,0,0.87);
+    margin: 0;
+    letter-spacing: -0.4pt;
+    line-height: 1.3;
+  }
+  .member-card .ko {
+    font-size: 13pt;
+    color: rgba(0,0,0,0.6);
+    margin: 0;
+    letter-spacing: -0.2pt;
+  }
+  .member-card .id {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 9pt;
+    color: rgba(0,0,0,0.45);
+    margin: 6pt 0 0 0;
+    letter-spacing: 0.4pt;
+    text-transform: uppercase;
+    padding-top: 6pt;
+    border-top: 1px solid rgba(0,0,0,0.08);
+  }
+  .member-card .meta {
+    font-size: 11pt;
+    color: rgba(0,0,0,0.6);
+    margin: 4pt 0 0 0;
+    line-height: 1.45;
+  }
+  .member-card .role {
+    display: inline-block;
+    background: #d4e9e2;
+    color: #006241;
+    font-size: 9pt;
+    font-weight: 600;
+    padding: 2pt 7pt;
+    border-radius: 999pt;
+    letter-spacing: 0.4pt;
+    text-transform: uppercase;
+    margin: 6pt 0 0 0;
+    align-self: flex-start;
+  }
+  .footer-strip {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 8pt;
+    border-top: 1px solid rgba(0,0,0,0.08);
+    margin-top: 14pt;
+  }
+  .footer-strip p {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 9pt;
+    color: rgba(0,0,0,0.45);
+    margin: 0;
+    letter-spacing: 0.4pt;
+  }
+</style>
+</head>
+<body>
+  <div class="frame">
+    <div class="top">
+      <svg class="siren" viewBox="0 0 32 32" aria-hidden="true">
+        <circle cx="16" cy="16" r="14" fill="none" stroke="#006241" stroke-width="2"/>
+        <circle cx="16" cy="16" r="9" fill="#006241"/>
+        <circle cx="16" cy="16" r="4" fill="#f2f0eb"/>
+      </svg>
+      <p class="eyebrow">02 · The pair · ADOR · debut 2022</p>
+    </div>
+
+    <div class="lede-row">
+      <div>
+        <h2 class="h2">Two voices, <span class="ink">one understanding.</span></h2>
+        <p class="lede">Both born 2004–2005 with one foot in Australia, both vocalists by training, both pulled into ADOR's bilingual debut window within the same year.</p>
+      </div>
+      <div class="right-stat">
+        <p class="num">2/5</p>
+        <p class="num-label">members · Australian roots</p>
+      </div>
+    </div>
+
+    <div class="members">
+      <div class="member-card">
+        <img src="./assets/hanni-portrait.jpg" alt="Hanni Pham of NewJeans" />
+        <div class="info">
+          <p class="name">Hanni</p>
+          <p class="ko">Hanni Pham · 팜하니</p>
+          <span class="role">Main vocal</span>
+          <p class="meta">Melbourne, AU · 2004 · Vietnamese-Australian</p>
+          <p class="id">NJN-M2 · since 2022</p>
+        </div>
+      </div>
+
+      <div class="member-card">
+        <img src="./assets/danielle-portrait.jpg" alt="Danielle Marsh of NewJeans" />
+        <div class="info">
+          <p class="name">Danielle</p>
+          <p class="ko">Danielle Marsh · 다니엘</p>
+          <span class="role">Lead vocal</span>
+          <p class="meta">Newcastle, AU → Seoul · 2005 · Korean-Australian</p>
+          <p class="id">NJN-M3 · since 2022</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer-strip">
+      <p>source · Wikimedia Commons · TenAsia/TV10 · CC-BY</p>
+      <p>02 / 06</p>
+    </div>
+  </div>
+</body>
+</html>

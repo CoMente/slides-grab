@@ -1,0 +1,2325 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Slide Viewer</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #111;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+
+    .viewer-container {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .nav-bar {
+      height: 48px;
+      background: #1a1a1a;
+      border-bottom: 1px solid #333;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      flex-shrink: 0;
+      z-index: 100;
+    }
+
+    .nav-bar button {
+      background: #333;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 6px 16px;
+      font-size: 13px;
+      font-family: inherit;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .nav-bar button:hover {
+      background: #555;
+    }
+
+    .nav-bar button:disabled {
+      opacity: 0.3;
+      cursor: default;
+    }
+
+    .slide-counter {
+      color: #aaa;
+      font-size: 14px;
+      font-weight: 500;
+      min-width: 60px;
+      text-align: center;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .btn-fullscreen {
+      position: absolute;
+      right: 16px;
+      background: transparent !important;
+      font-size: 18px;
+      padding: 6px 10px !important;
+    }
+
+    .slide-viewport {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .slide-scaler {
+      width: 720pt;
+      height: 405pt;
+      position: relative;
+      transform-origin: center center;
+    }
+
+    .slide-frame {
+      position: absolute;
+      inset: 0;
+      width: 720pt;
+      height: 405pt;
+      border: none;
+      overflow: hidden;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+    }
+
+    .slide-frame.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+  </style>
+</head>
+<body>
+  <div class="viewer-container">
+    <div class="nav-bar">
+      <button id="btn-prev" title="Previous (\u2190)">Prev</button>
+      <span class="slide-counter" id="counter">1 / 6</span>
+      <button id="btn-next" title="Next (\u2192)">Next</button>
+      <button class="btn-fullscreen" id="btn-fs" title="Fullscreen (F)">&#x26F6;</button>
+    </div>
+
+    <div class="slide-viewport" id="viewport">
+      <div class="slide-scaler" id="scaler">
+        <iframe class="slide-frame active" data-slide="1" srcdoc="<!DOCTYPE html>
+<html lang=&quot;en&quot;>
+<head>
+<base href=&quot;./&quot;>
+<script>
+(() => {
+  const slideFile = &quot;slide-01.html&quot;;
+  const localAssetPrefix = &quot;./assets/&quot;;
+  const absolutePathRe = /^(file:\/\/|\/Users\/|\/home\/|\/var\/|\/tmp\/|\/private\/|\/Volumes\/|[A-Za-z]:[\\/]|\\\\)/i;
+  const schemeRe = /^[a-z][a-z0-9+\-.]*:/i;
+  const prefix = '[slides-grab:image]';
+
+  function describeElement(element) {
+    if (!element || element.nodeType !== Node.ELEMENT_NODE) return '';
+    if (element === document.body) return 'body';
+
+    const parts = [];
+    let current = element;
+    while (current &amp;&amp; current.nodeType === Node.ELEMENT_NODE &amp;&amp; current !== document.body) {
+      let part = current.tagName.toLowerCase();
+      if (current.id) {
+        part += '#' + current.id;
+        parts.unshift(part);
+        break;
+      }
+      if (current.classList.length > 0) {
+        part += '.' + Array.from(current.classList).slice(0, 2).join('.');
+      }
+      parts.unshift(part);
+      current = current.parentElement;
+    }
+    return 'body > ' + parts.join(' > ');
+  }
+
+  function warn(message, detail) {
+    console.warn(prefix + ' ' + slideFile + ': ' + message, detail);
+  }
+
+  function fail(message, detail) {
+    console.error(prefix + ' ' + slideFile + ': ' + message, detail);
+  }
+
+  function validateAssetSource(kind, source, { allowEmpty = true, onNoncanonical = 'warn' } = {}) {
+    const value = (source || '').trim();
+    if (!value) {
+      return allowEmpty;
+    }
+    if (value.startsWith('data:')) {
+      return true;
+    }
+    if (value.startsWith('https://')) {
+      fail('remote ' + kind + ' URL is unsupported in saved slides; download it into ./assets/<file>', { src: value });
+      return false;
+    }
+    if (value.startsWith('http://')) {
+      fail('remote http:// ' + kind + ' URL is unsupported in saved slides; download it into ./assets/<file>', { src: value });
+      return false;
+    }
+    if (absolutePathRe.test(value) || value.startsWith('/')) {
+      fail('non-portable ' + kind + ' path is unsupported', { src: value });
+      return false;
+    }
+    if (schemeRe.test(value)) {
+      fail('unsupported ' + kind + ' URL scheme in saved slides; download it into ./assets/<file>', { src: value });
+      return false;
+    }
+    if (!value.startsWith(localAssetPrefix)) {
+      const report = onNoncanonical === 'fail' ? fail : warn;
+      report('noncanonical local ' + kind + ' path should use ./assets/<file>', { src: value });
+    }
+    return true;
+  }
+
+  function getVideoSources(video) {
+    const sources = [];
+    const directSrc = (video.getAttribute('src') || '').trim();
+    if (directSrc) {
+      sources.push(directSrc);
+    }
+    for (const source of video.querySelectorAll('source[src]')) {
+      const src = (source.getAttribute('src') || '').trim();
+      if (src) {
+        sources.push(src);
+      }
+    }
+    return sources;
+  }
+
+  window.addEventListener('error', (event) => {
+    const target = event.target;
+    if (target instanceof HTMLImageElement) {
+      const src = (target.getAttribute('src') || target.currentSrc || '').trim();
+      if (!src || src.startsWith('data:')) return;
+      if (src.startsWith(localAssetPrefix)) {
+        fail('missing local asset', { src });
+        return;
+      }
+      fail('image failed to load', { src });
+      return;
+    }
+
+    if (target instanceof HTMLVideoElement) {
+      const sources = getVideoSources(target);
+      if (sources.some((src) => src.startsWith(localAssetPrefix))) {
+        fail('missing local video asset', { sources });
+        return;
+      }
+      fail('video failed to load', { sources });
+      return;
+    }
+
+    if (target instanceof HTMLSourceElement &amp;&amp; target.parentElement instanceof HTMLVideoElement) {
+      const src = (target.getAttribute('src') || '').trim();
+      if (!src) return;
+      if (src.startsWith(localAssetPrefix)) {
+        fail('missing local video asset', { src });
+        return;
+      }
+      fail('video source failed to load', { src });
+    }
+  }, true);
+
+  window.addEventListener('DOMContentLoaded', () => {
+    for (const image of document.querySelectorAll('img[src]')) {
+      const src = (image.getAttribute('src') || '').trim();
+      validateAssetSource('image', src);
+    }
+
+    for (const video of document.querySelectorAll('video')) {
+      for (const src of getVideoSources(video)) {
+        validateAssetSource('video', src);
+      }
+
+      const poster = (video.getAttribute('poster') || '').trim();
+      if (poster) {
+        validateAssetSource('image', poster);
+      }
+    }
+
+    for (const element of document.body.querySelectorAll('*')) {
+      if (element === document.body) continue;
+      const backgroundImage = window.getComputedStyle(element).backgroundImage;
+      if (!backgroundImage || backgroundImage === 'none' || !backgroundImage.includes('url(')) continue;
+      fail('non-body background-image is not supported for slide content', {
+        element: describeElement(element),
+        backgroundImage,
+      });
+    }
+  });
+})();
+</script>
+<meta charset=&quot;UTF-8&quot; />
+<title>NiNiZ — Cover</title>
+<link rel=&quot;stylesheet&quot; href=&quot;https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css&quot; />
+<link href=&quot;https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Kalam:wght@400;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap&quot; rel=&quot;stylesheet&quot; />
+<style>
+  html, body { margin: 0; padding: 0; }
+  body {
+    width: 720pt;
+    height: 405pt;
+    background: #f2f0eb;
+    font-family: 'Inter', 'Pretendard', -apple-system, sans-serif;
+    color: rgba(0,0,0,0.87);
+    position: relative;
+    overflow: hidden;
+    letter-spacing: -0.01em;
+  }
+  .frame {
+    position: absolute;
+    inset: 0;
+    padding: 28pt 36pt 20pt 36pt;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  .top {
+    display: flex;
+    align-items: center;
+    gap: 10pt;
+  }
+  .siren {
+    width: 16pt;
+    height: 16pt;
+  }
+  .eyebrow {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 10pt;
+    font-weight: 500;
+    letter-spacing: 1.5pt;
+    text-transform: uppercase;
+    color: rgba(0,0,0,0.6);
+    margin: 0;
+  }
+  .hero {
+    display: grid;
+    grid-template-columns: 1.25fr 0.95fr;
+    gap: 28pt;
+    align-items: center;
+  }
+  .copy { display: flex; flex-direction: column; }
+  .h1 {
+    font-size: 56pt;
+    font-weight: 700;
+    line-height: 1.25;
+    letter-spacing: -1.5pt;
+    color: #006241;
+    margin: 0 0 8pt 0;
+  }
+  .sub {
+    font-size: 17pt;
+    font-weight: 500;
+    color: rgba(0,0,0,0.87);
+    line-height: 1.4;
+    margin: 0 0 14pt 0;
+    max-width: 380pt;
+    letter-spacing: -0.3pt;
+  }
+  .lede {
+    font-size: 12pt;
+    font-weight: 400;
+    color: rgba(0,0,0,0.6);
+    line-height: 1.55;
+    margin: 0 0 16pt 0;
+    max-width: 360pt;
+  }
+  .cup-names {
+    display: flex;
+    align-items: baseline;
+    gap: 16pt;
+    padding-top: 10pt;
+    border-top: 1px solid rgba(0,0,0,0.08);
+  }
+  .cup-names .label {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 10pt;
+    letter-spacing: 1.5pt;
+    text-transform: uppercase;
+    color: rgba(0,0,0,0.45);
+    margin: 0;
+  }
+  .cup {
+    font-family: 'Kalam', cursive;
+    font-weight: 700;
+    font-size: 22pt;
+    color: #006241;
+    margin: 0;
+    line-height: 1.8;
+    letter-spacing: 0;
+    transform: rotate(-2deg);
+  }
+  .cup.danielle {
+    transform: rotate(1deg);
+  }
+  .photo-card {
+    background: #ffffff;
+    border-radius: 12pt;
+    padding: 12pt;
+    box-shadow: 0 2pt 12pt rgba(0,0,0,0.06);
+    display: flex;
+    flex-direction: column;
+    gap: 10pt;
+    align-self: center;
+    max-width: 260pt;
+  }
+  .photo-card img {
+    width: 100%;
+    height: 200pt;
+    object-fit: cover;
+    object-position: center;
+    border-radius: 8pt;
+    display: block;
+  }
+  .photo-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 4pt;
+  }
+  .photo-meta .caption {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 9pt;
+    color: rgba(0,0,0,0.6);
+    margin: 0;
+    letter-spacing: 0.4pt;
+  }
+  .photo-meta .pill {
+    background: #d4e9e2;
+    color: #006241;
+    font-size: 9pt;
+    font-weight: 600;
+    padding: 3pt 8pt;
+    border-radius: 999pt;
+    letter-spacing: 0.4pt;
+    text-transform: uppercase;
+    margin: 0;
+  }
+  .footer-strip {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 8pt;
+    border-top: 1px solid rgba(0,0,0,0.08);
+  }
+  .footer-strip p {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 9pt;
+    color: rgba(0,0,0,0.45);
+    margin: 0;
+    letter-spacing: 0.4pt;
+  }
+</style>
+</head>
+<body>
+  <div class=&quot;frame&quot;>
+    <div class=&quot;top&quot;>
+      <svg class=&quot;siren&quot; viewBox=&quot;0 0 32 32&quot; aria-hidden=&quot;true&quot;>
+        <circle cx=&quot;16&quot; cy=&quot;16&quot; r=&quot;14&quot; fill=&quot;none&quot; stroke=&quot;#006241&quot; stroke-width=&quot;2&quot;/>
+        <circle cx=&quot;16&quot; cy=&quot;16&quot; r=&quot;9&quot; fill=&quot;#006241&quot;/>
+        <circle cx=&quot;16&quot; cy=&quot;16&quot; r=&quot;4&quot; fill=&quot;#f2f0eb&quot;/>
+      </svg>
+      <p class=&quot;eyebrow&quot;>Issue 03 · Cover · NewJeans · Australian duo</p>
+    </div>
+
+    <div class=&quot;hero&quot;>
+      <div class=&quot;copy&quot;>
+        <h1 class=&quot;h1&quot;>니니즈.</h1>
+        <p class=&quot;sub&quot;>Hanni &amp;amp; Danielle — two cups, one order.</p>
+        <p class=&quot;lede&quot;>The Australian half of NewJeans, sharing a stage, a press circuit, and a private bilingual shorthand since August 2022.</p>
+        <div class=&quot;cup-names&quot;>
+          <p class=&quot;label&quot;>cup name</p>
+          <p class=&quot;cup&quot;>Hanni</p>
+          <p class=&quot;cup danielle&quot;>Danielle</p>
+        </div>
+      </div>
+
+      <div class=&quot;photo-card&quot;>
+        <img src=&quot;./assets/niniz-together-crop.jpg&quot; alt=&quot;Hanni and Danielle from NewJeans together at a press event&quot; />
+        <div class=&quot;photo-meta&quot;>
+          <p class=&quot;caption&quot;>photo · 2024 · Incheon</p>
+          <p class=&quot;pill&quot;>Niniz</p>
+        </div>
+      </div>
+    </div>
+
+    <div class=&quot;footer-strip&quot;>
+      <p>slides-grab · ./DESIGN.slides.md · imported from voltagent/awesome-design-md → starbucks</p>
+      <p>01 / 06</p>
+    </div>
+  </div>
+</body>
+</html>
+" sandbox="allow-same-origin"></iframe>
+        <iframe class="slide-frame" data-slide="2" srcdoc="<!DOCTYPE html>
+<html lang=&quot;en&quot;>
+<head>
+<base href=&quot;./&quot;>
+<script>
+(() => {
+  const slideFile = &quot;slide-02.html&quot;;
+  const localAssetPrefix = &quot;./assets/&quot;;
+  const absolutePathRe = /^(file:\/\/|\/Users\/|\/home\/|\/var\/|\/tmp\/|\/private\/|\/Volumes\/|[A-Za-z]:[\\/]|\\\\)/i;
+  const schemeRe = /^[a-z][a-z0-9+\-.]*:/i;
+  const prefix = '[slides-grab:image]';
+
+  function describeElement(element) {
+    if (!element || element.nodeType !== Node.ELEMENT_NODE) return '';
+    if (element === document.body) return 'body';
+
+    const parts = [];
+    let current = element;
+    while (current &amp;&amp; current.nodeType === Node.ELEMENT_NODE &amp;&amp; current !== document.body) {
+      let part = current.tagName.toLowerCase();
+      if (current.id) {
+        part += '#' + current.id;
+        parts.unshift(part);
+        break;
+      }
+      if (current.classList.length > 0) {
+        part += '.' + Array.from(current.classList).slice(0, 2).join('.');
+      }
+      parts.unshift(part);
+      current = current.parentElement;
+    }
+    return 'body > ' + parts.join(' > ');
+  }
+
+  function warn(message, detail) {
+    console.warn(prefix + ' ' + slideFile + ': ' + message, detail);
+  }
+
+  function fail(message, detail) {
+    console.error(prefix + ' ' + slideFile + ': ' + message, detail);
+  }
+
+  function validateAssetSource(kind, source, { allowEmpty = true, onNoncanonical = 'warn' } = {}) {
+    const value = (source || '').trim();
+    if (!value) {
+      return allowEmpty;
+    }
+    if (value.startsWith('data:')) {
+      return true;
+    }
+    if (value.startsWith('https://')) {
+      fail('remote ' + kind + ' URL is unsupported in saved slides; download it into ./assets/<file>', { src: value });
+      return false;
+    }
+    if (value.startsWith('http://')) {
+      fail('remote http:// ' + kind + ' URL is unsupported in saved slides; download it into ./assets/<file>', { src: value });
+      return false;
+    }
+    if (absolutePathRe.test(value) || value.startsWith('/')) {
+      fail('non-portable ' + kind + ' path is unsupported', { src: value });
+      return false;
+    }
+    if (schemeRe.test(value)) {
+      fail('unsupported ' + kind + ' URL scheme in saved slides; download it into ./assets/<file>', { src: value });
+      return false;
+    }
+    if (!value.startsWith(localAssetPrefix)) {
+      const report = onNoncanonical === 'fail' ? fail : warn;
+      report('noncanonical local ' + kind + ' path should use ./assets/<file>', { src: value });
+    }
+    return true;
+  }
+
+  function getVideoSources(video) {
+    const sources = [];
+    const directSrc = (video.getAttribute('src') || '').trim();
+    if (directSrc) {
+      sources.push(directSrc);
+    }
+    for (const source of video.querySelectorAll('source[src]')) {
+      const src = (source.getAttribute('src') || '').trim();
+      if (src) {
+        sources.push(src);
+      }
+    }
+    return sources;
+  }
+
+  window.addEventListener('error', (event) => {
+    const target = event.target;
+    if (target instanceof HTMLImageElement) {
+      const src = (target.getAttribute('src') || target.currentSrc || '').trim();
+      if (!src || src.startsWith('data:')) return;
+      if (src.startsWith(localAssetPrefix)) {
+        fail('missing local asset', { src });
+        return;
+      }
+      fail('image failed to load', { src });
+      return;
+    }
+
+    if (target instanceof HTMLVideoElement) {
+      const sources = getVideoSources(target);
+      if (sources.some((src) => src.startsWith(localAssetPrefix))) {
+        fail('missing local video asset', { sources });
+        return;
+      }
+      fail('video failed to load', { sources });
+      return;
+    }
+
+    if (target instanceof HTMLSourceElement &amp;&amp; target.parentElement instanceof HTMLVideoElement) {
+      const src = (target.getAttribute('src') || '').trim();
+      if (!src) return;
+      if (src.startsWith(localAssetPrefix)) {
+        fail('missing local video asset', { src });
+        return;
+      }
+      fail('video source failed to load', { src });
+    }
+  }, true);
+
+  window.addEventListener('DOMContentLoaded', () => {
+    for (const image of document.querySelectorAll('img[src]')) {
+      const src = (image.getAttribute('src') || '').trim();
+      validateAssetSource('image', src);
+    }
+
+    for (const video of document.querySelectorAll('video')) {
+      for (const src of getVideoSources(video)) {
+        validateAssetSource('video', src);
+      }
+
+      const poster = (video.getAttribute('poster') || '').trim();
+      if (poster) {
+        validateAssetSource('image', poster);
+      }
+    }
+
+    for (const element of document.body.querySelectorAll('*')) {
+      if (element === document.body) continue;
+      const backgroundImage = window.getComputedStyle(element).backgroundImage;
+      if (!backgroundImage || backgroundImage === 'none' || !backgroundImage.includes('url(')) continue;
+      fail('non-body background-image is not supported for slide content', {
+        element: describeElement(element),
+        backgroundImage,
+      });
+    }
+  });
+})();
+</script>
+<meta charset=&quot;UTF-8&quot; />
+<title>NiNiZ — The Pair</title>
+<link rel=&quot;stylesheet&quot; href=&quot;https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css&quot; />
+<link href=&quot;https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap&quot; rel=&quot;stylesheet&quot; />
+<style>
+  html, body { margin: 0; padding: 0; }
+  body {
+    width: 720pt;
+    height: 405pt;
+    background: #f2f0eb;
+    font-family: 'Inter', 'Pretendard', -apple-system, sans-serif;
+    color: rgba(0,0,0,0.87);
+    position: relative;
+    overflow: hidden;
+    letter-spacing: -0.01em;
+  }
+  .frame {
+    position: absolute;
+    inset: 0;
+    padding: 18pt 28pt 14pt 28pt;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+  }
+  .top {
+    display: flex;
+    align-items: center;
+    gap: 10pt;
+    margin-bottom: 14pt;
+  }
+  .siren { width: 14pt; height: 14pt; }
+  .eyebrow {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 10pt;
+    font-weight: 500;
+    letter-spacing: 1.5pt;
+    text-transform: uppercase;
+    color: rgba(0,0,0,0.6);
+    margin: 0;
+  }
+  .lede-row {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr;
+    gap: 20pt;
+    align-items: end;
+    margin-bottom: 12pt;
+  }
+  .h2 {
+    font-size: 26pt;
+    font-weight: 600;
+    line-height: 1.3;
+    letter-spacing: -0.6pt;
+    color: #006241;
+    margin: 0 0 6pt 0;
+  }
+  .h2 .ink { color: rgba(0,0,0,0.87); font-weight: 500; }
+  .lede {
+    font-size: 13pt;
+    color: rgba(0,0,0,0.6);
+    line-height: 1.55;
+    margin: 0;
+    max-width: 360pt;
+  }
+  .right-stat {
+    text-align: right;
+  }
+  .right-stat .num {
+    font-family: 'Inter', sans-serif;
+    font-size: 30pt;
+    font-weight: 700;
+    color: #1E3932;
+    margin: 0;
+    line-height: 1.25;
+    letter-spacing: -0.8pt;
+  }
+  .right-stat .num-label {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 9pt;
+    color: rgba(0,0,0,0.45);
+    letter-spacing: 0.6pt;
+    text-transform: uppercase;
+    margin: 4pt 0 0 0;
+  }
+  .members {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16pt;
+    flex: 1;
+  }
+  .member-card {
+    background: #ffffff;
+    border-radius: 12pt;
+    padding: 10pt;
+    box-shadow: 0 2pt 12pt rgba(0,0,0,0.06);
+    display: grid;
+    grid-template-columns: 84pt 1fr;
+    gap: 12pt;
+    align-items: stretch;
+    overflow: hidden;
+  }
+  .member-card img {
+    width: 84pt;
+    height: 100%;
+    max-height: 160pt;
+    object-fit: cover;
+    object-position: top center;
+    border-radius: 8pt;
+    display: block;
+  }
+  .member-card .info {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 4pt;
+  }
+  .member-card .name {
+    font-size: 19pt;
+    font-weight: 600;
+    color: rgba(0,0,0,0.87);
+    margin: 0;
+    letter-spacing: -0.4pt;
+    line-height: 1.3;
+  }
+  .member-card .ko {
+    font-size: 13pt;
+    color: rgba(0,0,0,0.6);
+    margin: 0;
+    letter-spacing: -0.2pt;
+  }
+  .member-card .id {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 9pt;
+    color: rgba(0,0,0,0.45);
+    margin: 6pt 0 0 0;
+    letter-spacing: 0.4pt;
+    text-transform: uppercase;
+    padding-top: 6pt;
+    border-top: 1px solid rgba(0,0,0,0.08);
+  }
+  .member-card .meta {
+    font-size: 11pt;
+    color: rgba(0,0,0,0.6);
+    margin: 4pt 0 0 0;
+    line-height: 1.45;
+  }
+  .member-card .role {
+    display: inline-block;
+    background: #d4e9e2;
+    color: #006241;
+    font-size: 9pt;
+    font-weight: 600;
+    padding: 2pt 7pt;
+    border-radius: 999pt;
+    letter-spacing: 0.4pt;
+    text-transform: uppercase;
+    margin: 6pt 0 0 0;
+    align-self: flex-start;
+  }
+  .footer-strip {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 8pt;
+    border-top: 1px solid rgba(0,0,0,0.08);
+    margin-top: 14pt;
+  }
+  .footer-strip p {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 9pt;
+    color: rgba(0,0,0,0.45);
+    margin: 0;
+    letter-spacing: 0.4pt;
+  }
+</style>
+</head>
+<body>
+  <div class=&quot;frame&quot;>
+    <div class=&quot;top&quot;>
+      <svg class=&quot;siren&quot; viewBox=&quot;0 0 32 32&quot; aria-hidden=&quot;true&quot;>
+        <circle cx=&quot;16&quot; cy=&quot;16&quot; r=&quot;14&quot; fill=&quot;none&quot; stroke=&quot;#006241&quot; stroke-width=&quot;2&quot;/>
+        <circle cx=&quot;16&quot; cy=&quot;16&quot; r=&quot;9&quot; fill=&quot;#006241&quot;/>
+        <circle cx=&quot;16&quot; cy=&quot;16&quot; r=&quot;4&quot; fill=&quot;#f2f0eb&quot;/>
+      </svg>
+      <p class=&quot;eyebrow&quot;>02 · The pair · ADOR · debut 2022</p>
+    </div>
+
+    <div class=&quot;lede-row&quot;>
+      <div>
+        <h2 class=&quot;h2&quot;>Two voices, <span class=&quot;ink&quot;>one understanding.</span></h2>
+        <p class=&quot;lede&quot;>Both born 2004–2005 with one foot in Australia, both vocalists by training, both pulled into ADOR's bilingual debut window within the same year.</p>
+      </div>
+      <div class=&quot;right-stat&quot;>
+        <p class=&quot;num&quot;>2/5</p>
+        <p class=&quot;num-label&quot;>members · Australian roots</p>
+      </div>
+    </div>
+
+    <div class=&quot;members&quot;>
+      <div class=&quot;member-card&quot;>
+        <img src=&quot;./assets/hanni-portrait.jpg&quot; alt=&quot;Hanni Pham of NewJeans&quot; />
+        <div class=&quot;info&quot;>
+          <p class=&quot;name&quot;>Hanni</p>
+          <p class=&quot;ko&quot;>Hanni Pham · 팜하니</p>
+          <span class=&quot;role&quot;>Main vocal</span>
+          <p class=&quot;meta&quot;>Melbourne, AU · 2004 · Vietnamese-Australian</p>
+          <p class=&quot;id&quot;>NJN-M2 · since 2022</p>
+        </div>
+      </div>
+
+      <div class=&quot;member-card&quot;>
+        <img src=&quot;./assets/danielle-portrait.jpg&quot; alt=&quot;Danielle Marsh of NewJeans&quot; />
+        <div class=&quot;info&quot;>
+          <p class=&quot;name&quot;>Danielle</p>
+          <p class=&quot;ko&quot;>Danielle Marsh · 다니엘</p>
+          <span class=&quot;role&quot;>Lead vocal</span>
+          <p class=&quot;meta&quot;>Newcastle, AU → Seoul · 2005 · Korean-Australian</p>
+          <p class=&quot;id&quot;>NJN-M3 · since 2022</p>
+        </div>
+      </div>
+    </div>
+
+    <div class=&quot;footer-strip&quot;>
+      <p>source · Wikimedia Commons · TenAsia/TV10 · CC-BY</p>
+      <p>02 / 06</p>
+    </div>
+  </div>
+</body>
+</html>
+" sandbox="allow-same-origin"></iframe>
+        <iframe class="slide-frame" data-slide="3" srcdoc="<!DOCTYPE html>
+<html lang=&quot;en&quot;>
+<head>
+<base href=&quot;./&quot;>
+<script>
+(() => {
+  const slideFile = &quot;slide-03.html&quot;;
+  const localAssetPrefix = &quot;./assets/&quot;;
+  const absolutePathRe = /^(file:\/\/|\/Users\/|\/home\/|\/var\/|\/tmp\/|\/private\/|\/Volumes\/|[A-Za-z]:[\\/]|\\\\)/i;
+  const schemeRe = /^[a-z][a-z0-9+\-.]*:/i;
+  const prefix = '[slides-grab:image]';
+
+  function describeElement(element) {
+    if (!element || element.nodeType !== Node.ELEMENT_NODE) return '';
+    if (element === document.body) return 'body';
+
+    const parts = [];
+    let current = element;
+    while (current &amp;&amp; current.nodeType === Node.ELEMENT_NODE &amp;&amp; current !== document.body) {
+      let part = current.tagName.toLowerCase();
+      if (current.id) {
+        part += '#' + current.id;
+        parts.unshift(part);
+        break;
+      }
+      if (current.classList.length > 0) {
+        part += '.' + Array.from(current.classList).slice(0, 2).join('.');
+      }
+      parts.unshift(part);
+      current = current.parentElement;
+    }
+    return 'body > ' + parts.join(' > ');
+  }
+
+  function warn(message, detail) {
+    console.warn(prefix + ' ' + slideFile + ': ' + message, detail);
+  }
+
+  function fail(message, detail) {
+    console.error(prefix + ' ' + slideFile + ': ' + message, detail);
+  }
+
+  function validateAssetSource(kind, source, { allowEmpty = true, onNoncanonical = 'warn' } = {}) {
+    const value = (source || '').trim();
+    if (!value) {
+      return allowEmpty;
+    }
+    if (value.startsWith('data:')) {
+      return true;
+    }
+    if (value.startsWith('https://')) {
+      fail('remote ' + kind + ' URL is unsupported in saved slides; download it into ./assets/<file>', { src: value });
+      return false;
+    }
+    if (value.startsWith('http://')) {
+      fail('remote http:// ' + kind + ' URL is unsupported in saved slides; download it into ./assets/<file>', { src: value });
+      return false;
+    }
+    if (absolutePathRe.test(value) || value.startsWith('/')) {
+      fail('non-portable ' + kind + ' path is unsupported', { src: value });
+      return false;
+    }
+    if (schemeRe.test(value)) {
+      fail('unsupported ' + kind + ' URL scheme in saved slides; download it into ./assets/<file>', { src: value });
+      return false;
+    }
+    if (!value.startsWith(localAssetPrefix)) {
+      const report = onNoncanonical === 'fail' ? fail : warn;
+      report('noncanonical local ' + kind + ' path should use ./assets/<file>', { src: value });
+    }
+    return true;
+  }
+
+  function getVideoSources(video) {
+    const sources = [];
+    const directSrc = (video.getAttribute('src') || '').trim();
+    if (directSrc) {
+      sources.push(directSrc);
+    }
+    for (const source of video.querySelectorAll('source[src]')) {
+      const src = (source.getAttribute('src') || '').trim();
+      if (src) {
+        sources.push(src);
+      }
+    }
+    return sources;
+  }
+
+  window.addEventListener('error', (event) => {
+    const target = event.target;
+    if (target instanceof HTMLImageElement) {
+      const src = (target.getAttribute('src') || target.currentSrc || '').trim();
+      if (!src || src.startsWith('data:')) return;
+      if (src.startsWith(localAssetPrefix)) {
+        fail('missing local asset', { src });
+        return;
+      }
+      fail('image failed to load', { src });
+      return;
+    }
+
+    if (target instanceof HTMLVideoElement) {
+      const sources = getVideoSources(target);
+      if (sources.some((src) => src.startsWith(localAssetPrefix))) {
+        fail('missing local video asset', { sources });
+        return;
+      }
+      fail('video failed to load', { sources });
+      return;
+    }
+
+    if (target instanceof HTMLSourceElement &amp;&amp; target.parentElement instanceof HTMLVideoElement) {
+      const src = (target.getAttribute('src') || '').trim();
+      if (!src) return;
+      if (src.startsWith(localAssetPrefix)) {
+        fail('missing local video asset', { src });
+        return;
+      }
+      fail('video source failed to load', { src });
+    }
+  }, true);
+
+  window.addEventListener('DOMContentLoaded', () => {
+    for (const image of document.querySelectorAll('img[src]')) {
+      const src = (image.getAttribute('src') || '').trim();
+      validateAssetSource('image', src);
+    }
+
+    for (const video of document.querySelectorAll('video')) {
+      for (const src of getVideoSources(video)) {
+        validateAssetSource('video', src);
+      }
+
+      const poster = (video.getAttribute('poster') || '').trim();
+      if (poster) {
+        validateAssetSource('image', poster);
+      }
+    }
+
+    for (const element of document.body.querySelectorAll('*')) {
+      if (element === document.body) continue;
+      const backgroundImage = window.getComputedStyle(element).backgroundImage;
+      if (!backgroundImage || backgroundImage === 'none' || !backgroundImage.includes('url(')) continue;
+      fail('non-body background-image is not supported for slide content', {
+        element: describeElement(element),
+        backgroundImage,
+      });
+    }
+  });
+})();
+</script>
+<meta charset=&quot;UTF-8&quot; />
+<title>NiNiZ — Statistic</title>
+<link rel=&quot;stylesheet&quot; href=&quot;https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css&quot; />
+<link href=&quot;https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap&quot; rel=&quot;stylesheet&quot; />
+<style>
+  html, body { margin: 0; padding: 0; }
+  body {
+    width: 720pt;
+    height: 405pt;
+    background: #f2f0eb;
+    font-family: 'Inter', 'Pretendard', -apple-system, sans-serif;
+    color: rgba(0,0,0,0.87);
+    position: relative;
+    overflow: hidden;
+    letter-spacing: -0.01em;
+  }
+  .frame {
+    position: absolute;
+    inset: 0;
+    padding: 18pt 28pt 14pt 28pt;
+    box-sizing: border-box;
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    gap: 12pt;
+  }
+  .top {
+    display: flex;
+    align-items: center;
+    gap: 10pt;
+  }
+  .siren { width: 14pt; height: 14pt; }
+  .eyebrow {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 10pt;
+    font-weight: 500;
+    letter-spacing: 1.5pt;
+    text-transform: uppercase;
+    color: rgba(0,0,0,0.6);
+    margin: 0;
+  }
+  .main {
+    display: grid;
+    grid-template-columns: 1.3fr 1fr;
+    gap: 28pt;
+    align-items: center;
+  }
+  .stat-block {
+    position: relative;
+    padding: 14pt 18pt;
+  }
+  .stat-wash {
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 180pt;
+    height: 180pt;
+    border-radius: 50%;
+    background: #d4e9e2;
+    z-index: 0;
+    opacity: 0.7;
+  }
+  .stat-num {
+    position: relative;
+    z-index: 1;
+    font-size: 84pt;
+    font-weight: 700;
+    color: #1E3932;
+    line-height: 1.3;
+    margin: 0;
+    letter-spacing: -2.5pt;
+  }
+  .stat-num .unit {
+    font-size: 26pt;
+    color: #006241;
+    vertical-align: top;
+    margin-left: 6pt;
+    letter-spacing: -0.5pt;
+  }
+  .gold-underline {
+    height: 2pt;
+    width: 80pt;
+    background: #cba258;
+    margin: 14pt 0 12pt 0;
+    border-radius: 1pt;
+    position: relative;
+    z-index: 1;
+  }
+  .stat-caption {
+    position: relative;
+    z-index: 1;
+    font-size: 14pt;
+    color: rgba(0,0,0,0.87);
+    line-height: 1.5;
+    margin: 0;
+    max-width: 330pt;
+    letter-spacing: -0.2pt;
+  }
+  .stat-caption .green { color: #006241; font-weight: 600; }
+  .right-card {
+    background: #ffffff;
+    border-radius: 12pt;
+    padding: 16pt;
+    box-shadow: 0 2pt 12pt rgba(0,0,0,0.06);
+    display: flex;
+    flex-direction: column;
+    gap: 8pt;
+  }
+  .right-card .eye {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 9pt;
+    font-weight: 500;
+    letter-spacing: 1pt;
+    text-transform: uppercase;
+    color: rgba(0,0,0,0.45);
+    margin: 0;
+  }
+  .right-card h3 {
+    font-size: 16pt;
+    font-weight: 600;
+    color: rgba(0,0,0,0.87);
+    margin: 0 0 4pt 0;
+    line-height: 1.3;
+    letter-spacing: -0.3pt;
+  }
+  .right-card ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .right-card li {
+    font-size: 10.5pt;
+    color: rgba(0,0,0,0.6);
+    line-height: 1.45;
+    margin-bottom: 5pt;
+    display: flex;
+    gap: 8pt;
+    align-items: flex-start;
+  }
+  .right-card li::before {
+    content: &quot;&quot;;
+    width: 6pt;
+    height: 6pt;
+    background: #006241;
+    border-radius: 50%;
+    flex-shrink: 0;
+    margin-top: 6pt;
+  }
+  .right-card .pill-gold {
+    background: #dfc49d;
+    color: #1E3932;
+    font-size: 9pt;
+    font-weight: 700;
+    padding: 3pt 8pt;
+    border-radius: 999pt;
+    letter-spacing: 0.6pt;
+    text-transform: uppercase;
+    align-self: flex-start;
+  }
+  .footer-strip {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 8pt;
+    border-top: 1px solid rgba(0,0,0,0.08);
+  }
+  .footer-strip p {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 9pt;
+    color: rgba(0,0,0,0.45);
+    margin: 0;
+    letter-spacing: 0.4pt;
+  }
+</style>
+</head>
+<body>
+  <div class=&quot;frame&quot;>
+    <div class=&quot;top&quot;>
+      <svg class=&quot;siren&quot; viewBox=&quot;0 0 32 32&quot; aria-hidden=&quot;true&quot;>
+        <circle cx=&quot;16&quot; cy=&quot;16&quot; r=&quot;14&quot; fill=&quot;none&quot; stroke=&quot;#006241&quot; stroke-width=&quot;2&quot;/>
+        <circle cx=&quot;16&quot; cy=&quot;16&quot; r=&quot;9&quot; fill=&quot;#006241&quot;/>
+        <circle cx=&quot;16&quot; cy=&quot;16&quot; r=&quot;4&quot; fill=&quot;#f2f0eb&quot;/>
+      </svg>
+      <p class=&quot;eyebrow&quot;>03 · Statistic · Debut 2022 → Now</p>
+    </div>
+
+    <div class=&quot;main&quot;>
+      <div class=&quot;stat-block&quot;>
+        <div class=&quot;stat-wash&quot; aria-hidden=&quot;true&quot;></div>
+        <p class=&quot;stat-num&quot;>3<span class=&quot;unit&quot;>.5 yr</span></p>
+        <div class=&quot;gold-underline&quot; aria-hidden=&quot;true&quot;></div>
+        <p class=&quot;stat-caption&quot;>on stage <span class=&quot;green&quot;>together</span>, sharing the front-row stand on every NewJeans single since Aug 2022.</p>
+      </div>
+
+      <div class=&quot;right-card&quot;>
+        <p class=&quot;eye&quot;>What it adds up to</p>
+        <h3>The Australian half of every chorus</h3>
+        <ul>
+          <li>5 singles charted on Billboard Hot 100 (Hype Boy, Ditto, OMG, Cool With You, Super Shy)</li>
+          <li>Every English line in NewJeans choruses runs through Hanni or Danielle's mouth</li>
+          <li>Bilingual interview cadence — the press circuit relies on it</li>
+        </ul>
+        <span class=&quot;pill-gold&quot;>Milestone</span>
+      </div>
+    </div>
+
+    <div class=&quot;footer-strip&quot;>
+      <p>stat · Aug 2022 → Mar 2026 · ADOR discography</p>
+      <p>03 / 06</p>
+    </div>
+  </div>
+</body>
+</html>
+" sandbox="allow-same-origin"></iframe>
+        <iframe class="slide-frame" data-slide="4" srcdoc="<!DOCTYPE html>
+<html lang=&quot;en&quot;>
+<head>
+<base href=&quot;./&quot;>
+<script>
+(() => {
+  const slideFile = &quot;slide-04.html&quot;;
+  const localAssetPrefix = &quot;./assets/&quot;;
+  const absolutePathRe = /^(file:\/\/|\/Users\/|\/home\/|\/var\/|\/tmp\/|\/private\/|\/Volumes\/|[A-Za-z]:[\\/]|\\\\)/i;
+  const schemeRe = /^[a-z][a-z0-9+\-.]*:/i;
+  const prefix = '[slides-grab:image]';
+
+  function describeElement(element) {
+    if (!element || element.nodeType !== Node.ELEMENT_NODE) return '';
+    if (element === document.body) return 'body';
+
+    const parts = [];
+    let current = element;
+    while (current &amp;&amp; current.nodeType === Node.ELEMENT_NODE &amp;&amp; current !== document.body) {
+      let part = current.tagName.toLowerCase();
+      if (current.id) {
+        part += '#' + current.id;
+        parts.unshift(part);
+        break;
+      }
+      if (current.classList.length > 0) {
+        part += '.' + Array.from(current.classList).slice(0, 2).join('.');
+      }
+      parts.unshift(part);
+      current = current.parentElement;
+    }
+    return 'body > ' + parts.join(' > ');
+  }
+
+  function warn(message, detail) {
+    console.warn(prefix + ' ' + slideFile + ': ' + message, detail);
+  }
+
+  function fail(message, detail) {
+    console.error(prefix + ' ' + slideFile + ': ' + message, detail);
+  }
+
+  function validateAssetSource(kind, source, { allowEmpty = true, onNoncanonical = 'warn' } = {}) {
+    const value = (source || '').trim();
+    if (!value) {
+      return allowEmpty;
+    }
+    if (value.startsWith('data:')) {
+      return true;
+    }
+    if (value.startsWith('https://')) {
+      fail('remote ' + kind + ' URL is unsupported in saved slides; download it into ./assets/<file>', { src: value });
+      return false;
+    }
+    if (value.startsWith('http://')) {
+      fail('remote http:// ' + kind + ' URL is unsupported in saved slides; download it into ./assets/<file>', { src: value });
+      return false;
+    }
+    if (absolutePathRe.test(value) || value.startsWith('/')) {
+      fail('non-portable ' + kind + ' path is unsupported', { src: value });
+      return false;
+    }
+    if (schemeRe.test(value)) {
+      fail('unsupported ' + kind + ' URL scheme in saved slides; download it into ./assets/<file>', { src: value });
+      return false;
+    }
+    if (!value.startsWith(localAssetPrefix)) {
+      const report = onNoncanonical === 'fail' ? fail : warn;
+      report('noncanonical local ' + kind + ' path should use ./assets/<file>', { src: value });
+    }
+    return true;
+  }
+
+  function getVideoSources(video) {
+    const sources = [];
+    const directSrc = (video.getAttribute('src') || '').trim();
+    if (directSrc) {
+      sources.push(directSrc);
+    }
+    for (const source of video.querySelectorAll('source[src]')) {
+      const src = (source.getAttribute('src') || '').trim();
+      if (src) {
+        sources.push(src);
+      }
+    }
+    return sources;
+  }
+
+  window.addEventListener('error', (event) => {
+    const target = event.target;
+    if (target instanceof HTMLImageElement) {
+      const src = (target.getAttribute('src') || target.currentSrc || '').trim();
+      if (!src || src.startsWith('data:')) return;
+      if (src.startsWith(localAssetPrefix)) {
+        fail('missing local asset', { src });
+        return;
+      }
+      fail('image failed to load', { src });
+      return;
+    }
+
+    if (target instanceof HTMLVideoElement) {
+      const sources = getVideoSources(target);
+      if (sources.some((src) => src.startsWith(localAssetPrefix))) {
+        fail('missing local video asset', { sources });
+        return;
+      }
+      fail('video failed to load', { sources });
+      return;
+    }
+
+    if (target instanceof HTMLSourceElement &amp;&amp; target.parentElement instanceof HTMLVideoElement) {
+      const src = (target.getAttribute('src') || '').trim();
+      if (!src) return;
+      if (src.startsWith(localAssetPrefix)) {
+        fail('missing local video asset', { src });
+        return;
+      }
+      fail('video source failed to load', { src });
+    }
+  }, true);
+
+  window.addEventListener('DOMContentLoaded', () => {
+    for (const image of document.querySelectorAll('img[src]')) {
+      const src = (image.getAttribute('src') || '').trim();
+      validateAssetSource('image', src);
+    }
+
+    for (const video of document.querySelectorAll('video')) {
+      for (const src of getVideoSources(video)) {
+        validateAssetSource('video', src);
+      }
+
+      const poster = (video.getAttribute('poster') || '').trim();
+      if (poster) {
+        validateAssetSource('image', poster);
+      }
+    }
+
+    for (const element of document.body.querySelectorAll('*')) {
+      if (element === document.body) continue;
+      const backgroundImage = window.getComputedStyle(element).backgroundImage;
+      if (!backgroundImage || backgroundImage === 'none' || !backgroundImage.includes('url(')) continue;
+      fail('non-body background-image is not supported for slide content', {
+        element: describeElement(element),
+        backgroundImage,
+      });
+    }
+  });
+})();
+</script>
+<meta charset=&quot;UTF-8&quot; />
+<title>NiNiZ — On Stage</title>
+<link rel=&quot;stylesheet&quot; href=&quot;https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css&quot; />
+<link href=&quot;https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap&quot; rel=&quot;stylesheet&quot; />
+<style>
+  html, body { margin: 0; padding: 0; }
+  body {
+    width: 720pt;
+    height: 405pt;
+    background: #1E3932;
+    font-family: 'Inter', 'Pretendard', -apple-system, sans-serif;
+    color: #ffffff;
+    position: relative;
+    overflow: hidden;
+    letter-spacing: -0.01em;
+  }
+  .frame {
+    position: absolute;
+    inset: 0;
+    padding: 18pt 28pt 14pt 28pt;
+    box-sizing: border-box;
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    gap: 12pt;
+  }
+  .top {
+    display: flex;
+    align-items: center;
+    gap: 10pt;
+  }
+  .siren { width: 14pt; height: 14pt; }
+  .eyebrow {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 10pt;
+    font-weight: 500;
+    letter-spacing: 1.5pt;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.7);
+    margin: 0;
+  }
+  .main {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24pt;
+    align-items: center;
+  }
+  .copy {
+    display: flex;
+    flex-direction: column;
+  }
+  .h2 {
+    font-size: 30pt;
+    font-weight: 700;
+    line-height: 1.25;
+    letter-spacing: -0.8pt;
+    color: #ffffff;
+    margin: 0 0 10pt 0;
+  }
+  .h2 .gold { color: #cba258; }
+  .lede {
+    font-size: 13pt;
+    color: rgba(255,255,255,0.75);
+    line-height: 1.55;
+    margin: 0 0 18pt 0;
+    max-width: 340pt;
+  }
+  .tracks {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8pt 12pt;
+  }
+  .track {
+    display: flex;
+    align-items: center;
+    gap: 8pt;
+    padding: 6pt 0;
+    border-top: 1px solid rgba(255,255,255,0.18);
+  }
+  .track .no {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 9pt;
+    color: rgba(255,255,255,0.5);
+    letter-spacing: 0.6pt;
+    width: 32pt;
+    flex-shrink: 0;
+  }
+  .track .name {
+    font-size: 13pt;
+    font-weight: 600;
+    color: #ffffff;
+    letter-spacing: -0.3pt;
+  }
+  .track .year {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 9pt;
+    color: rgba(255,255,255,0.5);
+    margin-left: auto;
+  }
+  .photo-card {
+    background: #f2f0eb;
+    border-radius: 12pt;
+    padding: 12pt;
+    box-shadow: 0 4pt 16pt rgba(0,0,0,0.18);
+    display: flex;
+    flex-direction: column;
+    gap: 10pt;
+  }
+  .photo-card img {
+    width: 100%;
+    height: 180pt;
+    object-fit: cover;
+    object-position: center;
+    border-radius: 8pt;
+    display: block;
+  }
+  .photo-card .caption-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 4pt;
+  }
+  .photo-card .caption {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 9pt;
+    color: rgba(0,0,0,0.6);
+    margin: 0;
+    letter-spacing: 0.4pt;
+  }
+  .photo-card .pill {
+    background: #006241;
+    color: #ffffff;
+    font-size: 9pt;
+    font-weight: 600;
+    padding: 3pt 8pt;
+    border-radius: 999pt;
+    letter-spacing: 0.4pt;
+    text-transform: uppercase;
+    margin: 0;
+  }
+  .footer-strip {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 8pt;
+    border-top: 1px solid rgba(255,255,255,0.18);
+  }
+  .footer-strip p {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 9pt;
+    color: rgba(255,255,255,0.5);
+    margin: 0;
+    letter-spacing: 0.4pt;
+  }
+  .gold-rule {
+    height: 1.5pt;
+    width: 60pt;
+    background: #cba258;
+    border-radius: 1pt;
+    margin: 6pt 0 12pt 0;
+  }
+</style>
+</head>
+<body>
+  <div class=&quot;frame&quot;>
+    <div class=&quot;top&quot;>
+      <svg class=&quot;siren&quot; viewBox=&quot;0 0 32 32&quot; aria-hidden=&quot;true&quot;>
+        <circle cx=&quot;16&quot; cy=&quot;16&quot; r=&quot;14&quot; fill=&quot;none&quot; stroke=&quot;#cba258&quot; stroke-width=&quot;2&quot;/>
+        <circle cx=&quot;16&quot; cy=&quot;16&quot; r=&quot;9&quot; fill=&quot;#006241&quot;/>
+        <circle cx=&quot;16&quot; cy=&quot;16&quot; r=&quot;4&quot; fill=&quot;#1E3932&quot;/>
+      </svg>
+      <p class=&quot;eyebrow&quot;>04 · On stage · The harmony anchor</p>
+    </div>
+
+    <div class=&quot;main&quot;>
+      <div class=&quot;copy&quot;>
+        <h2 class=&quot;h2&quot;>Their harmony <span class=&quot;gold&quot;>anchors</span> every chorus.</h2>
+        <div class=&quot;gold-rule&quot; aria-hidden=&quot;true&quot;></div>
+        <p class=&quot;lede&quot;>Hanni's lower mid-tone catches the song; Danielle's airy top sits above it. Every NewJeans hook builds around that one bar.</p>
+        <div class=&quot;tracks&quot;>
+          <div class=&quot;track&quot;><span class=&quot;no&quot;>SNG-01</span><span class=&quot;name&quot;>Attention</span><span class=&quot;year&quot;>2022</span></div>
+          <div class=&quot;track&quot;><span class=&quot;no&quot;>SNG-02</span><span class=&quot;name&quot;>Hype Boy</span><span class=&quot;year&quot;>2022</span></div>
+          <div class=&quot;track&quot;><span class=&quot;no&quot;>SNG-03</span><span class=&quot;name&quot;>Ditto</span><span class=&quot;year&quot;>2022</span></div>
+          <div class=&quot;track&quot;><span class=&quot;no&quot;>SNG-04</span><span class=&quot;name&quot;>Super Shy</span><span class=&quot;year&quot;>2023</span></div>
+        </div>
+      </div>
+
+      <div class=&quot;photo-card&quot;>
+        <img src=&quot;./assets/niniz-onstage.jpg&quot; alt=&quot;NewJeans on stage at Melon Music Awards 2023, with Hanni and Danielle visible&quot; />
+        <div class=&quot;caption-row&quot;>
+          <p class=&quot;caption&quot;>Melon Music Awards · 2023</p>
+          <p class=&quot;pill&quot;>On stage</p>
+        </div>
+      </div>
+    </div>
+
+    <div class=&quot;footer-strip&quot;>
+      <p>photo · Wikimedia Commons · TenAsia · CC-BY</p>
+      <p>04 / 06</p>
+    </div>
+  </div>
+</body>
+</html>
+" sandbox="allow-same-origin"></iframe>
+        <iframe class="slide-frame" data-slide="5" srcdoc="<!DOCTYPE html>
+<html lang=&quot;en&quot;>
+<head>
+<base href=&quot;./&quot;>
+<script>
+(() => {
+  const slideFile = &quot;slide-05.html&quot;;
+  const localAssetPrefix = &quot;./assets/&quot;;
+  const absolutePathRe = /^(file:\/\/|\/Users\/|\/home\/|\/var\/|\/tmp\/|\/private\/|\/Volumes\/|[A-Za-z]:[\\/]|\\\\)/i;
+  const schemeRe = /^[a-z][a-z0-9+\-.]*:/i;
+  const prefix = '[slides-grab:image]';
+
+  function describeElement(element) {
+    if (!element || element.nodeType !== Node.ELEMENT_NODE) return '';
+    if (element === document.body) return 'body';
+
+    const parts = [];
+    let current = element;
+    while (current &amp;&amp; current.nodeType === Node.ELEMENT_NODE &amp;&amp; current !== document.body) {
+      let part = current.tagName.toLowerCase();
+      if (current.id) {
+        part += '#' + current.id;
+        parts.unshift(part);
+        break;
+      }
+      if (current.classList.length > 0) {
+        part += '.' + Array.from(current.classList).slice(0, 2).join('.');
+      }
+      parts.unshift(part);
+      current = current.parentElement;
+    }
+    return 'body > ' + parts.join(' > ');
+  }
+
+  function warn(message, detail) {
+    console.warn(prefix + ' ' + slideFile + ': ' + message, detail);
+  }
+
+  function fail(message, detail) {
+    console.error(prefix + ' ' + slideFile + ': ' + message, detail);
+  }
+
+  function validateAssetSource(kind, source, { allowEmpty = true, onNoncanonical = 'warn' } = {}) {
+    const value = (source || '').trim();
+    if (!value) {
+      return allowEmpty;
+    }
+    if (value.startsWith('data:')) {
+      return true;
+    }
+    if (value.startsWith('https://')) {
+      fail('remote ' + kind + ' URL is unsupported in saved slides; download it into ./assets/<file>', { src: value });
+      return false;
+    }
+    if (value.startsWith('http://')) {
+      fail('remote http:// ' + kind + ' URL is unsupported in saved slides; download it into ./assets/<file>', { src: value });
+      return false;
+    }
+    if (absolutePathRe.test(value) || value.startsWith('/')) {
+      fail('non-portable ' + kind + ' path is unsupported', { src: value });
+      return false;
+    }
+    if (schemeRe.test(value)) {
+      fail('unsupported ' + kind + ' URL scheme in saved slides; download it into ./assets/<file>', { src: value });
+      return false;
+    }
+    if (!value.startsWith(localAssetPrefix)) {
+      const report = onNoncanonical === 'fail' ? fail : warn;
+      report('noncanonical local ' + kind + ' path should use ./assets/<file>', { src: value });
+    }
+    return true;
+  }
+
+  function getVideoSources(video) {
+    const sources = [];
+    const directSrc = (video.getAttribute('src') || '').trim();
+    if (directSrc) {
+      sources.push(directSrc);
+    }
+    for (const source of video.querySelectorAll('source[src]')) {
+      const src = (source.getAttribute('src') || '').trim();
+      if (src) {
+        sources.push(src);
+      }
+    }
+    return sources;
+  }
+
+  window.addEventListener('error', (event) => {
+    const target = event.target;
+    if (target instanceof HTMLImageElement) {
+      const src = (target.getAttribute('src') || target.currentSrc || '').trim();
+      if (!src || src.startsWith('data:')) return;
+      if (src.startsWith(localAssetPrefix)) {
+        fail('missing local asset', { src });
+        return;
+      }
+      fail('image failed to load', { src });
+      return;
+    }
+
+    if (target instanceof HTMLVideoElement) {
+      const sources = getVideoSources(target);
+      if (sources.some((src) => src.startsWith(localAssetPrefix))) {
+        fail('missing local video asset', { sources });
+        return;
+      }
+      fail('video failed to load', { sources });
+      return;
+    }
+
+    if (target instanceof HTMLSourceElement &amp;&amp; target.parentElement instanceof HTMLVideoElement) {
+      const src = (target.getAttribute('src') || '').trim();
+      if (!src) return;
+      if (src.startsWith(localAssetPrefix)) {
+        fail('missing local video asset', { src });
+        return;
+      }
+      fail('video source failed to load', { src });
+    }
+  }, true);
+
+  window.addEventListener('DOMContentLoaded', () => {
+    for (const image of document.querySelectorAll('img[src]')) {
+      const src = (image.getAttribute('src') || '').trim();
+      validateAssetSource('image', src);
+    }
+
+    for (const video of document.querySelectorAll('video')) {
+      for (const src of getVideoSources(video)) {
+        validateAssetSource('video', src);
+      }
+
+      const poster = (video.getAttribute('poster') || '').trim();
+      if (poster) {
+        validateAssetSource('image', poster);
+      }
+    }
+
+    for (const element of document.body.querySelectorAll('*')) {
+      if (element === document.body) continue;
+      const backgroundImage = window.getComputedStyle(element).backgroundImage;
+      if (!backgroundImage || backgroundImage === 'none' || !backgroundImage.includes('url(')) continue;
+      fail('non-body background-image is not supported for slide content', {
+        element: describeElement(element),
+        backgroundImage,
+      });
+    }
+  });
+})();
+</script>
+<meta charset=&quot;UTF-8&quot; />
+<title>NiNiZ — Off Stage</title>
+<link rel=&quot;stylesheet&quot; href=&quot;https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css&quot; />
+<link href=&quot;https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap&quot; rel=&quot;stylesheet&quot; />
+<style>
+  html, body { margin: 0; padding: 0; }
+  body {
+    width: 720pt;
+    height: 405pt;
+    background: #f2f0eb;
+    font-family: 'Inter', 'Pretendard', -apple-system, sans-serif;
+    color: rgba(0,0,0,0.87);
+    position: relative;
+    overflow: hidden;
+    letter-spacing: -0.01em;
+  }
+  .frame {
+    position: absolute;
+    inset: 0;
+    padding: 16pt 28pt 12pt 28pt;
+    box-sizing: border-box;
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    gap: 10pt;
+  }
+  .top {
+    display: flex;
+    align-items: center;
+    gap: 10pt;
+  }
+  .siren { width: 14pt; height: 14pt; }
+  .eyebrow {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 10pt;
+    font-weight: 500;
+    letter-spacing: 1.5pt;
+    text-transform: uppercase;
+    color: rgba(0,0,0,0.6);
+    margin: 0;
+  }
+  .main {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap: 24pt;
+    align-items: stretch;
+  }
+  .copy {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  .h2 {
+    font-size: 24pt;
+    font-weight: 600;
+    line-height: 1.3;
+    letter-spacing: -0.5pt;
+    color: rgba(0,0,0,0.87);
+    margin: 0 0 10pt 0;
+  }
+  .h2 .green { color: #006241; }
+  .quote {
+    background: #ffffff;
+    border-radius: 12pt;
+    padding: 14pt 16pt;
+    box-shadow: 0 2pt 12pt rgba(0,0,0,0.06);
+    border-left: 3pt solid #006241;
+    margin-bottom: 10pt;
+  }
+  .quote p.q {
+    font-size: 13pt;
+    font-weight: 500;
+    color: rgba(0,0,0,0.87);
+    line-height: 1.5;
+    margin: 0 0 8pt 0;
+    letter-spacing: -0.2pt;
+  }
+  .quote p.q .green { color: #006241; font-weight: 600; }
+  .quote .attrib {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 10pt;
+    color: rgba(0,0,0,0.45);
+    margin: 0;
+    letter-spacing: 0.4pt;
+    text-transform: uppercase;
+  }
+  .beats {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .beats li {
+    font-size: 11pt;
+    color: rgba(0,0,0,0.6);
+    line-height: 1.45;
+    margin-bottom: 5pt;
+    display: flex;
+    gap: 8pt;
+    align-items: flex-start;
+  }
+  .beats li::before {
+    content: &quot;—&quot;;
+    color: #006241;
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+  .photo-card {
+    background: #ffffff;
+    border-radius: 12pt;
+    padding: 12pt;
+    box-shadow: 0 2pt 12pt rgba(0,0,0,0.06);
+    display: flex;
+    flex-direction: column;
+    gap: 10pt;
+    justify-self: stretch;
+    align-self: center;
+  }
+  .photo-card img {
+    width: 100%;
+    height: 180pt;
+    object-fit: cover;
+    object-position: center;
+    border-radius: 8pt;
+    display: block;
+  }
+  .photo-card .caption-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 4pt;
+  }
+  .photo-card .caption {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 9pt;
+    color: rgba(0,0,0,0.6);
+    margin: 0;
+    letter-spacing: 0.4pt;
+  }
+  .photo-card .pill {
+    background: #d4e9e2;
+    color: #006241;
+    font-size: 9pt;
+    font-weight: 600;
+    padding: 3pt 8pt;
+    border-radius: 999pt;
+    letter-spacing: 0.4pt;
+    text-transform: uppercase;
+    margin: 0;
+  }
+  .footer-strip {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 8pt;
+    border-top: 1px solid rgba(0,0,0,0.08);
+  }
+  .footer-strip p {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 9pt;
+    color: rgba(0,0,0,0.45);
+    margin: 0;
+    letter-spacing: 0.4pt;
+  }
+</style>
+</head>
+<body>
+  <div class=&quot;frame&quot;>
+    <div class=&quot;top&quot;>
+      <svg class=&quot;siren&quot; viewBox=&quot;0 0 32 32&quot; aria-hidden=&quot;true&quot;>
+        <circle cx=&quot;16&quot; cy=&quot;16&quot; r=&quot;14&quot; fill=&quot;none&quot; stroke=&quot;#006241&quot; stroke-width=&quot;2&quot;/>
+        <circle cx=&quot;16&quot; cy=&quot;16&quot; r=&quot;9&quot; fill=&quot;#006241&quot;/>
+        <circle cx=&quot;16&quot; cy=&quot;16&quot; r=&quot;4&quot; fill=&quot;#f2f0eb&quot;/>
+      </svg>
+      <p class=&quot;eyebrow&quot;>05 · Off stage · The bilingual in-jokes</p>
+    </div>
+
+    <div class=&quot;main&quot;>
+      <div class=&quot;copy&quot;>
+        <h2 class=&quot;h2&quot;>The press circuit runs on <span class=&quot;green&quot;>two languages.</span></h2>
+        <div class=&quot;quote&quot;>
+          <p class=&quot;q&quot;>&quot;Hanni and I just switch — we don't even notice. <span class=&quot;green&quot;>English, then Korean, then English again.</span> It's how we think together.&quot;</p>
+          <p class=&quot;attrib&quot;>Danielle · interview · 2024</p>
+        </div>
+        <ul class=&quot;beats&quot;>
+          <li>Mid-sentence language hand-off — KR → EN → KR in three seconds</li>
+          <li>Finishing each other's English sentences on Bubble chats</li>
+          <li>Australian slang that lands first with Danielle, gets repeated by Hanni</li>
+        </ul>
+      </div>
+
+      <div class=&quot;photo-card&quot;>
+        <img src=&quot;./assets/niniz-together-full.jpg&quot; alt=&quot;NewJeans Hanni and Danielle off-stage at an ambassador event&quot; />
+        <div class=&quot;caption-row&quot;>
+          <p class=&quot;caption&quot;>Incheon ambassador ceremony · 2024</p>
+          <p class=&quot;pill&quot;>Off stage</p>
+        </div>
+      </div>
+    </div>
+
+    <div class=&quot;footer-strip&quot;>
+      <p>quotes · paraphrased from public interviews</p>
+      <p>05 / 06</p>
+    </div>
+  </div>
+</body>
+</html>
+" sandbox="allow-same-origin"></iframe>
+        <iframe class="slide-frame" data-slide="6" srcdoc="<!DOCTYPE html>
+<html lang=&quot;en&quot;>
+<head>
+<base href=&quot;./&quot;>
+<script>
+(() => {
+  const slideFile = &quot;slide-06.html&quot;;
+  const localAssetPrefix = &quot;./assets/&quot;;
+  const absolutePathRe = /^(file:\/\/|\/Users\/|\/home\/|\/var\/|\/tmp\/|\/private\/|\/Volumes\/|[A-Za-z]:[\\/]|\\\\)/i;
+  const schemeRe = /^[a-z][a-z0-9+\-.]*:/i;
+  const prefix = '[slides-grab:image]';
+
+  function describeElement(element) {
+    if (!element || element.nodeType !== Node.ELEMENT_NODE) return '';
+    if (element === document.body) return 'body';
+
+    const parts = [];
+    let current = element;
+    while (current &amp;&amp; current.nodeType === Node.ELEMENT_NODE &amp;&amp; current !== document.body) {
+      let part = current.tagName.toLowerCase();
+      if (current.id) {
+        part += '#' + current.id;
+        parts.unshift(part);
+        break;
+      }
+      if (current.classList.length > 0) {
+        part += '.' + Array.from(current.classList).slice(0, 2).join('.');
+      }
+      parts.unshift(part);
+      current = current.parentElement;
+    }
+    return 'body > ' + parts.join(' > ');
+  }
+
+  function warn(message, detail) {
+    console.warn(prefix + ' ' + slideFile + ': ' + message, detail);
+  }
+
+  function fail(message, detail) {
+    console.error(prefix + ' ' + slideFile + ': ' + message, detail);
+  }
+
+  function validateAssetSource(kind, source, { allowEmpty = true, onNoncanonical = 'warn' } = {}) {
+    const value = (source || '').trim();
+    if (!value) {
+      return allowEmpty;
+    }
+    if (value.startsWith('data:')) {
+      return true;
+    }
+    if (value.startsWith('https://')) {
+      fail('remote ' + kind + ' URL is unsupported in saved slides; download it into ./assets/<file>', { src: value });
+      return false;
+    }
+    if (value.startsWith('http://')) {
+      fail('remote http:// ' + kind + ' URL is unsupported in saved slides; download it into ./assets/<file>', { src: value });
+      return false;
+    }
+    if (absolutePathRe.test(value) || value.startsWith('/')) {
+      fail('non-portable ' + kind + ' path is unsupported', { src: value });
+      return false;
+    }
+    if (schemeRe.test(value)) {
+      fail('unsupported ' + kind + ' URL scheme in saved slides; download it into ./assets/<file>', { src: value });
+      return false;
+    }
+    if (!value.startsWith(localAssetPrefix)) {
+      const report = onNoncanonical === 'fail' ? fail : warn;
+      report('noncanonical local ' + kind + ' path should use ./assets/<file>', { src: value });
+    }
+    return true;
+  }
+
+  function getVideoSources(video) {
+    const sources = [];
+    const directSrc = (video.getAttribute('src') || '').trim();
+    if (directSrc) {
+      sources.push(directSrc);
+    }
+    for (const source of video.querySelectorAll('source[src]')) {
+      const src = (source.getAttribute('src') || '').trim();
+      if (src) {
+        sources.push(src);
+      }
+    }
+    return sources;
+  }
+
+  window.addEventListener('error', (event) => {
+    const target = event.target;
+    if (target instanceof HTMLImageElement) {
+      const src = (target.getAttribute('src') || target.currentSrc || '').trim();
+      if (!src || src.startsWith('data:')) return;
+      if (src.startsWith(localAssetPrefix)) {
+        fail('missing local asset', { src });
+        return;
+      }
+      fail('image failed to load', { src });
+      return;
+    }
+
+    if (target instanceof HTMLVideoElement) {
+      const sources = getVideoSources(target);
+      if (sources.some((src) => src.startsWith(localAssetPrefix))) {
+        fail('missing local video asset', { sources });
+        return;
+      }
+      fail('video failed to load', { sources });
+      return;
+    }
+
+    if (target instanceof HTMLSourceElement &amp;&amp; target.parentElement instanceof HTMLVideoElement) {
+      const src = (target.getAttribute('src') || '').trim();
+      if (!src) return;
+      if (src.startsWith(localAssetPrefix)) {
+        fail('missing local video asset', { src });
+        return;
+      }
+      fail('video source failed to load', { src });
+    }
+  }, true);
+
+  window.addEventListener('DOMContentLoaded', () => {
+    for (const image of document.querySelectorAll('img[src]')) {
+      const src = (image.getAttribute('src') || '').trim();
+      validateAssetSource('image', src);
+    }
+
+    for (const video of document.querySelectorAll('video')) {
+      for (const src of getVideoSources(video)) {
+        validateAssetSource('video', src);
+      }
+
+      const poster = (video.getAttribute('poster') || '').trim();
+      if (poster) {
+        validateAssetSource('image', poster);
+      }
+    }
+
+    for (const element of document.body.querySelectorAll('*')) {
+      if (element === document.body) continue;
+      const backgroundImage = window.getComputedStyle(element).backgroundImage;
+      if (!backgroundImage || backgroundImage === 'none' || !backgroundImage.includes('url(')) continue;
+      fail('non-body background-image is not supported for slide content', {
+        element: describeElement(element),
+        backgroundImage,
+      });
+    }
+  });
+})();
+</script>
+<meta charset=&quot;UTF-8&quot; />
+<title>NiNiZ — Closing</title>
+<link rel=&quot;stylesheet&quot; href=&quot;https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css&quot; />
+<link href=&quot;https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Kalam:wght@400;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap&quot; rel=&quot;stylesheet&quot; />
+<style>
+  html, body { margin: 0; padding: 0; }
+  body {
+    width: 720pt;
+    height: 405pt;
+    background: #1E3932;
+    font-family: 'Inter', 'Pretendard', -apple-system, sans-serif;
+    color: #ffffff;
+    position: relative;
+    overflow: hidden;
+    letter-spacing: -0.01em;
+  }
+  .frame {
+    position: absolute;
+    inset: 0;
+    padding: 24pt 36pt 18pt 36pt;
+    box-sizing: border-box;
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    gap: 14pt;
+  }
+  .top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10pt;
+  }
+  .siren { width: 14pt; height: 14pt; }
+  .wordmark {
+    font-size: 14pt;
+    font-weight: 600;
+    color: #ffffff;
+    margin: 0;
+    letter-spacing: -0.4pt;
+  }
+  .eyebrow {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 10pt;
+    font-weight: 500;
+    letter-spacing: 1.5pt;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.7);
+    margin: 0;
+  }
+  .center {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 16pt;
+  }
+  .kicker {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 10pt;
+    color: #cba258;
+    letter-spacing: 1.5pt;
+    text-transform: uppercase;
+    margin: 0;
+  }
+  .h1 {
+    font-size: 38pt;
+    font-weight: 700;
+    line-height: 1.2;
+    letter-spacing: -1pt;
+    color: #ffffff;
+    margin: 0;
+    max-width: 620pt;
+  }
+  .h1 .gold { color: #cba258; font-style: italic; font-weight: 600; }
+  .h1 .strike {
+    color: rgba(255,255,255,0.4);
+    text-decoration: line-through;
+    text-decoration-color: rgba(255,255,255,0.3);
+  }
+  .cup-line {
+    display: flex;
+    align-items: center;
+    gap: 18pt;
+    padding-top: 14pt;
+    border-top: 1px solid rgba(255,255,255,0.18);
+  }
+  .cup-line .label {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 10pt;
+    color: rgba(255,255,255,0.5);
+    letter-spacing: 1.5pt;
+    text-transform: uppercase;
+    margin: 0;
+  }
+  .cup-line .signoff {
+    font-family: 'Kalam', cursive;
+    font-weight: 700;
+    font-size: 22pt;
+    color: #cba258;
+    margin: 0;
+    line-height: 1.6;
+    transform: rotate(-1.5deg);
+  }
+  .footer-band {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16pt;
+    padding-top: 12pt;
+    border-top: 1px solid rgba(255,255,255,0.18);
+  }
+  .footer-col p:first-child {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 8pt;
+    color: rgba(255,255,255,0.5);
+    margin: 0 0 4pt 0;
+    letter-spacing: 0.8pt;
+    text-transform: uppercase;
+  }
+  .footer-col p:nth-child(n+2) {
+    font-size: 10pt;
+    color: rgba(255,255,255,0.85);
+    margin: 0 0 2pt 0;
+    line-height: 1.35;
+  }
+  .footer-col p .gold { color: #cba258; font-weight: 600; }
+</style>
+</head>
+<body>
+  <div class=&quot;frame&quot;>
+    <div class=&quot;top&quot;>
+      <div class=&quot;brand&quot;>
+        <svg class=&quot;siren&quot; viewBox=&quot;0 0 32 32&quot; aria-hidden=&quot;true&quot;>
+          <circle cx=&quot;16&quot; cy=&quot;16&quot; r=&quot;14&quot; fill=&quot;none&quot; stroke=&quot;#cba258&quot; stroke-width=&quot;2&quot;/>
+          <circle cx=&quot;16&quot; cy=&quot;16&quot; r=&quot;9&quot; fill=&quot;#006241&quot;/>
+          <circle cx=&quot;16&quot; cy=&quot;16&quot; r=&quot;4&quot; fill=&quot;#1E3932&quot;/>
+        </svg>
+        <p class=&quot;wordmark&quot;>slides-grab · 니니즈 brief</p>
+      </div>
+      <p class=&quot;eyebrow&quot;>06 · Closing</p>
+    </div>
+
+    <div class=&quot;center&quot;>
+      <p class=&quot;kicker&quot;>The thesis</p>
+      <h1 class=&quot;h1&quot;>Not a <span class=&quot;strike&quot;>sub-unit.</span> Not a side plot.<br />The Australian duo that quietly <span class=&quot;gold&quot;>sets the room temperature.</span></h1>
+      <div class=&quot;cup-line&quot;>
+        <p class=&quot;label&quot;>cup signoff</p>
+        <p class=&quot;signoff&quot;>thank you · 다음 컵에서 만나요</p>
+      </div>
+    </div>
+
+    <div class=&quot;footer-band&quot;>
+      <div class=&quot;footer-col&quot;>
+        <p>Members</p>
+        <p>Hanni Pham</p>
+        <p>Danielle Marsh</p>
+      </div>
+      <div class=&quot;footer-col&quot;>
+        <p>Tracks cited</p>
+        <p>Attention · Hype Boy</p>
+        <p>Ditto · Super Shy</p>
+      </div>
+      <div class=&quot;footer-col&quot;>
+        <p>Photo source</p>
+        <p>Wikimedia Commons</p>
+        <p>TenAsia · CC-BY</p>
+      </div>
+      <div class=&quot;footer-col&quot;>
+        <p>Style</p>
+        <p><span class=&quot;gold&quot;>./DESIGN.slides.md</span></p>
+        <p>starbucks · imported</p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
+" sandbox="allow-same-origin"></iframe>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const TOTAL = 6;
+    let current = 1;
+
+    const frames = document.querySelectorAll('.slide-frame');
+    const counter = document.getElementById('counter');
+    const btnPrev = document.getElementById('btn-prev');
+    const btnNext = document.getElementById('btn-next');
+    const scaler = document.getElementById('scaler');
+    const viewport = document.getElementById('viewport');
+
+    function goTo(n) {
+      n = Math.max(1, Math.min(TOTAL, n));
+      if (n === current) return;
+      frames[current - 1].classList.remove('active');
+      current = n;
+      frames[current - 1].classList.add('active');
+      counter.textContent = current + ' / ' + TOTAL;
+      btnPrev.disabled = current === 1;
+      btnNext.disabled = current === TOTAL;
+    }
+
+    function next() { goTo(current + 1); }
+    function prev() { goTo(current - 1); }
+
+    btnPrev.addEventListener('click', prev);
+    btnNext.addEventListener('click', next);
+    btnPrev.disabled = true;
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); next(); }
+      else if (e.key === 'ArrowLeft') { e.preventDefault(); prev(); }
+      else if (e.key === 'Home') { e.preventDefault(); goTo(1); }
+      else if (e.key === 'End') { e.preventDefault(); goTo(TOTAL); }
+      else if (e.key === 'f' || e.key === 'F') {
+        e.preventDefault();
+        toggleFullscreen();
+      }
+    });
+
+    function toggleFullscreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      } else {
+        document.exitFullscreen();
+      }
+    }
+    document.getElementById('btn-fs').addEventListener('click', toggleFullscreen);
+
+    function rescale() {
+      const vw = viewport.clientWidth;
+      const vh = viewport.clientHeight;
+      const slideW = scaler.offsetWidth;
+      const slideH = scaler.offsetHeight;
+      const scale = Math.min(vw / slideW, vh / slideH) * 0.95;
+      scaler.style.transform = 'scale(' + scale + ')';
+    }
+
+    window.addEventListener('resize', rescale);
+    document.addEventListener('fullscreenchange', () => setTimeout(rescale, 100));
+    rescale();
+  </script>
+</body>
+</html>

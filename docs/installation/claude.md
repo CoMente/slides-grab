@@ -30,7 +30,7 @@ Then restart Claude Code so the shared skills are loaded.
 If you want to work on `slides-grab` itself:
 
 ```bash
-git clone https://github.com/vkehfdl1/slides-grab.git && cd slides-grab
+git clone https://github.com/NomaDamas/slides-grab.git && cd slides-grab
 npm ci
 npx playwright install chromium
 npx skills add . -g -a claude-code --yes --copy

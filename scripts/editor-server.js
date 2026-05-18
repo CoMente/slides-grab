@@ -816,6 +816,7 @@ async function startServer(opts) {
         userPrompt: prompt,
         slideMode: opts.mode,
         selections: normalizedSelections,
+        designBaseDir: slidesDirectory,
       });
 
       const usesClaude = isClaudeModel(selectedModel);

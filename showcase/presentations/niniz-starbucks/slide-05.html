@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>NiNiZ — Off Stage</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  html, body { margin: 0; padding: 0; }
+  body {
+    width: 720pt;
+    height: 405pt;
+    background: #f2f0eb;
+    font-family: 'Inter', 'Pretendard', -apple-system, sans-serif;
+    color: rgba(0,0,0,0.87);
+    position: relative;
+    overflow: hidden;
+    letter-spacing: -0.01em;
+  }
+  .frame {
+    position: absolute;
+    inset: 0;
+    padding: 16pt 28pt 12pt 28pt;
+    box-sizing: border-box;
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    gap: 10pt;
+  }
+  .top {
+    display: flex;
+    align-items: center;
+    gap: 10pt;
+  }
+  .siren { width: 14pt; height: 14pt; }
+  .eyebrow {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 10pt;
+    font-weight: 500;
+    letter-spacing: 1.5pt;
+    text-transform: uppercase;
+    color: rgba(0,0,0,0.6);
+    margin: 0;
+  }
+  .main {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap: 24pt;
+    align-items: stretch;
+  }
+  .copy {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  .h2 {
+    font-size: 24pt;
+    font-weight: 600;
+    line-height: 1.3;
+    letter-spacing: -0.5pt;
+    color: rgba(0,0,0,0.87);
+    margin: 0 0 10pt 0;
+  }
+  .h2 .green { color: #006241; }
+  .quote {
+    background: #ffffff;
+    border-radius: 12pt;
+    padding: 14pt 16pt;
+    box-shadow: 0 2pt 12pt rgba(0,0,0,0.06);
+    border-left: 3pt solid #006241;
+    margin-bottom: 10pt;
+  }
+  .quote p.q {
+    font-size: 13pt;
+    font-weight: 500;
+    color: rgba(0,0,0,0.87);
+    line-height: 1.5;
+    margin: 0 0 8pt 0;
+    letter-spacing: -0.2pt;
+  }
+  .quote p.q .green { color: #006241; font-weight: 600; }
+  .quote .attrib {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 10pt;
+    color: rgba(0,0,0,0.45);
+    margin: 0;
+    letter-spacing: 0.4pt;
+    text-transform: uppercase;
+  }
+  .beats {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .beats li {
+    font-size: 11pt;
+    color: rgba(0,0,0,0.6);
+    line-height: 1.45;
+    margin-bottom: 5pt;
+    display: flex;
+    gap: 8pt;
+    align-items: flex-start;
+  }
+  .beats li::before {
+    content: "—";
+    color: #006241;
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+  .photo-card {
+    background: #ffffff;
+    border-radius: 12pt;
+    padding: 12pt;
+    box-shadow: 0 2pt 12pt rgba(0,0,0,0.06);
+    display: flex;
+    flex-direction: column;
+    gap: 10pt;
+    justify-self: stretch;
+    align-self: center;
+  }
+  .photo-card img {
+    width: 100%;
+    height: 180pt;
+    object-fit: cover;
+    object-position: center;
+    border-radius: 8pt;
+    display: block;
+  }
+  .photo-card .caption-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 4pt;
+  }
+  .photo-card .caption {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 9pt;
+    color: rgba(0,0,0,0.6);
+    margin: 0;
+    letter-spacing: 0.4pt;
+  }
+  .photo-card .pill {
+    background: #d4e9e2;
+    color: #006241;
+    font-size: 9pt;
+    font-weight: 600;
+    padding: 3pt 8pt;
+    border-radius: 999pt;
+    letter-spacing: 0.4pt;
+    text-transform: uppercase;
+    margin: 0;
+  }
+  .footer-strip {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 8pt;
+    border-top: 1px solid rgba(0,0,0,0.08);
+  }
+  .footer-strip p {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 9pt;
+    color: rgba(0,0,0,0.45);
+    margin: 0;
+    letter-spacing: 0.4pt;
+  }
+</style>
+</head>
+<body>
+  <div class="frame">
+    <div class="top">
+      <svg class="siren" viewBox="0 0 32 32" aria-hidden="true">
+        <circle cx="16" cy="16" r="14" fill="none" stroke="#006241" stroke-width="2"/>
+        <circle cx="16" cy="16" r="9" fill="#006241"/>
+        <circle cx="16" cy="16" r="4" fill="#f2f0eb"/>
+      </svg>
+      <p class="eyebrow">05 · Off stage · The bilingual in-jokes</p>
+    </div>
+
+    <div class="main">
+      <div class="copy">
+        <h2 class="h2">The press circuit runs on <span class="green">two languages.</span></h2>
+        <div class="quote">
+          <p class="q">"Hanni and I just switch — we don't even notice. <span class="green">English, then Korean, then English again.</span> It's how we think together."</p>
+          <p class="attrib">Danielle · interview · 2024</p>
+        </div>
+        <ul class="beats">
+          <li>Mid-sentence language hand-off — KR → EN → KR in three seconds</li>
+          <li>Finishing each other's English sentences on Bubble chats</li>
+          <li>Australian slang that lands first with Danielle, gets repeated by Hanni</li>
+        </ul>
+      </div>
+
+      <div class="photo-card">
+        <img src="./assets/niniz-together-full.jpg" alt="NewJeans Hanni and Danielle off-stage at an ambassador event" />
+        <div class="caption-row">
+          <p class="caption">Incheon ambassador ceremony · 2024</p>
+          <p class="pill">Off stage</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer-strip">
+      <p>quotes · paraphrased from public interviews</p>
+      <p>05 / 06</p>
+    </div>
+  </div>
+</body>
+</html>

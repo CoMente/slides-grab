@@ -1,6 +1,6 @@
 # slides-grab Showcase
 
-A static gallery of presentations built with [slides-grab](https://github.com/vkehfdl1/slides-grab). Auto-deployed to GitHub Pages on every push to `main`.
+A static gallery of presentations built with [slides-grab](https://github.com/NomaDamas/slides-grab). Auto-deployed to GitHub Pages on every push to `main`.
 
 ## Layout
 

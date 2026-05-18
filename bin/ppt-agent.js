@@ -332,6 +332,115 @@ program
   });
 
 program
+  .command('import-design')
+  .description('Fetch a remote DESIGN.md (https only) and save it locally as a custom slide design source')
+  .argument('<url>', 'HTTPS URL to a DESIGN.md / markdown design system file')
+  .option('--output <path>', 'Output path for the saved file', 'DESIGN.md')
+  .option('--max-bytes <number>', 'Maximum allowed response size in bytes', '262144')
+  .option('--timeout-ms <number>', 'Fetch timeout in milliseconds', '15000')
+  .action(async (url, options = {}) => {
+    try {
+      const { fetchDesignMarkdown, formatImportedDesignMarkdown, saveImportedDesign } =
+        await import('../src/design-import.js');
+      const maxBytes = Number(options.maxBytes) || 262144;
+      const timeoutMs = Number(options.timeoutMs) || 15000;
+      const result = await fetchDesignMarkdown(url, { maxBytes, timeoutMs });
+      const markdown = formatImportedDesignMarkdown({
+        url: result.url,
+        content: result.text,
+        fetchedAt: result.fetchedAt,
+      });
+      const savedPath = saveImportedDesign({ outputPath: options.output, markdown });
+      console.log(`Saved ${result.bytes} bytes to ${savedPath}`);
+      console.log(
+        'Saved web-flavored design source. Next convert it to DESIGN.slides.md, then set ' +
+        '"style: ./DESIGN.slides.md" in your slide-outline.md.',
+      );
+    } catch (error) {
+      reportCliError(error);
+    }
+  });
+
+program
+  .command('show-design')
+  .description('Parse a local design markdown file (DESIGN.slides.md preferred, falls back to DESIGN.md) or a bundled style id and print the slides-grab design summary the agent will use')
+  .argument('<ref>', 'Path to DESIGN.slides.md / DESIGN.md / a directory containing one, or a bundled style id (e.g. glassmorphism)')
+  .action(async (ref) => {
+    try {
+      const { loadDesignStyleRef, detectLocalDesignMarkdown } = await import('../src/design-styles.js');
+      const { renderDesignStyleForPrompt } = await import('../src/design-md-parser.js');
+      const { existsSync, statSync } = await import('node:fs');
+      const { dirname, resolve } = await import('node:path');
+
+      let effectiveRef = ref;
+      let detection = null;
+      let explicitWebShadowed = false;
+      const absoluteRef = resolve(ref);
+      if (existsSync(absoluteRef) && statSync(absoluteRef).isDirectory()) {
+        detection = detectLocalDesignMarkdown({ baseDir: absoluteRef });
+        if (!detection.path) {
+          console.error(`No DESIGN.slides.md or DESIGN.md found in directory "${ref}".`);
+          process.exitCode = 1;
+          return;
+        }
+        effectiveRef = detection.path;
+      } else if (existsSync(absoluteRef) && statSync(absoluteRef).isFile() && absoluteRef.endsWith('/DESIGN.md')) {
+        const siblingDetection = detectLocalDesignMarkdown({ baseDir: dirname(absoluteRef) });
+        if (siblingDetection.kind === 'slides') {
+          detection = siblingDetection;
+          explicitWebShadowed = true;
+          effectiveRef = siblingDetection.path;
+        }
+      }
+
+      const style = loadDesignStyleRef(effectiveRef);
+      if (!style) {
+        console.error(`No design style or design markdown file found at "${ref}".`);
+        process.exitCode = 1;
+        return;
+      }
+      const isCustom = style?.source?.type === 'design-md';
+      if (isCustom) {
+        if (detection) {
+          const activeName = detection.kind === 'slides' ? 'DESIGN.slides.md' : 'DESIGN.md';
+          const otherPresent = detection.kind === 'slides' && detection.webPath;
+          console.log(`# Active file: ${activeName} (${detection.path})`);
+          if (otherPresent) {
+            const explicitPrefix = explicitWebShadowed ? ' explicit DESIGN.md reference was redirected;' : '';
+            console.log(`# Note:${explicitPrefix} DESIGN.md is also present at ${detection.webPath} but is shadowed by DESIGN.slides.md.`);
+          } else if (detection.kind === 'web') {
+            console.log('# Note: only the web-flavored DESIGN.md was found. Consider converting it to DESIGN.slides.md before generating slides (see skills/slides-grab-plan/references/design-md-to-slides-conversion.md).');
+          }
+          console.log('');
+        }
+        console.log(renderDesignStyleForPrompt(style));
+      } else {
+        console.log(`# Bundled style: ${style.title} (${style.id})`);
+        console.log(`Mood: ${style.mood}`);
+        console.log(`Best for: ${style.bestFor}`);
+        if (Array.isArray(style.background)) {
+          console.log('\n## Background');
+          for (const b of style.background) console.log(`- ${b}`);
+        }
+        if (Array.isArray(style.colors)) {
+          console.log('\n## Colors');
+          for (const c of style.colors) console.log(`- ${c.role}: ${c.label} (${c.hex})`);
+        }
+        if (Array.isArray(style.fonts)) {
+          console.log('\n## Typography');
+          for (const f of style.fonts) console.log(`- ${f}`);
+        }
+        if (Array.isArray(style.layout)) {
+          console.log('\n## Layout');
+          for (const l of style.layout) console.log(`- ${l}`);
+        }
+      }
+    } catch (error) {
+      reportCliError(error);
+    }
+  });
+
+program
   .command('show-template')
   .description('Print the contents of a template file')
   .argument('<name>', 'Template name (e.g. "cover", "content", "chart")')

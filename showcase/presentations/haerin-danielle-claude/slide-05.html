@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Haerin × Danielle — Bilingual Bridge</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  html, body { margin: 0; padding: 0; }
+  body {
+    width: 720pt;
+    height: 405pt;
+    background: #faf9f5;
+    font-family: 'Inter', 'Pretendard', sans-serif;
+    color: #141413;
+    position: relative;
+    overflow: hidden;
+  }
+  .frame {
+    position: absolute;
+    inset: 0;
+    padding: 22pt 36pt;
+    box-sizing: border-box;
+    display: grid;
+    grid-template-columns: 0.9fr 1.3fr;
+    grid-template-rows: 1fr auto;
+    gap: 18pt 22pt;
+    align-items: stretch;
+  }
+  .left {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  .eyebrow {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 10pt;
+    font-weight: 500;
+    letter-spacing: 1.5pt;
+    text-transform: uppercase;
+    color: #5a5852;
+    margin: 0 0 12pt 0;
+  }
+  .h2 {
+    font-family: 'Cormorant Garamond', 'Tiempos Headline', serif;
+    font-size: 26pt;
+    font-weight: 400;
+    line-height: 1.25;
+    letter-spacing: -0.5pt;
+    color: #141413;
+    margin: 0 0 10pt 0;
+  }
+  .h2 .coral { color: #cc785c; font-style: italic; font-weight: 500; }
+  .lede {
+    font-size: 11pt;
+    color: #3d3b37;
+    line-height: 1.5;
+    margin: 0 0 14pt 0;
+    max-width: 300pt;
+  }
+  .legend {
+    display: flex;
+    flex-direction: column;
+    gap: 8pt;
+    padding-top: 14pt;
+    border-top: 1px solid #d8d1c0;
+  }
+  .legend-row {
+    display: flex;
+    align-items: center;
+    gap: 10pt;
+    font-size: 11pt;
+    color: #3d3b37;
+  }
+  .legend-row .swatch {
+    width: 9pt;
+    height: 9pt;
+    border-radius: 2pt;
+    flex-shrink: 0;
+  }
+  .legend-row .swatch.haerin { background: #cc785c; }
+  .legend-row .swatch.danielle { background: #5db8a6; }
+  .legend-row .swatch.silence { background: #8a857a; }
+  .legend-row .key {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 10pt;
+    color: #5a5852;
+    letter-spacing: 0.3pt;
+  }
+
+  .terminal {
+    background: #181715;
+    border-radius: 14pt;
+    padding: 14pt 18pt;
+    color: #f0ece4;
+    display: flex;
+    flex-direction: column;
+    gap: 8pt;
+    overflow: hidden;
+  }
+  .term-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 12pt;
+    border-bottom: 1px solid #252320;
+  }
+  .term-head .dots { display: flex; gap: 5pt; }
+  .dot { width: 7pt; height: 7pt; border-radius: 50%; }
+  .dot.r { background: #cc785c; }
+  .dot.a { background: #e8a55a; }
+  .dot.t { background: #5db8a6; }
+  .term-title {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 10pt;
+    color: #8a857a;
+    margin: 0;
+    letter-spacing: 0.4pt;
+  }
+  .term-meta {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 9pt;
+    color: #6f6a5e;
+    margin: 0;
+    letter-spacing: 0.4pt;
+  }
+  .transcript {
+    background: #1f1e1b;
+    border-radius: 10pt;
+    padding: 12pt 14pt;
+    display: flex;
+    flex-direction: column;
+    gap: 5pt;
+  }
+  .line {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 8.5pt;
+    line-height: 1.5;
+    margin: 0;
+    display: flex;
+    gap: 8pt;
+    align-items: baseline;
+  }
+  .line .ts { color: #6f6a5e; flex-shrink: 0; width: 32pt; }
+  .line .who { flex-shrink: 0; width: 56pt; font-weight: 500; letter-spacing: 0.3pt; }
+  .line.h .who { color: #cc785c; }
+  .line.d .who { color: #5db8a6; }
+  .line.s .who { color: #8a857a; }
+  .line .text { color: #d8d2c4; }
+  .line .text .h-mark { color: #cc785c; }
+  .line .text .d-mark { color: #5db8a6; }
+  .footer {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    padding-top: 8pt;
+    border-top: 1px solid #d8d1c0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .footer p {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 9pt;
+    color: #6b6657;
+    margin: 0;
+    letter-spacing: 0.4pt;
+  }
+</style>
+</head>
+<body>
+  <div class="frame">
+    <div class="left">
+      <p class="eyebrow">05 · Bilingual bridge</p>
+      <h2 class="h2">Korean, English, <span class="coral">silence.</span></h2>
+      <p class="lede">In interviews, the two switch languages mid-sentence and finish each other's. The most distinctive register, though, is the third one — the beat of quiet eye-contact between the two.</p>
+      <div class="legend">
+        <div class="legend-row"><span class="swatch haerin"></span><span class="key">HAERIN · Korean</span></div>
+        <div class="legend-row"><span class="swatch danielle"></span><span class="key">DANIELLE · English</span></div>
+        <div class="legend-row"><span class="swatch silence"></span><span class="key">SILENCE · eye-contact beat</span></div>
+      </div>
+    </div>
+
+    <div class="terminal">
+      <div class="term-head">
+        <div class="dots"><span class="dot r"></span><span class="dot a"></span><span class="dot t"></span></div>
+        <p class="term-title">interview-transcript.log · 2024-08</p>
+        <p class="term-meta">live</p>
+      </div>
+
+      <div class="transcript">
+        <p class="line d"><span class="ts">00:02</span><span class="who">DANIELLE</span><span class="text">So we were trying to decide what to wear, and I just —</span></p>
+        <p class="line h"><span class="ts">00:05</span><span class="who">HAERIN</span><span class="text">맞아. (<span class="d-mark">Yeah.</span>) 그냥 똑같은 거 입자고 했어.</span></p>
+        <p class="line d"><span class="ts">00:08</span><span class="who">DANIELLE</span><span class="text">Same! Same. We didn't even talk about it that long.</span></p>
+        <p class="line s"><span class="ts">00:11</span><span class="who">— silence —</span><span class="text">(both laughing, glance at each other)</span></p>
+        <p class="line h"><span class="ts">00:14</span><span class="who">HAERIN</span><span class="text">우리 그런 거 잘해. (<span class="d-mark">We're good at that.</span>)</span></p>
+        <p class="line d"><span class="ts">00:17</span><span class="who">DANIELLE</span><span class="text">Yeah, we don't really need to explain.</span></p>
+      </div>
+    </div>
+
+    <div class="footer">
+      <p>style: ./DESIGN.md · imported · claude</p>
+      <p>05 / 06</p>
+    </div>
+  </div>
+</body>
+</html>

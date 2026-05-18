@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Haerin × Danielle — The Pair</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  html, body { margin: 0; padding: 0; }
+  body {
+    width: 720pt;
+    height: 405pt;
+    background: #faf9f5;
+    font-family: 'Inter', 'Pretendard', -apple-system, sans-serif;
+    color: #141413;
+    position: relative;
+    overflow: hidden;
+  }
+  .frame {
+    position: absolute;
+    inset: 0;
+    padding: 36pt 48pt;
+    box-sizing: border-box;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 28pt;
+    align-items: stretch;
+  }
+  .left {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  .eyebrow {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 10pt;
+    font-weight: 500;
+    letter-spacing: 1.5pt;
+    text-transform: uppercase;
+    color: #5a5852;
+    margin: 0 0 12pt 0;
+  }
+  .h2 {
+    font-family: 'Cormorant Garamond', 'Tiempos Headline', serif;
+    font-size: 38pt;
+    font-weight: 400;
+    line-height: 1.2;
+    letter-spacing: -1pt;
+    color: #141413;
+    margin: 0 0 14pt 0;
+  }
+  .h2 .coral { color: #cc785c; font-style: italic; font-weight: 500; }
+  .lede {
+    font-size: 13pt;
+    font-weight: 400;
+    line-height: 1.55;
+    color: #3d3b37;
+    margin: 0 0 18pt 0;
+    max-width: 320pt;
+  }
+  .pair-meta {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14pt;
+    padding-top: 16pt;
+    border-top: 1px solid #d8d1c0;
+  }
+  .pair-meta .col p:first-child {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 9pt;
+    color: #6b6657;
+    margin: 0 0 4pt 0;
+    letter-spacing: 0.4pt;
+    text-transform: uppercase;
+  }
+  .pair-meta .col p:nth-child(2) {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 20pt;
+    font-weight: 500;
+    color: #141413;
+    margin: 0 0 2pt 0;
+    letter-spacing: -0.4pt;
+  }
+  .pair-meta .col p:nth-child(3) {
+    font-size: 11pt;
+    color: #5a5852;
+    margin: 0;
+    line-height: 1.4;
+  }
+
+  .right-card {
+    background: #181715;
+    border-radius: 14pt;
+    padding: 24pt;
+    color: #f0ece4;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    position: relative;
+  }
+  .card-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 18pt;
+  }
+  .card-head .label {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 10pt;
+    color: #8a857a;
+    margin: 0;
+    letter-spacing: 0.6pt;
+    text-transform: uppercase;
+  }
+  .dot-row { display: flex; gap: 5pt; }
+  .dot { width: 7pt; height: 7pt; border-radius: 50%; background: #2a2825; }
+  .dot.live { background: #5db8a6; }
+
+  .profile-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 14pt;
+    padding: 12pt 0;
+    border-top: 1px solid #252320;
+  }
+  .profile-row:first-of-type { border-top: none; padding-top: 0; }
+  .avatar {
+    width: 36pt;
+    height: 36pt;
+    border-radius: 50%;
+    background: #cc785c;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    color: #ffffff;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 18pt;
+    font-weight: 500;
+  }
+  .avatar.teal { background: #5db8a6; }
+  .profile-row .info {
+    flex: 1;
+  }
+  .profile-row .name {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 19pt;
+    font-weight: 500;
+    color: #f0ece4;
+    margin: 0 0 2pt 0;
+    letter-spacing: -0.3pt;
+  }
+  .profile-row .meta {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 10pt;
+    color: #8a857a;
+    margin: 0 0 6pt 0;
+    letter-spacing: 0.2pt;
+  }
+  .profile-row .note {
+    font-size: 11pt;
+    line-height: 1.5;
+    color: #c8c3b6;
+    margin: 0;
+  }
+  .card-footer {
+    padding-top: 14pt;
+    border-top: 1px solid #252320;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .card-footer .stamp {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 9pt;
+    color: #6f6a5e;
+    margin: 0;
+    letter-spacing: 0.4pt;
+  }
+  .pill-amber {
+    background: rgba(232, 165, 90, 0.18);
+    color: #e8a55a;
+    font-size: 9pt;
+    font-weight: 500;
+    padding: 3pt 8pt;
+    border-radius: 999pt;
+    letter-spacing: 0.6pt;
+    text-transform: uppercase;
+  }
+  .page-no {
+    position: absolute;
+    bottom: 14pt;
+    right: 28pt;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 9pt;
+    color: #6b6657;
+    margin: 0;
+  }
+</style>
+</head>
+<body>
+  <div class="frame">
+    <div class="left">
+      <p class="eyebrow">02 · The Pair · ADOR trainee 2020–2021</p>
+      <h2 class="h2">Two members,<br /><span class="coral">one understanding.</span></h2>
+      <p class="lede">Haerin and Danielle joined ADOR's training program within months of each other. By debut, the two vocalists had already split the group's high–low register between them.</p>
+      <div class="pair-meta">
+        <div class="col">
+          <p>Voice ↑</p>
+          <p>Danielle</p>
+          <p>Airy lead, English-leaning</p>
+        </div>
+        <div class="col">
+          <p>Voice ↓</p>
+          <p>Haerin</p>
+          <p>Grounded tone, Korean-leaning</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="right-card">
+      <div class="card-head">
+        <p class="label">members.json</p>
+        <div class="dot-row">
+          <div class="dot"></div>
+          <div class="dot"></div>
+          <div class="dot live"></div>
+        </div>
+      </div>
+
+      <div class="profile-row">
+        <div class="avatar">H</div>
+        <div class="info">
+          <p class="name">Kang Haerin · 강해린</p>
+          <p class="meta">2006 · Seongnam · KR · vocal/visual</p>
+          <p class="note">"On stage I look for her first — it tells me where I am in the song."</p>
+        </div>
+      </div>
+
+      <div class="profile-row">
+        <div class="avatar teal">D</div>
+        <div class="info">
+          <p class="name">Danielle Marsh · 다니엘</p>
+          <p class="meta">2005 · Newcastle, AU → Seoul · vocal · AU/KR</p>
+          <p class="note">"Haerin and I just understand each other quietly. It saves so much energy."</p>
+        </div>
+      </div>
+
+      <div class="card-footer">
+        <p class="stamp">model: dynamics-v2 · last update 2024-11</p>
+        <span class="pill-amber">Pairing</span>
+      </div>
+
+      <p class="page-no">02 / 06</p>
+    </div>
+  </div>
+</body>
+</html>

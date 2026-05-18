@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>NiNiZ — Cover</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Kalam:wght@400;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  html, body { margin: 0; padding: 0; }
+  body {
+    width: 720pt;
+    height: 405pt;
+    background: #f2f0eb;
+    font-family: 'Inter', 'Pretendard', -apple-system, sans-serif;
+    color: rgba(0,0,0,0.87);
+    position: relative;
+    overflow: hidden;
+    letter-spacing: -0.01em;
+  }
+  .frame {
+    position: absolute;
+    inset: 0;
+    padding: 28pt 36pt 20pt 36pt;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  .top {
+    display: flex;
+    align-items: center;
+    gap: 10pt;
+  }
+  .siren {
+    width: 16pt;
+    height: 16pt;
+  }
+  .eyebrow {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 10pt;
+    font-weight: 500;
+    letter-spacing: 1.5pt;
+    text-transform: uppercase;
+    color: rgba(0,0,0,0.6);
+    margin: 0;
+  }
+  .hero {
+    display: grid;
+    grid-template-columns: 1.25fr 0.95fr;
+    gap: 28pt;
+    align-items: center;
+  }
+  .copy { display: flex; flex-direction: column; }
+  .h1 {
+    font-size: 56pt;
+    font-weight: 700;
+    line-height: 1.25;
+    letter-spacing: -1.5pt;
+    color: #006241;
+    margin: 0 0 8pt 0;
+  }
+  .sub {
+    font-size: 17pt;
+    font-weight: 500;
+    color: rgba(0,0,0,0.87);
+    line-height: 1.4;
+    margin: 0 0 14pt 0;
+    max-width: 380pt;
+    letter-spacing: -0.3pt;
+  }
+  .lede {
+    font-size: 12pt;
+    font-weight: 400;
+    color: rgba(0,0,0,0.6);
+    line-height: 1.55;
+    margin: 0 0 16pt 0;
+    max-width: 360pt;
+  }
+  .cup-names {
+    display: flex;
+    align-items: baseline;
+    gap: 16pt;
+    padding-top: 10pt;
+    border-top: 1px solid rgba(0,0,0,0.08);
+  }
+  .cup-names .label {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 10pt;
+    letter-spacing: 1.5pt;
+    text-transform: uppercase;
+    color: rgba(0,0,0,0.45);
+    margin: 0;
+  }
+  .cup {
+    font-family: 'Kalam', cursive;
+    font-weight: 700;
+    font-size: 22pt;
+    color: #006241;
+    margin: 0;
+    line-height: 1.8;
+    letter-spacing: 0;
+    transform: rotate(-2deg);
+  }
+  .cup.danielle {
+    transform: rotate(1deg);
+  }
+  .photo-card {
+    background: #ffffff;
+    border-radius: 12pt;
+    padding: 12pt;
+    box-shadow: 0 2pt 12pt rgba(0,0,0,0.06);
+    display: flex;
+    flex-direction: column;
+    gap: 10pt;
+    align-self: center;
+    max-width: 260pt;
+  }
+  .photo-card img {
+    width: 100%;
+    height: 200pt;
+    object-fit: cover;
+    object-position: center;
+    border-radius: 8pt;
+    display: block;
+  }
+  .photo-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 4pt;
+  }
+  .photo-meta .caption {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 9pt;
+    color: rgba(0,0,0,0.6);
+    margin: 0;
+    letter-spacing: 0.4pt;
+  }
+  .photo-meta .pill {
+    background: #d4e9e2;
+    color: #006241;
+    font-size: 9pt;
+    font-weight: 600;
+    padding: 3pt 8pt;
+    border-radius: 999pt;
+    letter-spacing: 0.4pt;
+    text-transform: uppercase;
+    margin: 0;
+  }
+  .footer-strip {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 8pt;
+    border-top: 1px solid rgba(0,0,0,0.08);
+  }
+  .footer-strip p {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 9pt;
+    color: rgba(0,0,0,0.45);
+    margin: 0;
+    letter-spacing: 0.4pt;
+  }
+</style>
+</head>
+<body>
+  <div class="frame">
+    <div class="top">
+      <svg class="siren" viewBox="0 0 32 32" aria-hidden="true">
+        <circle cx="16" cy="16" r="14" fill="none" stroke="#006241" stroke-width="2"/>
+        <circle cx="16" cy="16" r="9" fill="#006241"/>
+        <circle cx="16" cy="16" r="4" fill="#f2f0eb"/>
+      </svg>
+      <p class="eyebrow">Issue 03 · Cover · NewJeans · Australian duo</p>
+    </div>
+
+    <div class="hero">
+      <div class="copy">
+        <h1 class="h1">니니즈.</h1>
+        <p class="sub">Hanni &amp; Danielle — two cups, one order.</p>
+        <p class="lede">The Australian half of NewJeans, sharing a stage, a press circuit, and a private bilingual shorthand since August 2022.</p>
+        <div class="cup-names">
+          <p class="label">cup name</p>
+          <p class="cup">Hanni</p>
+          <p class="cup danielle">Danielle</p>
+        </div>
+      </div>
+
+      <div class="photo-card">
+        <img src="./assets/niniz-together-crop.jpg" alt="Hanni and Danielle from NewJeans together at a press event" />
+        <div class="photo-meta">
+          <p class="caption">photo · 2024 · Incheon</p>
+          <p class="pill">Niniz</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer-strip">
+      <p>slides-grab · ./DESIGN.slides.md · imported from voltagent/awesome-design-md → starbucks</p>
+      <p>01 / 06</p>
+    </div>
+  </div>
+</body>
+</html>

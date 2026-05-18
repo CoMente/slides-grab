@@ -53,7 +53,7 @@ Package-install setup verification ends here. Real slide-processing commands suc
 If you want to modify `slides-grab` itself:
 
 ```bash
-git clone https://github.com/vkehfdl1/slides-grab.git && cd slides-grab
+git clone https://github.com/NomaDamas/slides-grab.git && cd slides-grab
 npm ci
 npx playwright install chromium
 npx skills add . -g -a codex -a claude-code --yes --copy
