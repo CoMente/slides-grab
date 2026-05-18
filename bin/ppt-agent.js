@@ -352,7 +352,10 @@ program
       });
       const savedPath = saveImportedDesign({ outputPath: options.output, markdown });
       console.log(`Saved ${result.bytes} bytes to ${savedPath}`);
-      console.log(`Use it by setting "style: ./${options.output}" in your slide-outline.md`);
+      console.log(
+        'Saved web-flavored design source. Next convert it to DESIGN.slides.md, then set ' +
+        '"style: ./DESIGN.slides.md" in your slide-outline.md.',
+      );
     } catch (error) {
       reportCliError(error);
     }
@@ -367,10 +370,11 @@ program
       const { loadDesignStyleRef, detectLocalDesignMarkdown } = await import('../src/design-styles.js');
       const { renderDesignStyleForPrompt } = await import('../src/design-md-parser.js');
       const { existsSync, statSync } = await import('node:fs');
-      const { resolve } = await import('node:path');
+      const { dirname, resolve } = await import('node:path');
 
       let effectiveRef = ref;
       let detection = null;
+      let explicitWebShadowed = false;
       const absoluteRef = resolve(ref);
       if (existsSync(absoluteRef) && statSync(absoluteRef).isDirectory()) {
         detection = detectLocalDesignMarkdown({ baseDir: absoluteRef });
@@ -380,6 +384,13 @@ program
           return;
         }
         effectiveRef = detection.path;
+      } else if (existsSync(absoluteRef) && statSync(absoluteRef).isFile() && absoluteRef.endsWith('/DESIGN.md')) {
+        const siblingDetection = detectLocalDesignMarkdown({ baseDir: dirname(absoluteRef) });
+        if (siblingDetection.kind === 'slides') {
+          detection = siblingDetection;
+          explicitWebShadowed = true;
+          effectiveRef = siblingDetection.path;
+        }
       }
 
       const style = loadDesignStyleRef(effectiveRef);
@@ -395,7 +406,8 @@ program
           const otherPresent = detection.kind === 'slides' && detection.webPath;
           console.log(`# Active file: ${activeName} (${detection.path})`);
           if (otherPresent) {
-            console.log(`# Note: DESIGN.md is also present at ${detection.webPath} but is shadowed by DESIGN.slides.md.`);
+            const explicitPrefix = explicitWebShadowed ? ' explicit DESIGN.md reference was redirected;' : '';
+            console.log(`# Note:${explicitPrefix} DESIGN.md is also present at ${detection.webPath} but is shadowed by DESIGN.slides.md.`);
           } else if (detection.kind === 'web') {
             console.log('# Note: only the web-flavored DESIGN.md was found. Consider converting it to DESIGN.slides.md before generating slides (see skills/slides-grab-plan/references/design-md-to-slides-conversion.md).');
           }

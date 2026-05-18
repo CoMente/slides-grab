@@ -4,6 +4,63 @@ import { resolve } from 'node:path';
 const DEFAULT_MAX_BYTES = 256 * 1024;
 const ALLOWED_PROTOCOLS = new Set(['https:']);
 
+function getHeader(headers, name) {
+  if (!headers) return '';
+  if (typeof headers.get === 'function') return headers.get(name) ?? '';
+  return headers[name] ?? headers[name.toLowerCase()] ?? '';
+}
+
+function validateFinalDesignUrl(rawUrl, { allowedProtocols = ALLOWED_PROTOCOLS } = {}) {
+  let url;
+  try {
+    url = new URL(rawUrl);
+  } catch (cause) {
+    throw new DesignImportError(`Invalid final URL after redirects: ${rawUrl}`, { cause });
+  }
+  if (!allowedProtocols.has(url.protocol)) {
+    throw new DesignImportError(
+      `Redirect final URL protocol ${url.protocol} is not allowed. Allowed: ${[...allowedProtocols].join(', ')}`,
+    );
+  }
+  return url;
+}
+
+async function readResponseBody(response, { maxBytes }) {
+  if (response.body && typeof response.body.getReader === 'function') {
+    const reader = response.body.getReader();
+    const chunks = [];
+    let total = 0;
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        const chunk = Buffer.from(value);
+        total += chunk.byteLength;
+        if (total > maxBytes) {
+          if (typeof reader.cancel === 'function') {
+            await reader.cancel().catch(() => {});
+          }
+          throw new DesignImportError(
+            `DESIGN.md exceeds max size (${total} > ${maxBytes} bytes).`,
+          );
+        }
+        chunks.push(chunk);
+      }
+    } finally {
+      if (typeof reader.releaseLock === 'function') reader.releaseLock();
+    }
+    return Buffer.concat(chunks, total);
+  }
+
+  const buffer = Buffer.from(await response.arrayBuffer());
+  if (buffer.byteLength > maxBytes) {
+    throw new DesignImportError(
+      `DESIGN.md exceeds max size (${buffer.byteLength} > ${maxBytes} bytes).`,
+    );
+  }
+  return buffer;
+}
+
 export class DesignImportError extends Error {
   constructor(message, { cause } = {}) {
     super(message);
@@ -53,41 +110,39 @@ export async function fetchDesignMarkdown(rawUrl, options = {}) {
       signal: controller.signal,
       headers: { 'User-Agent': 'slides-grab/import-design (+https://github.com/NomaDamas/slides-grab)' },
     });
+
+    const finalUrl = validateFinalDesignUrl(response.url ?? url.toString(), { allowedProtocols });
+
+    if (!response.ok) {
+      throw new DesignImportError(`Fetch returned HTTP ${response.status} for ${url}`);
+    }
+
+    const contentType = getHeader(response.headers, 'content-type');
+    const looksLikeText = contentType === '' ||
+      contentType.includes('text/') ||
+      contentType.includes('markdown') ||
+      contentType.includes('application/octet-stream');
+    if (!looksLikeText) {
+      throw new DesignImportError(
+        `Refusing to import non-text response (content-type: ${contentType}).`,
+      );
+    }
+
+    const buffer = await readResponseBody(response, { maxBytes });
+    const text = buffer.toString('utf8');
+    return {
+      url: finalUrl.toString(),
+      contentType,
+      bytes: buffer.byteLength,
+      fetchedAt: new Date().toISOString(),
+      text,
+    };
   } catch (cause) {
-    clearTimeout(timeoutHandle);
+    if (cause instanceof DesignImportError) throw cause;
     throw new DesignImportError(`Fetch failed for ${url}: ${cause.message}`, { cause });
+  } finally {
+    clearTimeout(timeoutHandle);
   }
-  clearTimeout(timeoutHandle);
-
-  if (!response.ok) {
-    throw new DesignImportError(`Fetch returned HTTP ${response.status} for ${url}`);
-  }
-
-  const contentType = response.headers.get('content-type') ?? '';
-  const looksLikeText = contentType === '' ||
-    contentType.includes('text/') ||
-    contentType.includes('markdown') ||
-    contentType.includes('application/octet-stream');
-  if (!looksLikeText) {
-    throw new DesignImportError(
-      `Refusing to import non-text response (content-type: ${contentType}).`,
-    );
-  }
-
-  const buffer = Buffer.from(await response.arrayBuffer());
-  if (buffer.byteLength > maxBytes) {
-    throw new DesignImportError(
-      `DESIGN.md exceeds max size (${buffer.byteLength} > ${maxBytes} bytes).`,
-    );
-  }
-  const text = buffer.toString('utf8');
-  return {
-    url: url.toString(),
-    contentType,
-    bytes: buffer.byteLength,
-    fetchedAt: new Date().toISOString(),
-    text,
-  };
 }
 
 export function formatImportedDesignMarkdown({ url, content, fetchedAt }) {

@@ -1,5 +1,5 @@
 import { existsSync, readFileSync } from 'node:fs';
-import { dirname, isAbsolute, resolve } from 'node:path';
+import { basename, dirname, isAbsolute, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { RAW_DESIGN_STYLES } from './design-styles-data.js';
@@ -55,6 +55,9 @@ export function buildStylePreviewHtml() {
   return readFileSync(getPreviewHtmlPath(), 'utf-8');
 }
 
+export const SLIDE_DESIGN_FILENAME = 'DESIGN.slides.md';
+export const WEB_DESIGN_FILENAME = 'DESIGN.md';
+
 export function isDesignMarkdownRef(styleRef) {
   if (typeof styleRef !== 'string') return false;
   const trimmed = styleRef.trim();
@@ -71,6 +74,10 @@ export function resolveDesignMarkdownPath(styleRef, { baseDir = process.cwd() } 
   if (!existsSync(candidate)) {
     throw new Error(`DESIGN.md reference not found at ${candidate}`);
   }
+  if (basename(candidate) === WEB_DESIGN_FILENAME) {
+    const siblingSlideDesign = resolve(dirname(candidate), SLIDE_DESIGN_FILENAME);
+    if (existsSync(siblingSlideDesign)) return siblingSlideDesign;
+  }
   return candidate;
 }
 
@@ -82,9 +89,6 @@ export function loadDesignStyleRef(styleRef, options = {}) {
   }
   return requireDesignStyle(styleRef);
 }
-
-export const SLIDE_DESIGN_FILENAME = 'DESIGN.slides.md';
-export const WEB_DESIGN_FILENAME = 'DESIGN.md';
 
 export function findLocalDesignMarkdown({ baseDir = process.cwd() } = {}) {
   const detection = detectLocalDesignMarkdown({ baseDir });
