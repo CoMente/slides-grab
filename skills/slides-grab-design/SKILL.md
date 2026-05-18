@@ -22,7 +22,11 @@ Generate high-quality `slide-XX.html` files in the selected slides workspace (`s
 
 ## Workflow
 1. Read approved `slide-outline.md` and extract the `style` field from its meta section.
-2. Load the chosen style's full spec from `src/design-styles-data.js` — colors, fonts, layout, signature elements, and things to avoid. If the meta specifies a custom direction instead of a bundled ID, use that custom direction as the design basis.
+2. Load the chosen style's full spec:
+   - If `style` is a bundled id (e.g. `glassmorphism`), load from `src/design-styles-data.js` — colors, fonts, layout, signature elements, and things to avoid.
+   - If `style` ends in `.md` (e.g. `./DESIGN.slides.md` or `./DESIGN.md`), or if a design markdown file exists at the project root, parse it with `slides-grab show-design <path>` and treat the parsed output as the authoritative design system (colors, typography, layout, components, signature, avoid).
+   - **Precedence when both files exist:** `DESIGN.slides.md` takes priority over `DESIGN.md`. The `.slides.md` version is the slide-flavored conversion produced by the plan stage and is the only file safe to apply to slide HTML. If only `DESIGN.md` exists, treat it as web-flavored and follow the slide layout/avoid rules in `references/design-rules.md` strictly to avoid leaking web-only components (top-nav, CTA buttons, footer-band columns, pricing grids) into slides — or, preferably, switch back to the plan stage and produce a `DESIGN.slides.md` first.
+   - If the meta specifies a written custom direction, use that as the design basis.
 3. Before generating slides, write a quick **visual thesis** (mood/material/energy), a **content plan** (opener → support/proof → detail/story → close/CTA), a **system declaration** (reused layout patterns, max two background colors, max two typefaces, image-led vs text-led slides, where section dividers reset tempo), and the core design tokens (background, surface, text, muted, accent + display/headline/body/caption roles). Ground these tokens in the chosen style's spec. Follow `references/beautiful-slide-defaults.md` for the full working model, content discipline, color discipline, and AI slop tropes to avoid.
 4. If you need to confirm or revisit the approved bundled style before designing, re-run `slides-grab list-styles` and open the gallery from `slides-grab preview-styles` so the Stage 2 deck stays aligned with the Stage 1 direction.
 5. Generate slide HTML files with 2-digit numbering in selected `--slides-dir`.
