@@ -51,7 +51,7 @@ export async function fetchDesignMarkdown(rawUrl, options = {}) {
     response = await fetchImpl(url.toString(), {
       redirect: 'follow',
       signal: controller.signal,
-      headers: { 'User-Agent': 'slides-grab/import-design (+https://github.com/vkehfdl1/slides-grab)' },
+      headers: { 'User-Agent': 'slides-grab/import-design (+https://github.com/NomaDamas/slides-grab)' },
     });
   } catch (cause) {
     clearTimeout(timeoutHandle);

@@ -30,7 +30,7 @@ Then restart Codex so the installed skills are loaded.
 If you want to work on `slides-grab` itself instead of consuming the package:
 
 ```bash
-git clone https://github.com/vkehfdl1/slides-grab.git && cd slides-grab
+git clone https://github.com/NomaDamas/slides-grab.git && cd slides-grab
 npm ci
 npx playwright install chromium
 npx skills add . -g -a codex --yes --copy

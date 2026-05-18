@@ -6,11 +6,11 @@
   "author": "vkehfdl1",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/vkehfdl1/slides-grab.git"
+    "url": "git+https://github.com/NomaDamas/slides-grab.git"
   },
-  "homepage": "https://github.com/vkehfdl1/slides-grab#readme",
+  "homepage": "https://github.com/NomaDamas/slides-grab#readme",
   "bugs": {
-    "url": "https://github.com/vkehfdl1/slides-grab/issues"
+    "url": "https://github.com/NomaDamas/slides-grab/issues"
   },
   "keywords": [
     "presentation",
