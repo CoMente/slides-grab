@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>NiNiZ — On Stage</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  html, body { margin: 0; padding: 0; }
+  body {
+    width: 720pt;
+    height: 405pt;
+    background: #1E3932;
+    font-family: 'Inter', 'Pretendard', -apple-system, sans-serif;
+    color: #ffffff;
+    position: relative;
+    overflow: hidden;
+    letter-spacing: -0.01em;
+  }
+  .frame {
+    position: absolute;
+    inset: 0;
+    padding: 18pt 28pt 14pt 28pt;
+    box-sizing: border-box;
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    gap: 12pt;
+  }
+  .top {
+    display: flex;
+    align-items: center;
+    gap: 10pt;
+  }
+  .siren { width: 14pt; height: 14pt; }
+  .eyebrow {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 10pt;
+    font-weight: 500;
+    letter-spacing: 1.5pt;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.7);
+    margin: 0;
+  }
+  .main {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24pt;
+    align-items: center;
+  }
+  .copy {
+    display: flex;
+    flex-direction: column;
+  }
+  .h2 {
+    font-size: 30pt;
+    font-weight: 700;
+    line-height: 1.25;
+    letter-spacing: -0.8pt;
+    color: #ffffff;
+    margin: 0 0 10pt 0;
+  }
+  .h2 .gold { color: #cba258; }
+  .lede {
+    font-size: 13pt;
+    color: rgba(255,255,255,0.75);
+    line-height: 1.55;
+    margin: 0 0 18pt 0;
+    max-width: 340pt;
+  }
+  .tracks {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8pt 12pt;
+  }
+  .track {
+    display: flex;
+    align-items: center;
+    gap: 8pt;
+    padding: 6pt 0;
+    border-top: 1px solid rgba(255,255,255,0.18);
+  }
+  .track .no {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 9pt;
+    color: rgba(255,255,255,0.5);
+    letter-spacing: 0.6pt;
+    width: 32pt;
+    flex-shrink: 0;
+  }
+  .track .name {
+    font-size: 13pt;
+    font-weight: 600;
+    color: #ffffff;
+    letter-spacing: -0.3pt;
+  }
+  .track .year {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 9pt;
+    color: rgba(255,255,255,0.5);
+    margin-left: auto;
+  }
+  .photo-card {
+    background: #f2f0eb;
+    border-radius: 12pt;
+    padding: 12pt;
+    box-shadow: 0 4pt 16pt rgba(0,0,0,0.18);
+    display: flex;
+    flex-direction: column;
+    gap: 10pt;
+  }
+  .photo-card img {
+    width: 100%;
+    height: 180pt;
+    object-fit: cover;
+    object-position: center;
+    border-radius: 8pt;
+    display: block;
+  }
+  .photo-card .caption-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 4pt;
+  }
+  .photo-card .caption {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 9pt;
+    color: rgba(0,0,0,0.6);
+    margin: 0;
+    letter-spacing: 0.4pt;
+  }
+  .photo-card .pill {
+    background: #006241;
+    color: #ffffff;
+    font-size: 9pt;
+    font-weight: 600;
+    padding: 3pt 8pt;
+    border-radius: 999pt;
+    letter-spacing: 0.4pt;
+    text-transform: uppercase;
+    margin: 0;
+  }
+  .footer-strip {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 8pt;
+    border-top: 1px solid rgba(255,255,255,0.18);
+  }
+  .footer-strip p {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 9pt;
+    color: rgba(255,255,255,0.5);
+    margin: 0;
+    letter-spacing: 0.4pt;
+  }
+  .gold-rule {
+    height: 1.5pt;
+    width: 60pt;
+    background: #cba258;
+    border-radius: 1pt;
+    margin: 6pt 0 12pt 0;
+  }
+</style>
+</head>
+<body>
+  <div class="frame">
+    <div class="top">
+      <svg class="siren" viewBox="0 0 32 32" aria-hidden="true">
+        <circle cx="16" cy="16" r="14" fill="none" stroke="#cba258" stroke-width="2"/>
+        <circle cx="16" cy="16" r="9" fill="#006241"/>
+        <circle cx="16" cy="16" r="4" fill="#1E3932"/>
+      </svg>
+      <p class="eyebrow">04 · On stage · The harmony anchor</p>
+    </div>
+
+    <div class="main">
+      <div class="copy">
+        <h2 class="h2">Their harmony <span class="gold">anchors</span> every chorus.</h2>
+        <div class="gold-rule" aria-hidden="true"></div>
+        <p class="lede">Hanni's lower mid-tone catches the song; Danielle's airy top sits above it. Every NewJeans hook builds around that one bar.</p>
+        <div class="tracks">
+          <div class="track"><span class="no">SNG-01</span><span class="name">Attention</span><span class="year">2022</span></div>
+          <div class="track"><span class="no">SNG-02</span><span class="name">Hype Boy</span><span class="year">2022</span></div>
+          <div class="track"><span class="no">SNG-03</span><span class="name">Ditto</span><span class="year">2022</span></div>
+          <div class="track"><span class="no">SNG-04</span><span class="name">Super Shy</span><span class="year">2023</span></div>
+        </div>
+      </div>
+
+      <div class="photo-card">
+        <img src="./assets/niniz-onstage.jpg" alt="NewJeans on stage at Melon Music Awards 2023, with Hanni and Danielle visible" />
+        <div class="caption-row">
+          <p class="caption">Melon Music Awards · 2023</p>
+          <p class="pill">On stage</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer-strip">
+      <p>photo · Wikimedia Commons · TenAsia · CC-BY</p>
+      <p>04 / 06</p>
+    </div>
+  </div>
+</body>
+</html>

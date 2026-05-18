@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>NiNiZ — Closing</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Kalam:wght@400;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  html, body { margin: 0; padding: 0; }
+  body {
+    width: 720pt;
+    height: 405pt;
+    background: #1E3932;
+    font-family: 'Inter', 'Pretendard', -apple-system, sans-serif;
+    color: #ffffff;
+    position: relative;
+    overflow: hidden;
+    letter-spacing: -0.01em;
+  }
+  .frame {
+    position: absolute;
+    inset: 0;
+    padding: 24pt 36pt 18pt 36pt;
+    box-sizing: border-box;
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    gap: 14pt;
+  }
+  .top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10pt;
+  }
+  .siren { width: 14pt; height: 14pt; }
+  .wordmark {
+    font-size: 14pt;
+    font-weight: 600;
+    color: #ffffff;
+    margin: 0;
+    letter-spacing: -0.4pt;
+  }
+  .eyebrow {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 10pt;
+    font-weight: 500;
+    letter-spacing: 1.5pt;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.7);
+    margin: 0;
+  }
+  .center {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 16pt;
+  }
+  .kicker {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 10pt;
+    color: #cba258;
+    letter-spacing: 1.5pt;
+    text-transform: uppercase;
+    margin: 0;
+  }
+  .h1 {
+    font-size: 38pt;
+    font-weight: 700;
+    line-height: 1.2;
+    letter-spacing: -1pt;
+    color: #ffffff;
+    margin: 0;
+    max-width: 620pt;
+  }
+  .h1 .gold { color: #cba258; font-style: italic; font-weight: 600; }
+  .h1 .strike {
+    color: rgba(255,255,255,0.4);
+    text-decoration: line-through;
+    text-decoration-color: rgba(255,255,255,0.3);
+  }
+  .cup-line {
+    display: flex;
+    align-items: center;
+    gap: 18pt;
+    padding-top: 14pt;
+    border-top: 1px solid rgba(255,255,255,0.18);
+  }
+  .cup-line .label {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 10pt;
+    color: rgba(255,255,255,0.5);
+    letter-spacing: 1.5pt;
+    text-transform: uppercase;
+    margin: 0;
+  }
+  .cup-line .signoff {
+    font-family: 'Kalam', cursive;
+    font-weight: 700;
+    font-size: 22pt;
+    color: #cba258;
+    margin: 0;
+    line-height: 1.6;
+    transform: rotate(-1.5deg);
+  }
+  .footer-band {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16pt;
+    padding-top: 12pt;
+    border-top: 1px solid rgba(255,255,255,0.18);
+  }
+  .footer-col p:first-child {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 8pt;
+    color: rgba(255,255,255,0.5);
+    margin: 0 0 4pt 0;
+    letter-spacing: 0.8pt;
+    text-transform: uppercase;
+  }
+  .footer-col p:nth-child(n+2) {
+    font-size: 10pt;
+    color: rgba(255,255,255,0.85);
+    margin: 0 0 2pt 0;
+    line-height: 1.35;
+  }
+  .footer-col p .gold { color: #cba258; font-weight: 600; }
+</style>
+</head>
+<body>
+  <div class="frame">
+    <div class="top">
+      <div class="brand">
+        <svg class="siren" viewBox="0 0 32 32" aria-hidden="true">
+          <circle cx="16" cy="16" r="14" fill="none" stroke="#cba258" stroke-width="2"/>
+          <circle cx="16" cy="16" r="9" fill="#006241"/>
+          <circle cx="16" cy="16" r="4" fill="#1E3932"/>
+        </svg>
+        <p class="wordmark">slides-grab · 니니즈 brief</p>
+      </div>
+      <p class="eyebrow">06 · Closing</p>
+    </div>
+
+    <div class="center">
+      <p class="kicker">The thesis</p>
+      <h1 class="h1">Not a <span class="strike">sub-unit.</span> Not a side plot.<br />The Australian duo that quietly <span class="gold">sets the room temperature.</span></h1>
+      <div class="cup-line">
+        <p class="label">cup signoff</p>
+        <p class="signoff">thank you · 다음 컵에서 만나요</p>
+      </div>
+    </div>
+
+    <div class="footer-band">
+      <div class="footer-col">
+        <p>Members</p>
+        <p>Hanni Pham</p>
+        <p>Danielle Marsh</p>
+      </div>
+      <div class="footer-col">
+        <p>Tracks cited</p>
+        <p>Attention · Hype Boy</p>
+        <p>Ditto · Super Shy</p>
+      </div>
+      <div class="footer-col">
+        <p>Photo source</p>
+        <p>Wikimedia Commons</p>
+        <p>TenAsia · CC-BY</p>
+      </div>
+      <div class="footer-col">
+        <p>Style</p>
+        <p><span class="gold">./DESIGN.slides.md</span></p>
+        <p>starbucks · imported</p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

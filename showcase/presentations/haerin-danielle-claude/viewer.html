@@ -1,0 +1,2322 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Slide Viewer</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #111;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+
+    .viewer-container {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .nav-bar {
+      height: 48px;
+      background: #1a1a1a;
+      border-bottom: 1px solid #333;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      flex-shrink: 0;
+      z-index: 100;
+    }
+
+    .nav-bar button {
+      background: #333;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 6px 16px;
+      font-size: 13px;
+      font-family: inherit;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .nav-bar button:hover {
+      background: #555;
+    }
+
+    .nav-bar button:disabled {
+      opacity: 0.3;
+      cursor: default;
+    }
+
+    .slide-counter {
+      color: #aaa;
+      font-size: 14px;
+      font-weight: 500;
+      min-width: 60px;
+      text-align: center;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .btn-fullscreen {
+      position: absolute;
+      right: 16px;
+      background: transparent !important;
+      font-size: 18px;
+      padding: 6px 10px !important;
+    }
+
+    .slide-viewport {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .slide-scaler {
+      width: 720pt;
+      height: 405pt;
+      position: relative;
+      transform-origin: center center;
+    }
+
+    .slide-frame {
+      position: absolute;
+      inset: 0;
+      width: 720pt;
+      height: 405pt;
+      border: none;
+      overflow: hidden;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+    }
+
+    .slide-frame.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+  </style>
+</head>
+<body>
+  <div class="viewer-container">
+    <div class="nav-bar">
+      <button id="btn-prev" title="Previous (\u2190)">Prev</button>
+      <span class="slide-counter" id="counter">1 / 6</span>
+      <button id="btn-next" title="Next (\u2192)">Next</button>
+      <button class="btn-fullscreen" id="btn-fs" title="Fullscreen (F)">&#x26F6;</button>
+    </div>
+
+    <div class="slide-viewport" id="viewport">
+      <div class="slide-scaler" id="scaler">
+        <iframe class="slide-frame active" data-slide="1" srcdoc="<!DOCTYPE html>
+<html lang=&quot;en&quot;>
+<head>
+<base href=&quot;./&quot;>
+<script>
+(() => {
+  const slideFile = &quot;slide-01.html&quot;;
+  const localAssetPrefix = &quot;./assets/&quot;;
+  const absolutePathRe = /^(file:\/\/|\/Users\/|\/home\/|\/var\/|\/tmp\/|\/private\/|\/Volumes\/|[A-Za-z]:[\\/]|\\\\)/i;
+  const schemeRe = /^[a-z][a-z0-9+\-.]*:/i;
+  const prefix = '[slides-grab:image]';
+
+  function describeElement(element) {
+    if (!element || element.nodeType !== Node.ELEMENT_NODE) return '';
+    if (element === document.body) return 'body';
+
+    const parts = [];
+    let current = element;
+    while (current &amp;&amp; current.nodeType === Node.ELEMENT_NODE &amp;&amp; current !== document.body) {
+      let part = current.tagName.toLowerCase();
+      if (current.id) {
+        part += '#' + current.id;
+        parts.unshift(part);
+        break;
+      }
+      if (current.classList.length > 0) {
+        part += '.' + Array.from(current.classList).slice(0, 2).join('.');
+      }
+      parts.unshift(part);
+      current = current.parentElement;
+    }
+    return 'body > ' + parts.join(' > ');
+  }
+
+  function warn(message, detail) {
+    console.warn(prefix + ' ' + slideFile + ': ' + message, detail);
+  }
+
+  function fail(message, detail) {
+    console.error(prefix + ' ' + slideFile + ': ' + message, detail);
+  }
+
+  function validateAssetSource(kind, source, { allowEmpty = true, onNoncanonical = 'warn' } = {}) {
+    const value = (source || '').trim();
+    if (!value) {
+      return allowEmpty;
+    }
+    if (value.startsWith('data:')) {
+      return true;
+    }
+    if (value.startsWith('https://')) {
+      fail('remote ' + kind + ' URL is unsupported in saved slides; download it into ./assets/<file>', { src: value });
+      return false;
+    }
+    if (value.startsWith('http://')) {
+      fail('remote http:// ' + kind + ' URL is unsupported in saved slides; download it into ./assets/<file>', { src: value });
+      return false;
+    }
+    if (absolutePathRe.test(value) || value.startsWith('/')) {
+      fail('non-portable ' + kind + ' path is unsupported', { src: value });
+      return false;
+    }
+    if (schemeRe.test(value)) {
+      fail('unsupported ' + kind + ' URL scheme in saved slides; download it into ./assets/<file>', { src: value });
+      return false;
+    }
+    if (!value.startsWith(localAssetPrefix)) {
+      const report = onNoncanonical === 'fail' ? fail : warn;
+      report('noncanonical local ' + kind + ' path should use ./assets/<file>', { src: value });
+    }
+    return true;
+  }
+
+  function getVideoSources(video) {
+    const sources = [];
+    const directSrc = (video.getAttribute('src') || '').trim();
+    if (directSrc) {
+      sources.push(directSrc);
+    }
+    for (const source of video.querySelectorAll('source[src]')) {
+      const src = (source.getAttribute('src') || '').trim();
+      if (src) {
+        sources.push(src);
+      }
+    }
+    return sources;
+  }
+
+  window.addEventListener('error', (event) => {
+    const target = event.target;
+    if (target instanceof HTMLImageElement) {
+      const src = (target.getAttribute('src') || target.currentSrc || '').trim();
+      if (!src || src.startsWith('data:')) return;
+      if (src.startsWith(localAssetPrefix)) {
+        fail('missing local asset', { src });
+        return;
+      }
+      fail('image failed to load', { src });
+      return;
+    }
+
+    if (target instanceof HTMLVideoElement) {
+      const sources = getVideoSources(target);
+      if (sources.some((src) => src.startsWith(localAssetPrefix))) {
+        fail('missing local video asset', { sources });
+        return;
+      }
+      fail('video failed to load', { sources });
+      return;
+    }
+
+    if (target instanceof HTMLSourceElement &amp;&amp; target.parentElement instanceof HTMLVideoElement) {
+      const src = (target.getAttribute('src') || '').trim();
+      if (!src) return;
+      if (src.startsWith(localAssetPrefix)) {
+        fail('missing local video asset', { src });
+        return;
+      }
+      fail('video source failed to load', { src });
+    }
+  }, true);
+
+  window.addEventListener('DOMContentLoaded', () => {
+    for (const image of document.querySelectorAll('img[src]')) {
+      const src = (image.getAttribute('src') || '').trim();
+      validateAssetSource('image', src);
+    }
+
+    for (const video of document.querySelectorAll('video')) {
+      for (const src of getVideoSources(video)) {
+        validateAssetSource('video', src);
+      }
+
+      const poster = (video.getAttribute('poster') || '').trim();
+      if (poster) {
+        validateAssetSource('image', poster);
+      }
+    }
+
+    for (const element of document.body.querySelectorAll('*')) {
+      if (element === document.body) continue;
+      const backgroundImage = window.getComputedStyle(element).backgroundImage;
+      if (!backgroundImage || backgroundImage === 'none' || !backgroundImage.includes('url(')) continue;
+      fail('non-body background-image is not supported for slide content', {
+        element: describeElement(element),
+        backgroundImage,
+      });
+    }
+  });
+})();
+</script>
+<meta charset=&quot;UTF-8&quot; />
+<title>Haerin × Danielle — Cover</title>
+<link rel=&quot;stylesheet&quot; href=&quot;https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css&quot; />
+<link href=&quot;https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap&quot; rel=&quot;stylesheet&quot; />
+<style>
+  html, body { margin: 0; padding: 0; }
+  body {
+    width: 720pt;
+    height: 405pt;
+    background: #faf9f5;
+    font-family: 'Inter', 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    color: #141413;
+    position: relative;
+    overflow: hidden;
+  }
+  .frame {
+    position: absolute;
+    inset: 0;
+    padding: 28pt 48pt 20pt 48pt;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  .eyebrow-strip {
+    display: flex;
+    align-items: center;
+    gap: 10pt;
+  }
+  .spike {
+    width: 12pt;
+    height: 12pt;
+    color: #141413;
+  }
+  .eyebrow {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 10pt;
+    font-weight: 500;
+    letter-spacing: 1.5pt;
+    text-transform: uppercase;
+    color: #6b6657;
+    margin: 0;
+  }
+  .hero {
+    display: grid;
+    grid-template-columns: 1.25fr 1fr;
+    gap: 32pt;
+    align-items: center;
+  }
+  .copy {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  .h1 {
+    font-family: 'Cormorant Garamond', 'Tiempos Headline', serif;
+    font-size: 46pt;
+    font-weight: 400;
+    line-height: 1.2;
+    letter-spacing: -1.1pt;
+    color: #141413;
+    margin: 0 0 12pt 0;
+    max-width: 420pt;
+  }
+  .h1 .amp {
+    color: #cc785c;
+    font-style: italic;
+    font-weight: 500;
+  }
+  .sub {
+    font-family: 'Cormorant Garamond', 'Tiempos Headline', serif;
+    font-size: 18pt;
+    font-style: italic;
+    color: #3d3b37;
+    line-height: 1.45;
+    margin: 0;
+    max-width: 380pt;
+  }
+  .kicker {
+    margin: 12pt 0 0 0;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 10pt;
+    color: #6b6657;
+    letter-spacing: 0.6pt;
+    text-transform: uppercase;
+  }
+  .kicker .coral { color: #cc785c; }
+  .quote-card {
+    background: #efe9de;
+    border-radius: 14pt;
+    padding: 22pt;
+    display: flex;
+    flex-direction: column;
+    gap: 14pt;
+  }
+  .quote-eyebrow {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 9pt;
+    font-weight: 500;
+    letter-spacing: 1pt;
+    text-transform: uppercase;
+    color: #6b6657;
+    margin: 0;
+  }
+  .quote {
+    font-family: 'Cormorant Garamond', 'Tiempos Headline', serif;
+    font-size: 17pt;
+    font-style: italic;
+    line-height: 1.4;
+    color: #141413;
+    margin: 0;
+    letter-spacing: -0.3pt;
+  }
+  .quote .coral { color: #cc785c; font-weight: 500; }
+  .quote-attribution {
+    display: flex;
+    flex-direction: column;
+    gap: 2pt;
+    padding-top: 12pt;
+    border-top: 1px solid #d8d1c0;
+  }
+  .quote-attribution .name {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 13pt;
+    font-weight: 500;
+    color: #141413;
+    margin: 0;
+    letter-spacing: -0.2pt;
+  }
+  .quote-attribution .role {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 9pt;
+    color: #6b6657;
+    margin: 0;
+    letter-spacing: 0.4pt;
+  }
+  .footer-strip {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 10pt;
+    border-top: 1px solid #d8d1c0;
+  }
+  .footer-strip p {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 9pt;
+    color: #6b6657;
+    margin: 0;
+    letter-spacing: 0.4pt;
+  }
+</style>
+</head>
+<body>
+  <div class=&quot;frame&quot;>
+    <div class=&quot;eyebrow-strip&quot;>
+      <svg class=&quot;spike&quot; viewBox=&quot;0 0 24 24&quot; fill=&quot;currentColor&quot; aria-hidden=&quot;true&quot;>
+        <path d=&quot;M12 2 L13.3 9.6 L20.5 8.3 L14.7 12 L20.5 15.7 L13.3 14.4 L12 22 L10.7 14.4 L3.5 15.7 L9.3 12 L3.5 8.3 L10.7 9.6 Z&quot;/>
+      </svg>
+      <p class=&quot;eyebrow&quot;>Issue 02 · Cover · NewJeans · long read</p>
+    </div>
+
+    <div class=&quot;hero&quot;>
+      <div class=&quot;copy&quot;>
+        <h1 class=&quot;h1&quot;>Haerin <span class=&quot;amp&quot;>&amp;amp;</span> Danielle.</h1>
+        <p class=&quot;sub&quot;>A friendship, kept in plain sight — across two languages, one stage, and four years of shared frames.</p>
+        <p class=&quot;kicker&quot;>An editorial · 6-slide brief · style <span class=&quot;coral&quot;>DESIGN.slides.md</span></p>
+      </div>
+
+      <div class=&quot;quote-card&quot;>
+        <p class=&quot;quote-eyebrow&quot;>Pull quote · interview · 2023</p>
+        <p class=&quot;quote&quot;>&quot;We don't need to <span class=&quot;coral&quot;>talk much</span> on stage — we already know where the other one is going.&quot;</p>
+        <div class=&quot;quote-attribution&quot;>
+          <p class=&quot;name&quot;>Danielle Marsh</p>
+          <p class=&quot;role&quot;>on Haerin · NewJeans</p>
+        </div>
+      </div>
+    </div>
+
+    <div class=&quot;footer-strip&quot;>
+      <p>slides-grab · long read</p>
+      <p>01 / 06</p>
+    </div>
+  </div>
+</body>
+</html>
+" sandbox="allow-same-origin"></iframe>
+        <iframe class="slide-frame" data-slide="2" srcdoc="<!DOCTYPE html>
+<html lang=&quot;en&quot;>
+<head>
+<base href=&quot;./&quot;>
+<script>
+(() => {
+  const slideFile = &quot;slide-02.html&quot;;
+  const localAssetPrefix = &quot;./assets/&quot;;
+  const absolutePathRe = /^(file:\/\/|\/Users\/|\/home\/|\/var\/|\/tmp\/|\/private\/|\/Volumes\/|[A-Za-z]:[\\/]|\\\\)/i;
+  const schemeRe = /^[a-z][a-z0-9+\-.]*:/i;
+  const prefix = '[slides-grab:image]';
+
+  function describeElement(element) {
+    if (!element || element.nodeType !== Node.ELEMENT_NODE) return '';
+    if (element === document.body) return 'body';
+
+    const parts = [];
+    let current = element;
+    while (current &amp;&amp; current.nodeType === Node.ELEMENT_NODE &amp;&amp; current !== document.body) {
+      let part = current.tagName.toLowerCase();
+      if (current.id) {
+        part += '#' + current.id;
+        parts.unshift(part);
+        break;
+      }
+      if (current.classList.length > 0) {
+        part += '.' + Array.from(current.classList).slice(0, 2).join('.');
+      }
+      parts.unshift(part);
+      current = current.parentElement;
+    }
+    return 'body > ' + parts.join(' > ');
+  }
+
+  function warn(message, detail) {
+    console.warn(prefix + ' ' + slideFile + ': ' + message, detail);
+  }
+
+  function fail(message, detail) {
+    console.error(prefix + ' ' + slideFile + ': ' + message, detail);
+  }
+
+  function validateAssetSource(kind, source, { allowEmpty = true, onNoncanonical = 'warn' } = {}) {
+    const value = (source || '').trim();
+    if (!value) {
+      return allowEmpty;
+    }
+    if (value.startsWith('data:')) {
+      return true;
+    }
+    if (value.startsWith('https://')) {
+      fail('remote ' + kind + ' URL is unsupported in saved slides; download it into ./assets/<file>', { src: value });
+      return false;
+    }
+    if (value.startsWith('http://')) {
+      fail('remote http:// ' + kind + ' URL is unsupported in saved slides; download it into ./assets/<file>', { src: value });
+      return false;
+    }
+    if (absolutePathRe.test(value) || value.startsWith('/')) {
+      fail('non-portable ' + kind + ' path is unsupported', { src: value });
+      return false;
+    }
+    if (schemeRe.test(value)) {
+      fail('unsupported ' + kind + ' URL scheme in saved slides; download it into ./assets/<file>', { src: value });
+      return false;
+    }
+    if (!value.startsWith(localAssetPrefix)) {
+      const report = onNoncanonical === 'fail' ? fail : warn;
+      report('noncanonical local ' + kind + ' path should use ./assets/<file>', { src: value });
+    }
+    return true;
+  }
+
+  function getVideoSources(video) {
+    const sources = [];
+    const directSrc = (video.getAttribute('src') || '').trim();
+    if (directSrc) {
+      sources.push(directSrc);
+    }
+    for (const source of video.querySelectorAll('source[src]')) {
+      const src = (source.getAttribute('src') || '').trim();
+      if (src) {
+        sources.push(src);
+      }
+    }
+    return sources;
+  }
+
+  window.addEventListener('error', (event) => {
+    const target = event.target;
+    if (target instanceof HTMLImageElement) {
+      const src = (target.getAttribute('src') || target.currentSrc || '').trim();
+      if (!src || src.startsWith('data:')) return;
+      if (src.startsWith(localAssetPrefix)) {
+        fail('missing local asset', { src });
+        return;
+      }
+      fail('image failed to load', { src });
+      return;
+    }
+
+    if (target instanceof HTMLVideoElement) {
+      const sources = getVideoSources(target);
+      if (sources.some((src) => src.startsWith(localAssetPrefix))) {
+        fail('missing local video asset', { sources });
+        return;
+      }
+      fail('video failed to load', { sources });
+      return;
+    }
+
+    if (target instanceof HTMLSourceElement &amp;&amp; target.parentElement instanceof HTMLVideoElement) {
+      const src = (target.getAttribute('src') || '').trim();
+      if (!src) return;
+      if (src.startsWith(localAssetPrefix)) {
+        fail('missing local video asset', { src });
+        return;
+      }
+      fail('video source failed to load', { src });
+    }
+  }, true);
+
+  window.addEventListener('DOMContentLoaded', () => {
+    for (const image of document.querySelectorAll('img[src]')) {
+      const src = (image.getAttribute('src') || '').trim();
+      validateAssetSource('image', src);
+    }
+
+    for (const video of document.querySelectorAll('video')) {
+      for (const src of getVideoSources(video)) {
+        validateAssetSource('video', src);
+      }
+
+      const poster = (video.getAttribute('poster') || '').trim();
+      if (poster) {
+        validateAssetSource('image', poster);
+      }
+    }
+
+    for (const element of document.body.querySelectorAll('*')) {
+      if (element === document.body) continue;
+      const backgroundImage = window.getComputedStyle(element).backgroundImage;
+      if (!backgroundImage || backgroundImage === 'none' || !backgroundImage.includes('url(')) continue;
+      fail('non-body background-image is not supported for slide content', {
+        element: describeElement(element),
+        backgroundImage,
+      });
+    }
+  });
+})();
+</script>
+<meta charset=&quot;UTF-8&quot; />
+<title>Haerin × Danielle — The Pair</title>
+<link rel=&quot;stylesheet&quot; href=&quot;https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css&quot; />
+<link href=&quot;https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap&quot; rel=&quot;stylesheet&quot; />
+<style>
+  html, body { margin: 0; padding: 0; }
+  body {
+    width: 720pt;
+    height: 405pt;
+    background: #faf9f5;
+    font-family: 'Inter', 'Pretendard', -apple-system, sans-serif;
+    color: #141413;
+    position: relative;
+    overflow: hidden;
+  }
+  .frame {
+    position: absolute;
+    inset: 0;
+    padding: 36pt 48pt;
+    box-sizing: border-box;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 28pt;
+    align-items: stretch;
+  }
+  .left {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  .eyebrow {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 10pt;
+    font-weight: 500;
+    letter-spacing: 1.5pt;
+    text-transform: uppercase;
+    color: #5a5852;
+    margin: 0 0 12pt 0;
+  }
+  .h2 {
+    font-family: 'Cormorant Garamond', 'Tiempos Headline', serif;
+    font-size: 38pt;
+    font-weight: 400;
+    line-height: 1.2;
+    letter-spacing: -1pt;
+    color: #141413;
+    margin: 0 0 14pt 0;
+  }
+  .h2 .coral { color: #cc785c; font-style: italic; font-weight: 500; }
+  .lede {
+    font-size: 13pt;
+    font-weight: 400;
+    line-height: 1.55;
+    color: #3d3b37;
+    margin: 0 0 18pt 0;
+    max-width: 320pt;
+  }
+  .pair-meta {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14pt;
+    padding-top: 16pt;
+    border-top: 1px solid #d8d1c0;
+  }
+  .pair-meta .col p:first-child {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 9pt;
+    color: #6b6657;
+    margin: 0 0 4pt 0;
+    letter-spacing: 0.4pt;
+    text-transform: uppercase;
+  }
+  .pair-meta .col p:nth-child(2) {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 20pt;
+    font-weight: 500;
+    color: #141413;
+    margin: 0 0 2pt 0;
+    letter-spacing: -0.4pt;
+  }
+  .pair-meta .col p:nth-child(3) {
+    font-size: 11pt;
+    color: #5a5852;
+    margin: 0;
+    line-height: 1.4;
+  }
+
+  .right-card {
+    background: #181715;
+    border-radius: 14pt;
+    padding: 24pt;
+    color: #f0ece4;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    position: relative;
+  }
+  .card-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 18pt;
+  }
+  .card-head .label {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 10pt;
+    color: #8a857a;
+    margin: 0;
+    letter-spacing: 0.6pt;
+    text-transform: uppercase;
+  }
+  .dot-row { display: flex; gap: 5pt; }
+  .dot { width: 7pt; height: 7pt; border-radius: 50%; background: #2a2825; }
+  .dot.live { background: #5db8a6; }
+
+  .profile-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 14pt;
+    padding: 12pt 0;
+    border-top: 1px solid #252320;
+  }
+  .profile-row:first-of-type { border-top: none; padding-top: 0; }
+  .avatar {
+    width: 36pt;
+    height: 36pt;
+    border-radius: 50%;
+    background: #cc785c;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    color: #ffffff;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 18pt;
+    font-weight: 500;
+  }
+  .avatar.teal { background: #5db8a6; }
+  .profile-row .info {
+    flex: 1;
+  }
+  .profile-row .name {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 19pt;
+    font-weight: 500;
+    color: #f0ece4;
+    margin: 0 0 2pt 0;
+    letter-spacing: -0.3pt;
+  }
+  .profile-row .meta {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 10pt;
+    color: #8a857a;
+    margin: 0 0 6pt 0;
+    letter-spacing: 0.2pt;
+  }
+  .profile-row .note {
+    font-size: 11pt;
+    line-height: 1.5;
+    color: #c8c3b6;
+    margin: 0;
+  }
+  .card-footer {
+    padding-top: 14pt;
+    border-top: 1px solid #252320;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .card-footer .stamp {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 9pt;
+    color: #6f6a5e;
+    margin: 0;
+    letter-spacing: 0.4pt;
+  }
+  .pill-amber {
+    background: rgba(232, 165, 90, 0.18);
+    color: #e8a55a;
+    font-size: 9pt;
+    font-weight: 500;
+    padding: 3pt 8pt;
+    border-radius: 999pt;
+    letter-spacing: 0.6pt;
+    text-transform: uppercase;
+  }
+  .page-no {
+    position: absolute;
+    bottom: 14pt;
+    right: 28pt;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 9pt;
+    color: #6b6657;
+    margin: 0;
+  }
+</style>
+</head>
+<body>
+  <div class=&quot;frame&quot;>
+    <div class=&quot;left&quot;>
+      <p class=&quot;eyebrow&quot;>02 · The Pair · ADOR trainee 2020–2021</p>
+      <h2 class=&quot;h2&quot;>Two members,<br /><span class=&quot;coral&quot;>one understanding.</span></h2>
+      <p class=&quot;lede&quot;>Haerin and Danielle joined ADOR's training program within months of each other. By debut, the two vocalists had already split the group's high–low register between them.</p>
+      <div class=&quot;pair-meta&quot;>
+        <div class=&quot;col&quot;>
+          <p>Voice ↑</p>
+          <p>Danielle</p>
+          <p>Airy lead, English-leaning</p>
+        </div>
+        <div class=&quot;col&quot;>
+          <p>Voice ↓</p>
+          <p>Haerin</p>
+          <p>Grounded tone, Korean-leaning</p>
+        </div>
+      </div>
+    </div>
+
+    <div class=&quot;right-card&quot;>
+      <div class=&quot;card-head&quot;>
+        <p class=&quot;label&quot;>members.json</p>
+        <div class=&quot;dot-row&quot;>
+          <div class=&quot;dot&quot;></div>
+          <div class=&quot;dot&quot;></div>
+          <div class=&quot;dot live&quot;></div>
+        </div>
+      </div>
+
+      <div class=&quot;profile-row&quot;>
+        <div class=&quot;avatar&quot;>H</div>
+        <div class=&quot;info&quot;>
+          <p class=&quot;name&quot;>Kang Haerin · 강해린</p>
+          <p class=&quot;meta&quot;>2006 · Seongnam · KR · vocal/visual</p>
+          <p class=&quot;note&quot;>&quot;On stage I look for her first — it tells me where I am in the song.&quot;</p>
+        </div>
+      </div>
+
+      <div class=&quot;profile-row&quot;>
+        <div class=&quot;avatar teal&quot;>D</div>
+        <div class=&quot;info&quot;>
+          <p class=&quot;name&quot;>Danielle Marsh · 다니엘</p>
+          <p class=&quot;meta&quot;>2005 · Newcastle, AU → Seoul · vocal · AU/KR</p>
+          <p class=&quot;note&quot;>&quot;Haerin and I just understand each other quietly. It saves so much energy.&quot;</p>
+        </div>
+      </div>
+
+      <div class=&quot;card-footer&quot;>
+        <p class=&quot;stamp&quot;>model: dynamics-v2 · last update 2024-11</p>
+        <span class=&quot;pill-amber&quot;>Pairing</span>
+      </div>
+
+      <p class=&quot;page-no&quot;>02 / 06</p>
+    </div>
+  </div>
+</body>
+</html>
+" sandbox="allow-same-origin"></iframe>
+        <iframe class="slide-frame" data-slide="3" srcdoc="<!DOCTYPE html>
+<html lang=&quot;en&quot;>
+<head>
+<base href=&quot;./&quot;>
+<script>
+(() => {
+  const slideFile = &quot;slide-03.html&quot;;
+  const localAssetPrefix = &quot;./assets/&quot;;
+  const absolutePathRe = /^(file:\/\/|\/Users\/|\/home\/|\/var\/|\/tmp\/|\/private\/|\/Volumes\/|[A-Za-z]:[\\/]|\\\\)/i;
+  const schemeRe = /^[a-z][a-z0-9+\-.]*:/i;
+  const prefix = '[slides-grab:image]';
+
+  function describeElement(element) {
+    if (!element || element.nodeType !== Node.ELEMENT_NODE) return '';
+    if (element === document.body) return 'body';
+
+    const parts = [];
+    let current = element;
+    while (current &amp;&amp; current.nodeType === Node.ELEMENT_NODE &amp;&amp; current !== document.body) {
+      let part = current.tagName.toLowerCase();
+      if (current.id) {
+        part += '#' + current.id;
+        parts.unshift(part);
+        break;
+      }
+      if (current.classList.length > 0) {
+        part += '.' + Array.from(current.classList).slice(0, 2).join('.');
+      }
+      parts.unshift(part);
+      current = current.parentElement;
+    }
+    return 'body > ' + parts.join(' > ');
+  }
+
+  function warn(message, detail) {
+    console.warn(prefix + ' ' + slideFile + ': ' + message, detail);
+  }
+
+  function fail(message, detail) {
+    console.error(prefix + ' ' + slideFile + ': ' + message, detail);
+  }
+
+  function validateAssetSource(kind, source, { allowEmpty = true, onNoncanonical = 'warn' } = {}) {
+    const value = (source || '').trim();
+    if (!value) {
+      return allowEmpty;
+    }
+    if (value.startsWith('data:')) {
+      return true;
+    }
+    if (value.startsWith('https://')) {
+      fail('remote ' + kind + ' URL is unsupported in saved slides; download it into ./assets/<file>', { src: value });
+      return false;
+    }
+    if (value.startsWith('http://')) {
+      fail('remote http:// ' + kind + ' URL is unsupported in saved slides; download it into ./assets/<file>', { src: value });
+      return false;
+    }
+    if (absolutePathRe.test(value) || value.startsWith('/')) {
+      fail('non-portable ' + kind + ' path is unsupported', { src: value });
+      return false;
+    }
+    if (schemeRe.test(value)) {
+      fail('unsupported ' + kind + ' URL scheme in saved slides; download it into ./assets/<file>', { src: value });
+      return false;
+    }
+    if (!value.startsWith(localAssetPrefix)) {
+      const report = onNoncanonical === 'fail' ? fail : warn;
+      report('noncanonical local ' + kind + ' path should use ./assets/<file>', { src: value });
+    }
+    return true;
+  }
+
+  function getVideoSources(video) {
+    const sources = [];
+    const directSrc = (video.getAttribute('src') || '').trim();
+    if (directSrc) {
+      sources.push(directSrc);
+    }
+    for (const source of video.querySelectorAll('source[src]')) {
+      const src = (source.getAttribute('src') || '').trim();
+      if (src) {
+        sources.push(src);
+      }
+    }
+    return sources;
+  }
+
+  window.addEventListener('error', (event) => {
+    const target = event.target;
+    if (target instanceof HTMLImageElement) {
+      const src = (target.getAttribute('src') || target.currentSrc || '').trim();
+      if (!src || src.startsWith('data:')) return;
+      if (src.startsWith(localAssetPrefix)) {
+        fail('missing local asset', { src });
+        return;
+      }
+      fail('image failed to load', { src });
+      return;
+    }
+
+    if (target instanceof HTMLVideoElement) {
+      const sources = getVideoSources(target);
+      if (sources.some((src) => src.startsWith(localAssetPrefix))) {
+        fail('missing local video asset', { sources });
+        return;
+      }
+      fail('video failed to load', { sources });
+      return;
+    }
+
+    if (target instanceof HTMLSourceElement &amp;&amp; target.parentElement instanceof HTMLVideoElement) {
+      const src = (target.getAttribute('src') || '').trim();
+      if (!src) return;
+      if (src.startsWith(localAssetPrefix)) {
+        fail('missing local video asset', { src });
+        return;
+      }
+      fail('video source failed to load', { src });
+    }
+  }, true);
+
+  window.addEventListener('DOMContentLoaded', () => {
+    for (const image of document.querySelectorAll('img[src]')) {
+      const src = (image.getAttribute('src') || '').trim();
+      validateAssetSource('image', src);
+    }
+
+    for (const video of document.querySelectorAll('video')) {
+      for (const src of getVideoSources(video)) {
+        validateAssetSource('video', src);
+      }
+
+      const poster = (video.getAttribute('poster') || '').trim();
+      if (poster) {
+        validateAssetSource('image', poster);
+      }
+    }
+
+    for (const element of document.body.querySelectorAll('*')) {
+      if (element === document.body) continue;
+      const backgroundImage = window.getComputedStyle(element).backgroundImage;
+      if (!backgroundImage || backgroundImage === 'none' || !backgroundImage.includes('url(')) continue;
+      fail('non-body background-image is not supported for slide content', {
+        element: describeElement(element),
+        backgroundImage,
+      });
+    }
+  });
+})();
+</script>
+<meta charset=&quot;UTF-8&quot; />
+<title>Haerin × Danielle — On Stage</title>
+<link rel=&quot;stylesheet&quot; href=&quot;https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css&quot; />
+<link href=&quot;https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap&quot; rel=&quot;stylesheet&quot; />
+<style>
+  html, body { margin: 0; padding: 0; }
+  body {
+    width: 720pt;
+    height: 405pt;
+    background: #faf9f5;
+    font-family: 'Inter', 'Pretendard', sans-serif;
+    color: #141413;
+    position: relative;
+    overflow: hidden;
+  }
+  .frame {
+    position: absolute;
+    inset: 0;
+    padding: 24pt 48pt;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+  }
+  .head {
+    margin-bottom: 14pt;
+  }
+  .eyebrow {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 10pt;
+    font-weight: 500;
+    letter-spacing: 1.5pt;
+    text-transform: uppercase;
+    color: #5a5852;
+    margin: 0 0 10pt 0;
+  }
+  .h2 {
+    font-family: 'Cormorant Garamond', 'Tiempos Headline', serif;
+    font-size: 28pt;
+    font-weight: 400;
+    line-height: 1.25;
+    letter-spacing: -0.6pt;
+    color: #141413;
+    margin: 0 0 6pt 0;
+  }
+  .h2 .coral { color: #cc785c; font-style: italic; font-weight: 500; }
+  .lede {
+    font-size: 12pt;
+    color: #3d3b37;
+    line-height: 1.55;
+    margin: 0;
+    max-width: 540pt;
+  }
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14pt;
+    flex: 1;
+  }
+  .card {
+    background: #efe9de;
+    border-radius: 12pt;
+    padding: 16pt;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    overflow: hidden;
+  }
+  .card-no {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 10pt;
+    font-weight: 500;
+    color: #cc785c;
+    margin: 0 0 8pt 0;
+    letter-spacing: 0.6pt;
+  }
+  .track {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 22pt;
+    font-weight: 500;
+    color: #141413;
+    margin: 0 0 6pt 0;
+    line-height: 1.25;
+    letter-spacing: -0.4pt;
+  }
+  .note {
+    font-size: 10pt;
+    color: #3d3b37;
+    line-height: 1.5;
+    margin: 0 0 10pt 0;
+  }
+  .duet-row {
+    display: flex;
+    align-items: center;
+    gap: 8pt;
+    padding-top: 12pt;
+    border-top: 1px solid #d8d1c0;
+  }
+  .who {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 10pt;
+    color: #5a5852;
+    letter-spacing: 0.3pt;
+  }
+  .who .h { color: #cc785c; }
+  .who .d { color: #5db8a6; }
+  .footer {
+    margin-top: 12pt;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 10pt;
+    border-top: 1px solid #d8d1c0;
+    flex-shrink: 0;
+  }
+  .footer p {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 9pt;
+    color: #6b6657;
+    margin: 0;
+    letter-spacing: 0.4pt;
+  }
+</style>
+</head>
+<body>
+  <div class=&quot;frame&quot;>
+    <div class=&quot;head&quot;>
+      <p class=&quot;eyebrow&quot;>03 · On Stage · The harmony as connective tissue</p>
+      <h2 class=&quot;h2&quot;>Their harmony is the group's <span class=&quot;coral&quot;>spine.</span></h2>
+      <p class=&quot;lede&quot;>Across the singles, Haerin and Danielle keep handing the melody back and forth — sometimes inside a single bar. It's the most quietly engineered part of NewJeans.</p>
+    </div>
+
+    <div class=&quot;cards&quot;>
+      <div class=&quot;card&quot;>
+        <div>
+          <p class=&quot;card-no&quot;>TRK · 01 · 2022</p>
+          <p class=&quot;track&quot;>Hype Boy</p>
+          <p class=&quot;note&quot;>Danielle opens the verse, Haerin lands the second-verse hook on the same airy syllable. The handoff is one breath wide.</p>
+        </div>
+        <div class=&quot;duet-row&quot;>
+          <span class=&quot;who&quot;><span class=&quot;d&quot;>DANIELLE</span> → <span class=&quot;h&quot;>HAERIN</span></span>
+        </div>
+      </div>
+
+      <div class=&quot;card&quot;>
+        <div>
+          <p class=&quot;card-no&quot;>TRK · 02 · 2022</p>
+          <p class=&quot;track&quot;>Ditto</p>
+          <p class=&quot;note&quot;>The duet bridge the entire MV pivots on — Haerin's low line under Danielle's keening top sits the song's emotional beat right between them.</p>
+        </div>
+        <div class=&quot;duet-row&quot;>
+          <span class=&quot;who&quot;><span class=&quot;h&quot;>HAERIN</span> + <span class=&quot;d&quot;>DANIELLE</span></span>
+        </div>
+      </div>
+
+      <div class=&quot;card&quot;>
+        <div>
+          <p class=&quot;card-no&quot;>TRK · 03 · 2023</p>
+          <p class=&quot;track&quot;>Cool With You</p>
+          <p class=&quot;note&quot;>Haerin's whisper-tone slides under Danielle's airy lead. The track barely modulates — the dynamic comes entirely from their two voices alternating.</p>
+        </div>
+        <div class=&quot;duet-row&quot;>
+          <span class=&quot;who&quot;><span class=&quot;h&quot;>HAERIN</span> ↔ <span class=&quot;d&quot;>DANIELLE</span></span>
+        </div>
+      </div>
+    </div>
+
+    <div class=&quot;footer&quot;>
+      <p>source: discography 2022–2023</p>
+      <p>03 / 06</p>
+    </div>
+  </div>
+</body>
+</html>
+" sandbox="allow-same-origin"></iframe>
+        <iframe class="slide-frame" data-slide="4" srcdoc="<!DOCTYPE html>
+<html lang=&quot;en&quot;>
+<head>
+<base href=&quot;./&quot;>
+<script>
+(() => {
+  const slideFile = &quot;slide-04.html&quot;;
+  const localAssetPrefix = &quot;./assets/&quot;;
+  const absolutePathRe = /^(file:\/\/|\/Users\/|\/home\/|\/var\/|\/tmp\/|\/private\/|\/Volumes\/|[A-Za-z]:[\\/]|\\\\)/i;
+  const schemeRe = /^[a-z][a-z0-9+\-.]*:/i;
+  const prefix = '[slides-grab:image]';
+
+  function describeElement(element) {
+    if (!element || element.nodeType !== Node.ELEMENT_NODE) return '';
+    if (element === document.body) return 'body';
+
+    const parts = [];
+    let current = element;
+    while (current &amp;&amp; current.nodeType === Node.ELEMENT_NODE &amp;&amp; current !== document.body) {
+      let part = current.tagName.toLowerCase();
+      if (current.id) {
+        part += '#' + current.id;
+        parts.unshift(part);
+        break;
+      }
+      if (current.classList.length > 0) {
+        part += '.' + Array.from(current.classList).slice(0, 2).join('.');
+      }
+      parts.unshift(part);
+      current = current.parentElement;
+    }
+    return 'body > ' + parts.join(' > ');
+  }
+
+  function warn(message, detail) {
+    console.warn(prefix + ' ' + slideFile + ': ' + message, detail);
+  }
+
+  function fail(message, detail) {
+    console.error(prefix + ' ' + slideFile + ': ' + message, detail);
+  }
+
+  function validateAssetSource(kind, source, { allowEmpty = true, onNoncanonical = 'warn' } = {}) {
+    const value = (source || '').trim();
+    if (!value) {
+      return allowEmpty;
+    }
+    if (value.startsWith('data:')) {
+      return true;
+    }
+    if (value.startsWith('https://')) {
+      fail('remote ' + kind + ' URL is unsupported in saved slides; download it into ./assets/<file>', { src: value });
+      return false;
+    }
+    if (value.startsWith('http://')) {
+      fail('remote http:// ' + kind + ' URL is unsupported in saved slides; download it into ./assets/<file>', { src: value });
+      return false;
+    }
+    if (absolutePathRe.test(value) || value.startsWith('/')) {
+      fail('non-portable ' + kind + ' path is unsupported', { src: value });
+      return false;
+    }
+    if (schemeRe.test(value)) {
+      fail('unsupported ' + kind + ' URL scheme in saved slides; download it into ./assets/<file>', { src: value });
+      return false;
+    }
+    if (!value.startsWith(localAssetPrefix)) {
+      const report = onNoncanonical === 'fail' ? fail : warn;
+      report('noncanonical local ' + kind + ' path should use ./assets/<file>', { src: value });
+    }
+    return true;
+  }
+
+  function getVideoSources(video) {
+    const sources = [];
+    const directSrc = (video.getAttribute('src') || '').trim();
+    if (directSrc) {
+      sources.push(directSrc);
+    }
+    for (const source of video.querySelectorAll('source[src]')) {
+      const src = (source.getAttribute('src') || '').trim();
+      if (src) {
+        sources.push(src);
+      }
+    }
+    return sources;
+  }
+
+  window.addEventListener('error', (event) => {
+    const target = event.target;
+    if (target instanceof HTMLImageElement) {
+      const src = (target.getAttribute('src') || target.currentSrc || '').trim();
+      if (!src || src.startsWith('data:')) return;
+      if (src.startsWith(localAssetPrefix)) {
+        fail('missing local asset', { src });
+        return;
+      }
+      fail('image failed to load', { src });
+      return;
+    }
+
+    if (target instanceof HTMLVideoElement) {
+      const sources = getVideoSources(target);
+      if (sources.some((src) => src.startsWith(localAssetPrefix))) {
+        fail('missing local video asset', { sources });
+        return;
+      }
+      fail('video failed to load', { sources });
+      return;
+    }
+
+    if (target instanceof HTMLSourceElement &amp;&amp; target.parentElement instanceof HTMLVideoElement) {
+      const src = (target.getAttribute('src') || '').trim();
+      if (!src) return;
+      if (src.startsWith(localAssetPrefix)) {
+        fail('missing local video asset', { src });
+        return;
+      }
+      fail('video source failed to load', { src });
+    }
+  }, true);
+
+  window.addEventListener('DOMContentLoaded', () => {
+    for (const image of document.querySelectorAll('img[src]')) {
+      const src = (image.getAttribute('src') || '').trim();
+      validateAssetSource('image', src);
+    }
+
+    for (const video of document.querySelectorAll('video')) {
+      for (const src of getVideoSources(video)) {
+        validateAssetSource('video', src);
+      }
+
+      const poster = (video.getAttribute('poster') || '').trim();
+      if (poster) {
+        validateAssetSource('image', poster);
+      }
+    }
+
+    for (const element of document.body.querySelectorAll('*')) {
+      if (element === document.body) continue;
+      const backgroundImage = window.getComputedStyle(element).backgroundImage;
+      if (!backgroundImage || backgroundImage === 'none' || !backgroundImage.includes('url(')) continue;
+      fail('non-body background-image is not supported for slide content', {
+        element: describeElement(element),
+        backgroundImage,
+      });
+    }
+  });
+})();
+</script>
+<meta charset=&quot;UTF-8&quot; />
+<title>Haerin × Danielle — Off Stage</title>
+<link rel=&quot;stylesheet&quot; href=&quot;https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css&quot; />
+<link href=&quot;https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap&quot; rel=&quot;stylesheet&quot; />
+<style>
+  html, body { margin: 0; padding: 0; }
+  body {
+    width: 720pt;
+    height: 405pt;
+    background: #faf9f5;
+    font-family: 'Inter', 'Pretendard', sans-serif;
+    color: #141413;
+    position: relative;
+    overflow: hidden;
+  }
+  .frame {
+    position: absolute;
+    inset: 0;
+    padding: 24pt 48pt;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    gap: 14pt;
+  }
+  .eyebrow {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 10pt;
+    font-weight: 500;
+    letter-spacing: 1.5pt;
+    text-transform: uppercase;
+    color: #5a5852;
+    margin: 0;
+  }
+  .callout {
+    background: #cc785c;
+    border-radius: 16pt;
+    padding: 22pt 28pt;
+    color: #ffffff;
+    display: grid;
+    grid-template-columns: 1.5fr 1fr;
+    gap: 24pt;
+    align-items: center;
+  }
+  .callout .h-quote {
+    font-family: 'Cormorant Garamond', 'Tiempos Headline', serif;
+    font-size: 22pt;
+    font-weight: 400;
+    line-height: 1.35;
+    letter-spacing: -0.3pt;
+    margin: 0 0 12pt 0;
+    color: #fff8f4;
+  }
+  .callout .h-quote em {
+    font-style: italic;
+    color: #ffe8d8;
+  }
+  .callout .quote-foot {
+    display: flex;
+    align-items: center;
+    gap: 10pt;
+    padding-top: 14pt;
+    border-top: 1px solid rgba(255, 255, 255, 0.28);
+  }
+  .callout .quote-foot p {
+    margin: 0;
+  }
+  .callout .attribution {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 14pt;
+    font-weight: 500;
+    color: #fff8f4;
+  }
+  .callout .meta {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 10pt;
+    color: rgba(255, 248, 244, 0.7);
+    letter-spacing: 0.4pt;
+  }
+  .side {
+    background: rgba(255, 255, 255, 0.12);
+    border-radius: 12pt;
+    padding: 14pt;
+    backdrop-filter: blur(4pt);
+  }
+  .side .side-eyebrow {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 9pt;
+    color: rgba(255, 248, 244, 0.7);
+    margin: 0 0 10pt 0;
+    letter-spacing: 0.6pt;
+    text-transform: uppercase;
+  }
+  .side h3 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 15pt;
+    font-weight: 500;
+    line-height: 1.35;
+    color: #fff8f4;
+    margin: 0 0 8pt 0;
+    letter-spacing: -0.2pt;
+  }
+  .side ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .side li {
+    font-size: 9pt;
+    color: #fff8f4;
+    margin-bottom: 5pt;
+    line-height: 1.5;
+    display: flex;
+    gap: 6pt;
+    align-items: flex-start;
+  }
+  .side li::before {
+    content: &quot;—&quot;;
+    color: rgba(255, 255, 255, 0.7);
+    flex-shrink: 0;
+  }
+  .head-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .head-row h2 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 24pt;
+    font-weight: 400;
+    line-height: 1.3;
+    letter-spacing: -0.5pt;
+    color: #141413;
+    margin: 0;
+  }
+  .head-row h2 .coral { color: #cc785c; font-style: italic; font-weight: 500; }
+  .head-row .meta-pill {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 9pt;
+    color: #6b6657;
+    background: #efe9de;
+    padding: 5pt 10pt;
+    border-radius: 999pt;
+    letter-spacing: 0.4pt;
+    text-transform: uppercase;
+  }
+  .footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 6pt;
+  }
+  .footer p {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 9pt;
+    color: #6b6657;
+    margin: 0;
+    letter-spacing: 0.4pt;
+  }
+</style>
+</head>
+<body>
+  <div class=&quot;frame&quot;>
+    <p class=&quot;eyebrow&quot;>04 · Off Stage · The unguarded moments</p>
+    <div class=&quot;head-row&quot;>
+      <h2>The proof is in the <span class=&quot;coral&quot;>small frames.</span></h2>
+      <span class=&quot;meta-pill&quot;>Vlogs · Bubble · Fan-meet</span>
+    </div>
+
+    <div class=&quot;callout&quot;>
+      <div>
+        <p class=&quot;h-quote&quot;>&quot;<em>Danielle finishes my sentence in English.</em> I keep her in frame in Korean. That's basically the bit.&quot;</p>
+        <div class=&quot;quote-foot&quot;>
+          <div>
+            <p class=&quot;attribution&quot;>Kang Haerin · paraphrased</p>
+            <p class=&quot;meta&quot;>on the chemistry · Bubble chat 2024</p>
+          </div>
+        </div>
+      </div>
+      <div class=&quot;side&quot;>
+        <p class=&quot;side-eyebrow&quot;>Recurring beats</p>
+        <h3>Three patterns the fancams keep catching</h3>
+        <ul>
+          <li>Mid-interview language hand-off — KR → EN → KR in three seconds</li>
+          <li>Haerin's quiet camera-frame discipline; Danielle's verbal lead</li>
+          <li>Eye-contact check before every harmony switch</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class=&quot;footer&quot;>
+      <p>source: ADOR Bubble · NewJeans vlog 2024 · fancam compilations</p>
+      <p>04 / 06</p>
+    </div>
+  </div>
+</body>
+</html>
+" sandbox="allow-same-origin"></iframe>
+        <iframe class="slide-frame" data-slide="5" srcdoc="<!DOCTYPE html>
+<html lang=&quot;en&quot;>
+<head>
+<base href=&quot;./&quot;>
+<script>
+(() => {
+  const slideFile = &quot;slide-05.html&quot;;
+  const localAssetPrefix = &quot;./assets/&quot;;
+  const absolutePathRe = /^(file:\/\/|\/Users\/|\/home\/|\/var\/|\/tmp\/|\/private\/|\/Volumes\/|[A-Za-z]:[\\/]|\\\\)/i;
+  const schemeRe = /^[a-z][a-z0-9+\-.]*:/i;
+  const prefix = '[slides-grab:image]';
+
+  function describeElement(element) {
+    if (!element || element.nodeType !== Node.ELEMENT_NODE) return '';
+    if (element === document.body) return 'body';
+
+    const parts = [];
+    let current = element;
+    while (current &amp;&amp; current.nodeType === Node.ELEMENT_NODE &amp;&amp; current !== document.body) {
+      let part = current.tagName.toLowerCase();
+      if (current.id) {
+        part += '#' + current.id;
+        parts.unshift(part);
+        break;
+      }
+      if (current.classList.length > 0) {
+        part += '.' + Array.from(current.classList).slice(0, 2).join('.');
+      }
+      parts.unshift(part);
+      current = current.parentElement;
+    }
+    return 'body > ' + parts.join(' > ');
+  }
+
+  function warn(message, detail) {
+    console.warn(prefix + ' ' + slideFile + ': ' + message, detail);
+  }
+
+  function fail(message, detail) {
+    console.error(prefix + ' ' + slideFile + ': ' + message, detail);
+  }
+
+  function validateAssetSource(kind, source, { allowEmpty = true, onNoncanonical = 'warn' } = {}) {
+    const value = (source || '').trim();
+    if (!value) {
+      return allowEmpty;
+    }
+    if (value.startsWith('data:')) {
+      return true;
+    }
+    if (value.startsWith('https://')) {
+      fail('remote ' + kind + ' URL is unsupported in saved slides; download it into ./assets/<file>', { src: value });
+      return false;
+    }
+    if (value.startsWith('http://')) {
+      fail('remote http:// ' + kind + ' URL is unsupported in saved slides; download it into ./assets/<file>', { src: value });
+      return false;
+    }
+    if (absolutePathRe.test(value) || value.startsWith('/')) {
+      fail('non-portable ' + kind + ' path is unsupported', { src: value });
+      return false;
+    }
+    if (schemeRe.test(value)) {
+      fail('unsupported ' + kind + ' URL scheme in saved slides; download it into ./assets/<file>', { src: value });
+      return false;
+    }
+    if (!value.startsWith(localAssetPrefix)) {
+      const report = onNoncanonical === 'fail' ? fail : warn;
+      report('noncanonical local ' + kind + ' path should use ./assets/<file>', { src: value });
+    }
+    return true;
+  }
+
+  function getVideoSources(video) {
+    const sources = [];
+    const directSrc = (video.getAttribute('src') || '').trim();
+    if (directSrc) {
+      sources.push(directSrc);
+    }
+    for (const source of video.querySelectorAll('source[src]')) {
+      const src = (source.getAttribute('src') || '').trim();
+      if (src) {
+        sources.push(src);
+      }
+    }
+    return sources;
+  }
+
+  window.addEventListener('error', (event) => {
+    const target = event.target;
+    if (target instanceof HTMLImageElement) {
+      const src = (target.getAttribute('src') || target.currentSrc || '').trim();
+      if (!src || src.startsWith('data:')) return;
+      if (src.startsWith(localAssetPrefix)) {
+        fail('missing local asset', { src });
+        return;
+      }
+      fail('image failed to load', { src });
+      return;
+    }
+
+    if (target instanceof HTMLVideoElement) {
+      const sources = getVideoSources(target);
+      if (sources.some((src) => src.startsWith(localAssetPrefix))) {
+        fail('missing local video asset', { sources });
+        return;
+      }
+      fail('video failed to load', { sources });
+      return;
+    }
+
+    if (target instanceof HTMLSourceElement &amp;&amp; target.parentElement instanceof HTMLVideoElement) {
+      const src = (target.getAttribute('src') || '').trim();
+      if (!src) return;
+      if (src.startsWith(localAssetPrefix)) {
+        fail('missing local video asset', { src });
+        return;
+      }
+      fail('video source failed to load', { src });
+    }
+  }, true);
+
+  window.addEventListener('DOMContentLoaded', () => {
+    for (const image of document.querySelectorAll('img[src]')) {
+      const src = (image.getAttribute('src') || '').trim();
+      validateAssetSource('image', src);
+    }
+
+    for (const video of document.querySelectorAll('video')) {
+      for (const src of getVideoSources(video)) {
+        validateAssetSource('video', src);
+      }
+
+      const poster = (video.getAttribute('poster') || '').trim();
+      if (poster) {
+        validateAssetSource('image', poster);
+      }
+    }
+
+    for (const element of document.body.querySelectorAll('*')) {
+      if (element === document.body) continue;
+      const backgroundImage = window.getComputedStyle(element).backgroundImage;
+      if (!backgroundImage || backgroundImage === 'none' || !backgroundImage.includes('url(')) continue;
+      fail('non-body background-image is not supported for slide content', {
+        element: describeElement(element),
+        backgroundImage,
+      });
+    }
+  });
+})();
+</script>
+<meta charset=&quot;UTF-8&quot; />
+<title>Haerin × Danielle — Bilingual Bridge</title>
+<link rel=&quot;stylesheet&quot; href=&quot;https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css&quot; />
+<link href=&quot;https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap&quot; rel=&quot;stylesheet&quot; />
+<style>
+  html, body { margin: 0; padding: 0; }
+  body {
+    width: 720pt;
+    height: 405pt;
+    background: #faf9f5;
+    font-family: 'Inter', 'Pretendard', sans-serif;
+    color: #141413;
+    position: relative;
+    overflow: hidden;
+  }
+  .frame {
+    position: absolute;
+    inset: 0;
+    padding: 22pt 36pt;
+    box-sizing: border-box;
+    display: grid;
+    grid-template-columns: 0.9fr 1.3fr;
+    grid-template-rows: 1fr auto;
+    gap: 18pt 22pt;
+    align-items: stretch;
+  }
+  .left {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  .eyebrow {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 10pt;
+    font-weight: 500;
+    letter-spacing: 1.5pt;
+    text-transform: uppercase;
+    color: #5a5852;
+    margin: 0 0 12pt 0;
+  }
+  .h2 {
+    font-family: 'Cormorant Garamond', 'Tiempos Headline', serif;
+    font-size: 26pt;
+    font-weight: 400;
+    line-height: 1.25;
+    letter-spacing: -0.5pt;
+    color: #141413;
+    margin: 0 0 10pt 0;
+  }
+  .h2 .coral { color: #cc785c; font-style: italic; font-weight: 500; }
+  .lede {
+    font-size: 11pt;
+    color: #3d3b37;
+    line-height: 1.5;
+    margin: 0 0 14pt 0;
+    max-width: 300pt;
+  }
+  .legend {
+    display: flex;
+    flex-direction: column;
+    gap: 8pt;
+    padding-top: 14pt;
+    border-top: 1px solid #d8d1c0;
+  }
+  .legend-row {
+    display: flex;
+    align-items: center;
+    gap: 10pt;
+    font-size: 11pt;
+    color: #3d3b37;
+  }
+  .legend-row .swatch {
+    width: 9pt;
+    height: 9pt;
+    border-radius: 2pt;
+    flex-shrink: 0;
+  }
+  .legend-row .swatch.haerin { background: #cc785c; }
+  .legend-row .swatch.danielle { background: #5db8a6; }
+  .legend-row .swatch.silence { background: #8a857a; }
+  .legend-row .key {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 10pt;
+    color: #5a5852;
+    letter-spacing: 0.3pt;
+  }
+
+  .terminal {
+    background: #181715;
+    border-radius: 14pt;
+    padding: 14pt 18pt;
+    color: #f0ece4;
+    display: flex;
+    flex-direction: column;
+    gap: 8pt;
+    overflow: hidden;
+  }
+  .term-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 12pt;
+    border-bottom: 1px solid #252320;
+  }
+  .term-head .dots { display: flex; gap: 5pt; }
+  .dot { width: 7pt; height: 7pt; border-radius: 50%; }
+  .dot.r { background: #cc785c; }
+  .dot.a { background: #e8a55a; }
+  .dot.t { background: #5db8a6; }
+  .term-title {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 10pt;
+    color: #8a857a;
+    margin: 0;
+    letter-spacing: 0.4pt;
+  }
+  .term-meta {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 9pt;
+    color: #6f6a5e;
+    margin: 0;
+    letter-spacing: 0.4pt;
+  }
+  .transcript {
+    background: #1f1e1b;
+    border-radius: 10pt;
+    padding: 12pt 14pt;
+    display: flex;
+    flex-direction: column;
+    gap: 5pt;
+  }
+  .line {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 8.5pt;
+    line-height: 1.5;
+    margin: 0;
+    display: flex;
+    gap: 8pt;
+    align-items: baseline;
+  }
+  .line .ts { color: #6f6a5e; flex-shrink: 0; width: 32pt; }
+  .line .who { flex-shrink: 0; width: 56pt; font-weight: 500; letter-spacing: 0.3pt; }
+  .line.h .who { color: #cc785c; }
+  .line.d .who { color: #5db8a6; }
+  .line.s .who { color: #8a857a; }
+  .line .text { color: #d8d2c4; }
+  .line .text .h-mark { color: #cc785c; }
+  .line .text .d-mark { color: #5db8a6; }
+  .footer {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    padding-top: 8pt;
+    border-top: 1px solid #d8d1c0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .footer p {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 9pt;
+    color: #6b6657;
+    margin: 0;
+    letter-spacing: 0.4pt;
+  }
+</style>
+</head>
+<body>
+  <div class=&quot;frame&quot;>
+    <div class=&quot;left&quot;>
+      <p class=&quot;eyebrow&quot;>05 · Bilingual bridge</p>
+      <h2 class=&quot;h2&quot;>Korean, English, <span class=&quot;coral&quot;>silence.</span></h2>
+      <p class=&quot;lede&quot;>In interviews, the two switch languages mid-sentence and finish each other's. The most distinctive register, though, is the third one — the beat of quiet eye-contact between the two.</p>
+      <div class=&quot;legend&quot;>
+        <div class=&quot;legend-row&quot;><span class=&quot;swatch haerin&quot;></span><span class=&quot;key&quot;>HAERIN · Korean</span></div>
+        <div class=&quot;legend-row&quot;><span class=&quot;swatch danielle&quot;></span><span class=&quot;key&quot;>DANIELLE · English</span></div>
+        <div class=&quot;legend-row&quot;><span class=&quot;swatch silence&quot;></span><span class=&quot;key&quot;>SILENCE · eye-contact beat</span></div>
+      </div>
+    </div>
+
+    <div class=&quot;terminal&quot;>
+      <div class=&quot;term-head&quot;>
+        <div class=&quot;dots&quot;><span class=&quot;dot r&quot;></span><span class=&quot;dot a&quot;></span><span class=&quot;dot t&quot;></span></div>
+        <p class=&quot;term-title&quot;>interview-transcript.log · 2024-08</p>
+        <p class=&quot;term-meta&quot;>live</p>
+      </div>
+
+      <div class=&quot;transcript&quot;>
+        <p class=&quot;line d&quot;><span class=&quot;ts&quot;>00:02</span><span class=&quot;who&quot;>DANIELLE</span><span class=&quot;text&quot;>So we were trying to decide what to wear, and I just —</span></p>
+        <p class=&quot;line h&quot;><span class=&quot;ts&quot;>00:05</span><span class=&quot;who&quot;>HAERIN</span><span class=&quot;text&quot;>맞아. (<span class=&quot;d-mark&quot;>Yeah.</span>) 그냥 똑같은 거 입자고 했어.</span></p>
+        <p class=&quot;line d&quot;><span class=&quot;ts&quot;>00:08</span><span class=&quot;who&quot;>DANIELLE</span><span class=&quot;text&quot;>Same! Same. We didn't even talk about it that long.</span></p>
+        <p class=&quot;line s&quot;><span class=&quot;ts&quot;>00:11</span><span class=&quot;who&quot;>— silence —</span><span class=&quot;text&quot;>(both laughing, glance at each other)</span></p>
+        <p class=&quot;line h&quot;><span class=&quot;ts&quot;>00:14</span><span class=&quot;who&quot;>HAERIN</span><span class=&quot;text&quot;>우리 그런 거 잘해. (<span class=&quot;d-mark&quot;>We're good at that.</span>)</span></p>
+        <p class=&quot;line d&quot;><span class=&quot;ts&quot;>00:17</span><span class=&quot;who&quot;>DANIELLE</span><span class=&quot;text&quot;>Yeah, we don't really need to explain.</span></p>
+      </div>
+    </div>
+
+    <div class=&quot;footer&quot;>
+      <p>style: ./DESIGN.md · imported · claude</p>
+      <p>05 / 06</p>
+    </div>
+  </div>
+</body>
+</html>
+" sandbox="allow-same-origin"></iframe>
+        <iframe class="slide-frame" data-slide="6" srcdoc="<!DOCTYPE html>
+<html lang=&quot;en&quot;>
+<head>
+<base href=&quot;./&quot;>
+<script>
+(() => {
+  const slideFile = &quot;slide-06.html&quot;;
+  const localAssetPrefix = &quot;./assets/&quot;;
+  const absolutePathRe = /^(file:\/\/|\/Users\/|\/home\/|\/var\/|\/tmp\/|\/private\/|\/Volumes\/|[A-Za-z]:[\\/]|\\\\)/i;
+  const schemeRe = /^[a-z][a-z0-9+\-.]*:/i;
+  const prefix = '[slides-grab:image]';
+
+  function describeElement(element) {
+    if (!element || element.nodeType !== Node.ELEMENT_NODE) return '';
+    if (element === document.body) return 'body';
+
+    const parts = [];
+    let current = element;
+    while (current &amp;&amp; current.nodeType === Node.ELEMENT_NODE &amp;&amp; current !== document.body) {
+      let part = current.tagName.toLowerCase();
+      if (current.id) {
+        part += '#' + current.id;
+        parts.unshift(part);
+        break;
+      }
+      if (current.classList.length > 0) {
+        part += '.' + Array.from(current.classList).slice(0, 2).join('.');
+      }
+      parts.unshift(part);
+      current = current.parentElement;
+    }
+    return 'body > ' + parts.join(' > ');
+  }
+
+  function warn(message, detail) {
+    console.warn(prefix + ' ' + slideFile + ': ' + message, detail);
+  }
+
+  function fail(message, detail) {
+    console.error(prefix + ' ' + slideFile + ': ' + message, detail);
+  }
+
+  function validateAssetSource(kind, source, { allowEmpty = true, onNoncanonical = 'warn' } = {}) {
+    const value = (source || '').trim();
+    if (!value) {
+      return allowEmpty;
+    }
+    if (value.startsWith('data:')) {
+      return true;
+    }
+    if (value.startsWith('https://')) {
+      fail('remote ' + kind + ' URL is unsupported in saved slides; download it into ./assets/<file>', { src: value });
+      return false;
+    }
+    if (value.startsWith('http://')) {
+      fail('remote http:// ' + kind + ' URL is unsupported in saved slides; download it into ./assets/<file>', { src: value });
+      return false;
+    }
+    if (absolutePathRe.test(value) || value.startsWith('/')) {
+      fail('non-portable ' + kind + ' path is unsupported', { src: value });
+      return false;
+    }
+    if (schemeRe.test(value)) {
+      fail('unsupported ' + kind + ' URL scheme in saved slides; download it into ./assets/<file>', { src: value });
+      return false;
+    }
+    if (!value.startsWith(localAssetPrefix)) {
+      const report = onNoncanonical === 'fail' ? fail : warn;
+      report('noncanonical local ' + kind + ' path should use ./assets/<file>', { src: value });
+    }
+    return true;
+  }
+
+  function getVideoSources(video) {
+    const sources = [];
+    const directSrc = (video.getAttribute('src') || '').trim();
+    if (directSrc) {
+      sources.push(directSrc);
+    }
+    for (const source of video.querySelectorAll('source[src]')) {
+      const src = (source.getAttribute('src') || '').trim();
+      if (src) {
+        sources.push(src);
+      }
+    }
+    return sources;
+  }
+
+  window.addEventListener('error', (event) => {
+    const target = event.target;
+    if (target instanceof HTMLImageElement) {
+      const src = (target.getAttribute('src') || target.currentSrc || '').trim();
+      if (!src || src.startsWith('data:')) return;
+      if (src.startsWith(localAssetPrefix)) {
+        fail('missing local asset', { src });
+        return;
+      }
+      fail('image failed to load', { src });
+      return;
+    }
+
+    if (target instanceof HTMLVideoElement) {
+      const sources = getVideoSources(target);
+      if (sources.some((src) => src.startsWith(localAssetPrefix))) {
+        fail('missing local video asset', { sources });
+        return;
+      }
+      fail('video failed to load', { sources });
+      return;
+    }
+
+    if (target instanceof HTMLSourceElement &amp;&amp; target.parentElement instanceof HTMLVideoElement) {
+      const src = (target.getAttribute('src') || '').trim();
+      if (!src) return;
+      if (src.startsWith(localAssetPrefix)) {
+        fail('missing local video asset', { src });
+        return;
+      }
+      fail('video source failed to load', { src });
+    }
+  }, true);
+
+  window.addEventListener('DOMContentLoaded', () => {
+    for (const image of document.querySelectorAll('img[src]')) {
+      const src = (image.getAttribute('src') || '').trim();
+      validateAssetSource('image', src);
+    }
+
+    for (const video of document.querySelectorAll('video')) {
+      for (const src of getVideoSources(video)) {
+        validateAssetSource('video', src);
+      }
+
+      const poster = (video.getAttribute('poster') || '').trim();
+      if (poster) {
+        validateAssetSource('image', poster);
+      }
+    }
+
+    for (const element of document.body.querySelectorAll('*')) {
+      if (element === document.body) continue;
+      const backgroundImage = window.getComputedStyle(element).backgroundImage;
+      if (!backgroundImage || backgroundImage === 'none' || !backgroundImage.includes('url(')) continue;
+      fail('non-body background-image is not supported for slide content', {
+        element: describeElement(element),
+        backgroundImage,
+      });
+    }
+  });
+})();
+</script>
+<meta charset=&quot;UTF-8&quot; />
+<title>Haerin × Danielle — Closing</title>
+<link rel=&quot;stylesheet&quot; href=&quot;https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css&quot; />
+<link href=&quot;https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap&quot; rel=&quot;stylesheet&quot; />
+<style>
+  html, body { margin: 0; padding: 0; }
+  body {
+    width: 720pt;
+    height: 405pt;
+    background: #181715;
+    font-family: 'Inter', 'Pretendard', sans-serif;
+    color: #f0ece4;
+    position: relative;
+    overflow: hidden;
+  }
+  .frame {
+    position: absolute;
+    inset: 0;
+    padding: 16pt 32pt;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 8pt;
+  }
+  .top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 8pt;
+  }
+  .spike {
+    width: 14pt;
+    height: 14pt;
+    color: #f0ece4;
+  }
+  .wordmark {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 14pt;
+    font-weight: 500;
+    color: #f0ece4;
+    margin: 0;
+    letter-spacing: -0.3pt;
+  }
+  .eyebrow {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 10pt;
+    font-weight: 500;
+    letter-spacing: 1.5pt;
+    text-transform: uppercase;
+    color: #8a857a;
+    margin: 0;
+  }
+  .center {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 10pt;
+    flex: 1;
+  }
+  .lead-kicker {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 10pt;
+    font-weight: 500;
+    letter-spacing: 1.5pt;
+    text-transform: uppercase;
+    color: #cc785c;
+    margin: 0;
+  }
+  .h1 {
+    font-family: 'Cormorant Garamond', 'Tiempos Headline', serif;
+    font-size: 26pt;
+    font-weight: 400;
+    line-height: 1.3;
+    letter-spacing: -0.5pt;
+    color: #f8f5ec;
+    margin: 0;
+    max-width: 600pt;
+  }
+  .h1 .coral { color: #cc785c; font-style: italic; font-weight: 500; }
+  .h1 .strike {
+    color: #6f6a5e;
+    text-decoration: line-through;
+    text-decoration-color: #4a4742;
+    font-style: italic;
+  }
+  .sub {
+    font-size: 12pt;
+    line-height: 1.5;
+    color: #c8c3b6;
+    margin: 0;
+    max-width: 540pt;
+  }
+  .cta-row {
+    display: flex;
+    gap: 10pt;
+    margin-top: 4pt;
+  }
+  .cta-primary {
+    background: #cc785c;
+    color: #ffffff;
+    font-size: 12pt;
+    font-weight: 500;
+    padding: 10pt 18pt;
+    border-radius: 7pt;
+  }
+  .cta-secondary {
+    background: #252320;
+    color: #f0ece4;
+    font-size: 12pt;
+    font-weight: 500;
+    padding: 10pt 18pt;
+    border-radius: 7pt;
+  }
+  .footer-band {
+    border-top: 1px solid #252320;
+    padding-top: 10pt;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12pt;
+  }
+  .footer-col p:first-child {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 8pt;
+    color: #8a857a;
+    margin: 0 0 4pt 0;
+    letter-spacing: 0.6pt;
+    text-transform: uppercase;
+  }
+  .footer-col p:nth-child(n+2) {
+    font-size: 9pt;
+    color: #c8c3b6;
+    margin: 0 0 2pt 0;
+    line-height: 1.35;
+  }
+  .footer-col p .coral { color: #cc785c; }
+  .meta-bottom {
+    grid-column: 1 / -1;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 8pt;
+    border-top: 1px solid #252320;
+    margin-top: 4pt;
+  }
+  .meta-bottom p {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 8pt;
+    color: #6f6a5e;
+    margin: 0;
+    letter-spacing: 0.4pt;
+  }
+</style>
+</head>
+<body>
+  <div class=&quot;frame&quot;>
+    <div class=&quot;top&quot;>
+      <div class=&quot;brand&quot;>
+        <svg class=&quot;spike&quot; viewBox=&quot;0 0 24 24&quot; fill=&quot;currentColor&quot; aria-hidden=&quot;true&quot;>
+          <path d=&quot;M12 2 L13.3 9.6 L20.5 8.3 L14.7 12 L20.5 15.7 L13.3 14.4 L12 22 L10.7 14.4 L3.5 15.7 L9.3 12 L3.5 8.3 L10.7 9.6 Z&quot;/>
+        </svg>
+        <p class=&quot;wordmark&quot;>slides-grab · long read</p>
+      </div>
+      <p class=&quot;eyebrow&quot;>06 · Closing</p>
+    </div>
+
+    <div class=&quot;center&quot;>
+      <p class=&quot;lead-kicker&quot;>The thesis</p>
+      <h1 class=&quot;h1&quot;>Not a <span class=&quot;strike&quot;>ship.</span> Not a side plot. <br />A <span class=&quot;coral&quot;>working friendship</span> that holds the group together.</h1>
+      <p class=&quot;sub&quot;>Haerin and Danielle aren't a fan narrative. They're the part of NewJeans that explains why the harmonies, the camera framing, and the off-stage cadence all line up.</p>
+      <div class=&quot;cta-row&quot;>
+        <span class=&quot;cta-primary&quot;>Read the next issue →</span>
+        <span class=&quot;cta-secondary&quot;>Back to cover</span>
+      </div>
+    </div>
+
+    <div class=&quot;footer-band&quot;>
+      <div class=&quot;footer-col&quot;>
+        <p>Members</p>
+        <p>Haerin</p>
+        <p>Danielle</p>
+      </div>
+      <div class=&quot;footer-col&quot;>
+        <p>Tracks cited</p>
+        <p>Hype Boy</p>
+        <p>Ditto</p>
+        <p>Cool With You</p>
+      </div>
+      <div class=&quot;footer-col&quot;>
+        <p>Sources</p>
+        <p>ADOR Bubble</p>
+        <p>NewJeans vlog</p>
+      </div>
+      <div class=&quot;footer-col&quot;>
+        <p>Style</p>
+        <p><span class=&quot;coral&quot;>./DESIGN.md</span></p>
+        <p>claude · imported</p>
+      </div>
+      <div class=&quot;meta-bottom&quot;>
+        <p>slides-grab · DESIGN.md demo · 2026</p>
+        <p>06 / 06 · End of issue</p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
+" sandbox="allow-same-origin"></iframe>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const TOTAL = 6;
+    let current = 1;
+
+    const frames = document.querySelectorAll('.slide-frame');
+    const counter = document.getElementById('counter');
+    const btnPrev = document.getElementById('btn-prev');
+    const btnNext = document.getElementById('btn-next');
+    const scaler = document.getElementById('scaler');
+    const viewport = document.getElementById('viewport');
+
+    function goTo(n) {
+      n = Math.max(1, Math.min(TOTAL, n));
+      if (n === current) return;
+      frames[current - 1].classList.remove('active');
+      current = n;
+      frames[current - 1].classList.add('active');
+      counter.textContent = current + ' / ' + TOTAL;
+      btnPrev.disabled = current === 1;
+      btnNext.disabled = current === TOTAL;
+    }
+
+    function next() { goTo(current + 1); }
+    function prev() { goTo(current - 1); }
+
+    btnPrev.addEventListener('click', prev);
+    btnNext.addEventListener('click', next);
+    btnPrev.disabled = true;
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); next(); }
+      else if (e.key === 'ArrowLeft') { e.preventDefault(); prev(); }
+      else if (e.key === 'Home') { e.preventDefault(); goTo(1); }
+      else if (e.key === 'End') { e.preventDefault(); goTo(TOTAL); }
+      else if (e.key === 'f' || e.key === 'F') {
+        e.preventDefault();
+        toggleFullscreen();
+      }
+    });
+
+    function toggleFullscreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      } else {
+        document.exitFullscreen();
+      }
+    }
+    document.getElementById('btn-fs').addEventListener('click', toggleFullscreen);
+
+    function rescale() {
+      const vw = viewport.clientWidth;
+      const vh = viewport.clientHeight;
+      const slideW = scaler.offsetWidth;
+      const slideH = scaler.offsetHeight;
+      const scale = Math.min(vw / slideW, vh / slideH) * 0.95;
+      scaler.style.transform = 'scale(' + scale + ')';
+    }
+
+    window.addEventListener('resize', rescale);
+    document.addEventListener('fullscreenchange', () => setTimeout(rescale, 100));
+    rescale();
+  </script>
+</body>
+</html>
