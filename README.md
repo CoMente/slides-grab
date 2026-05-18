@@ -1,5 +1,7 @@
 <h1 align="center">slides-grab</h1>
 
+<p align="center"><a href="README-ko.md">한국어 README</a> | <a href="README.md">English</a></p>
+
 <p align="center">Select context for agents directly from AI-generated HTML slides</p>
 
 <p align="center">
