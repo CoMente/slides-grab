@@ -93,26 +93,106 @@ test('bundled preview html maps every runtime style by exact id or title', () =>
 test('design-diversity style guidance avoids direct gradient implementation instructions', () => {
   const directGradientPatterns = [
     /linear-gradient/i,
+    /mesh-gradient/i,
     /full-bleed\s+[^\n]*mesh gradient/i,
     /gradient vertical fill/i,
     /gradient arcs/i,
     /gradient fade area/i,
+    /gradient(?:[-\w\s]{0,40})\b(?:fill|fills|border|borders|arrow|arrows|beam|base line|dot|dots|text|arc|arcs|line|stroke|bar|chip|badge|bubble|number|pill|progress bar|glowing left bar)/i,
+    /(?:prism-)?gradient-text/i,
+    /gradient_a(?! asset)/i,
+    /gradients? allowed/i,
+    /gradient\s+\d+% alpha/i,
+    /(?:radial|vertical) gradient/i,
+    /vertical gradient sequence/i,
+    /그라디언트\s*(?:채움|fill|화살표|테두리|라인|텍스트)/i,
+    /그라데이션\s*(?:채움|fill|화살표|테두리|라인|텍스트)/i,
+    /그라디언트(?:를|로)?\s*[^\n]*(?:깔|발광|스트로크|커넥터|윤곽선|주인공)/i,
+    /그라데이션(?:을|으로)?\s*[^\n]*(?:깔|발광|스트로크|커넥터|윤곽선|주인공)/i,
+    /그라디언트(?:가)?\s*[^\n]*(?:채우|안개)/i,
+    /그라데이션(?:이)?\s*[^\n]*(?:채우|안개)/i,
+    /(?:다색|배경)[^\n]{0,30}그라디언트/i,
+    /(?:다색|배경)[^\n]{0,30}그라데이션/i,
+  ];
+  const assetOrFallbackQualifierPatterns = [
+    /\b(?:rasterized(?:\/svg|(?: png)?)?|png\/sharp|png|sharp|svg\/local[- ]asset|svg[- ]local[- ]asset|local[- ]asset|image asset)\b[\w\s\/-]{0,40}\b(?:gradient|duotone|prism|radial|mesh|vertical|fill|border|arrow|beam|line|dot|text|arc|bar|chip|badge|bubble|pill|progress|mesh-gradient)\b[\w\s\/-]{0,40}\b(?:asset|image|effect|fallback)\b/i,
+    /\b(?:gradient|duotone|prism|radial|mesh|vertical|fill|border|arrow|beam|line|dot|text|arc|bar|chip|badge|bubble|pill|progress)\b[^;,]{0,80}\b(?:as|uses?|using|render(?:ed)? as|with)\b[^;,]{0,40}\b(?:rasterized|png\/sharp|png|sharp|svg\/local[- ]asset|svg[- ]local[- ]asset|local[- ]asset|flat[- ]token fallback|solid fallback)\b/i,
+    /\b(?:flat[- ]token fallback|flat token|solid fallback)\b[^;,]{0,80}\b(?:gradient|duotone|prism|radial|mesh|vertical|fill|border|arrow|beam|line|dot|text|arc|bar|chip|badge|bubble|pill|progress)\b/i,
   ];
 
+  const qualifiedExamples = [
+    'gradient fill as rasterized PNG asset with flat-token fallback',
+    'gradient arrows as SVG/local asset; no CSS gradients',
+    'radial gradient as rasterized PNG asset with solid fallback',
+  ];
+  const unqualifiedExamples = [
+    'gradient fill; no CSS gradients',
+    'mesh-gradient',
+    'gradient_a',
+    'gradient 20% alpha',
+    '그라디언트 화살표',
+    'gradient fill; decorative icon should be SVG',
+    'gradient fill and decorative SVG icon',
+    'gradient fill and decorative PNG icon',
+    'gradient fill and decorative Sharp icon',
+    'SVG icon before gradient fill',
+    'PNG icon before gradient fill',
+    'Sharp icon before gradient fill',
+    '그라디언트 화살표; 장식 아이콘은 SVG 사용',
+    '그라디언트 fill 및 SVG 아이콘',
+    '배경은 항상 다색 그라디언트',
+  ];
+
+  const hasQualifiedGradientGuidance = (entry) => {
+    for (const pattern of directGradientPatterns) {
+      pattern.lastIndex = 0;
+      const match = pattern.exec(entry);
+      if (!match) continue;
+
+      const windowStart = Math.max(0, match.index - 48);
+      const nextSeparator = entry.slice(match.index).search(/[;,]|\s[-–—]\s/);
+      const phraseEnd = nextSeparator >= 0 ? match.index + nextSeparator : entry.length;
+      const windowEnd = Math.min(phraseEnd, match.index + match[0].length + 96);
+      const localGradientPhrase = entry.slice(windowStart, windowEnd);
+
+      if (!assetOrFallbackQualifierPatterns.some((qualifierPattern) => qualifierPattern.test(localGradientPhrase))) {
+        return false;
+      }
+    }
+
+    return true;
+  };
+
+  for (const entry of qualifiedExamples) {
+    assert.ok(
+      directGradientPatterns.some((pattern) => pattern.test(entry)) && hasQualifiedGradientGuidance(entry),
+      `${entry} should be treated as qualified gradient guidance`,
+    );
+  }
+
+  for (const entry of unqualifiedExamples) {
+    assert.ok(
+      directGradientPatterns.some((pattern) => pattern.test(entry)) && !hasQualifiedGradientGuidance(entry),
+      `${entry} should be treated as unqualified gradient guidance`,
+    );
+  }
+
   for (const style of listDesignStyles().filter((entry) => entry.collection === 'design-diversity')) {
-    const guidance = [
+    const prescriptiveEntries = [
       ...style.background,
       ...style.layout,
       ...style.signature,
       ...style.avoid,
-    ].join('\n');
+    ];
+    for (const entry of prescriptiveEntries) {
+      for (const pattern of directGradientPatterns) {
+        if (!pattern.test(entry)) continue;
 
-    for (const pattern of directGradientPatterns) {
-      assert.doesNotMatch(
-        guidance,
-        pattern,
-        `${style.id} should describe rasterized gradient assets or flat tokens instead of direct gradient implementation guidance`,
-      );
+        assert.ok(
+          hasQualifiedGradientGuidance(entry),
+          `${style.id} has unqualified prescriptive gradient guidance: ${entry}`,
+        );
+      }
     }
   }
 });

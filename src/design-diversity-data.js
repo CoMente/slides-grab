@@ -449,8 +449,8 @@ export const RAW_DESIGN_DIVERSITY_STYLES = [
       "shape.min_contrast: WCAG 4.5:1 (body text on panel)"
     ],
     "signature": [
-      "컬러풀 그라디언트 배경 위 부유하는 반투명 프로스티드 글래스 패널, 하이라이트 보더의 깊이감.",
-      "한눈에 알아보는 단서: (1) 콘텐츠가 반투명(불투명도 15~25%) 흰 패널 안에 담기고 패널 너머로 배경 그라디언트가 흐릿하게 비친다, (2) 패널 가장자리에 1px 밝은 하이라이트 보더, (3) 배경은 채도 높은 다색 그라디언트. 모든 패널이 유리처럼 떠 있다.",
+      "rasterized PNG/Sharp 다색 메시 배경 asset 또는 flat-token fallback 위 부유하는 반투명 프로스티드 글래스 패널, 하이라이트 보더의 깊이감.",
+      "한눈에 알아보는 단서: (1) 콘텐츠가 반투명(불투명도 15~25%) 흰 패널 안에 담기고 패널 너머로 rasterized PNG/Sharp 다색 메시 배경 asset 또는 flat-token fallback이 흐릿하게 비친다, (2) 패널 가장자리에 1px 밝은 하이라이트 보더, (3) 배경은 채도 높은 rasterized PNG/Sharp 다색 메시 asset 또는 flat-token fallback. 모든 패널이 유리처럼 떠 있고 CSS gradient는 금지한다.",
       "diagram.language: inside glass panel only; rounded nodes (12px) with 12% alpha chip fill; 1.5pt solid connectors; circular number badges; highlight = panel-text-color solid 100%, never alpha on text/connectors/badges",
       "diagram.node.shape: rounded square 12px radius",
       "diagram.node.size: 2.0in x 0.9in",
@@ -464,11 +464,11 @@ export const RAW_DESIGN_DIVERSITY_STYLES = [
       "**패널 불투명도를 55% 미만으로 내리기** — 텍스트가 메시 배경에 묻혀 판독 불가가 된다. 글래스 정체성은 블러와 보더로 살리고, 채움은 55%+ 유지.",
       "**텍스트에 알파(불투명도)를 걸어 흐리게 만들기** — 위계는 크기·굵기로만. 본문은 항상 솔리드 색(라이트=`#1A1A2E`, 다크=`#FFFFFF`).",
       "**밝은 라이트 패널 위에 흰 텍스트 / 어두운 다크 패널 위에 잉크 텍스트** — 패널 변형에 맞는 텍스트 색을 반드시 짝지어 4.5:1 대비를 확보.",
-      "그라디언트 배경 위에 패널·칩 없이 텍스트를 직접 올리기.",
+      "rasterized PNG/Sharp 다색 메시 배경 asset 위에 패널·칩 없이 텍스트를 직접 올리기.",
       "직각 모서리 — 모든 패널 크게 둥글게(24px).",
-      "단색 배경 — 배경은 항상 다색 그라디언트.",
+      "단색 배경 — 배경은 항상 rasterized PNG/Sharp 다색 메시 asset 또는 flat-token fallback.",
       "진한 그림자, 하드 섀도, 이모지·클립아트·스톡 아이콘.",
-      "배경 그라디언트를 보라-핑크 2색만 쓰기 — 4정점(보라/스카이/핑크/민트) 모두 사용.",
+      "배경 rasterized PNG/Sharp 메시 asset을 보라-핑크 2색만 쓰기 금지 — 4정점(보라/스카이/핑크/민트) 모두 사용하고 flat-token fallback을 제공.",
       "**아마추어 차트 회귀 금지:** 3D·입체 차트, 원근·기울임, 막대 그림자·광택·베벨, 무지개·계열별 색칠, 격자선 과다, 차트 테두리 박스, 차트 배경 채움, 범례 박스, 잘린 y축·확대 축척, 다중 도넛, 파이 조각 5개 이상, div 블록 막대. 데이터 도형에 반투명 알파를 걸어 흐리게 만들지 않는다(솔리드 100%). 차트는 메시 배경 위 직접 금지 — 반드시 패널 안."
     ],
     "collection": "design-diversity"
@@ -674,7 +674,7 @@ export const RAW_DESIGN_DIVERSITY_STYLES = [
       "둥근 큰 모서리(8px 초과), 파스텔 색, 그라디언트 배경.",
       "이모지·클립아트·스톡 아이콘.",
       "모노 라벨 없이 일반 산세리프로만 라벨링 — 메타 라벨·차트 수치 라벨은 모노 필수.",
-      "**아마추어 차트 회귀 금지:** 3D·입체 차트, 부드러운 확산 그림자(깊이는 네온 글로우로), 무지개·계열별 색칠(시안·바이올렛 2색만), 막대 그라디언트 채움, 격자선 과다·격자선 발광, 차트 테두리 박스, 잘린 y축. 차트 수치 라벨을 일반 산세리프로 쓰기."
+      "**아마추어 차트 회귀 금지:** 3D·입체 차트, 부드러운 확산 그림자(깊이는 네온 글로우로), 무지개·계열별 색칠(시안·바이올렛 2색만), 막대 CSS gradient 사용, 격자선 과다·격자선 발광, 차트 테두리 박스, 잘린 y축. 차트 수치 라벨을 일반 산세리프로 쓰기."
     ],
     "collection": "design-diversity"
   },
@@ -881,7 +881,7 @@ export const RAW_DESIGN_DIVERSITY_STYLES = [
       "둥근 큰 모서리(8px 초과), 그라디언트 배경.",
       "이모지·클립아트. 아이콘은 라인 아이콘만.",
       "KPI 숫자를 본문 크기로 — 주 지표는 반드시 크게(40pt).",
-      "**아마추어 차트 회귀 금지:** 3D·입체 막대·입체 도넛, 막대/조각 그림자·베벨, 무지개·계열별 난색 색칠(데이터 4색만 순서대로), 막대 그라디언트 채움, 격자선 과다(2~3개만)·범례 박스, 차트 테두리 박스·플롯 배경 채움, 잘린 y축(0 기준선 필수), 값 레이블을 일반 텍스트 크기로 키우기, 출처 누락. 도넛 조각 4개 이상·다중 도넛 금지."
+      "**아마추어 차트 회귀 금지:** 3D·입체 막대·입체 도넛, 막대/조각 그림자·베벨, 무지개·계열별 난색 색칠(데이터 4색만 순서대로), 막대 CSS gradient 사용, 격자선 과다(2~3개만)·범례 박스, 차트 테두리 박스·플롯 배경 채움, 잘린 y축(0 기준선 필수), 값 레이블을 일반 텍스트 크기로 키우기, 출처 누락. 도넛 조각 4개 이상·다중 도넛 금지."
     ],
     "collection": "design-diversity"
   },
@@ -996,7 +996,7 @@ export const RAW_DESIGN_DIVERSITY_STYLES = [
       "부드럽고 친근한 톤, 이모지, 클립아트, 일러스트.",
       "본문을 6줄 넘게 채우기.",
       "룰 라인 없이 여백만으로 구획 — 구획은 두꺼운 룰로 명시.",
-      "**아마추어 차트 회귀 금지:** 3D·입체 막대·입체 도넛, 막대/조각 그림자·베벨, 색 사용(무채색 명도만), 막대 그라디언트 채움, 회색 3단계 이상 동시 사용(혼탁), 격자선 과다(1개만)·범례 박스, 차트 테두리 박스·플롯 배경 채움, 잘린 y축(0 기준선 필수), 둥근 막대(직각 0px), 값 레이블 누락·출처 누락."
+      "**아마추어 차트 회귀 금지:** 3D·입체 막대·입체 도넛, 막대/조각 그림자·베벨, 색 사용(무채색 명도만), 막대 CSS gradient 사용, 회색 3단계 이상 동시 사용(혼탁), 격자선 과다(1개만)·범례 박스, 차트 테두리 박스·플롯 배경 채움, 잘린 y축(0 기준선 필수), 둥근 막대(직각 0px), 값 레이블 누락·출처 누락."
     ],
     "collection": "design-diversity"
   },
@@ -1365,7 +1365,7 @@ export const RAW_DESIGN_DIVERSITY_STYLES = [
     "bestFor": "design-diversity standard · vivid-gradient-future",
     "id": "ppt-vivid-gradient-future",
     "background": [
-      "Bg: `mesh-gradient`",
+      "Bg asset: rasterized PNG/Sharp mesh-gradient image; flat fallback #3A1C71; no CSS gradients",
       "Surface: `rgba(255,255,255,0.12)`"
     ],
     "colors": [
@@ -1460,8 +1460,8 @@ export const RAW_DESIGN_DIVERSITY_STYLES = [
       "shape.decor: sphere-3d, ribbon, fluid-blob, glow-curve"
     ],
     "signature": [
-      "채도 높은 다색 메시 그라디언트가 배경을 채우고 발광 곡선·추상 3D가 부유하는 미래 비전 톤.",
-      "미래지향 AI/테크 비전 톤. 채도 높은 다색 메시 그라디언트가 슬라이드 배경 전면을 풀블리드로 채우고, 발광 곡선과 추상 3D 형태(구·리본·매끄러운 블롭)가 그 위에 부유한다. 굵은 기하 산세리프가 그라디언트 위에서 또렷이 외친다 — 한눈에 \"차세대 테크 키노트\"로 식별된다.",
+      "채도 높은 다색 메시 효과를 rasterized PNG/Sharp 배경 asset 또는 flat-token fallback으로 채우고 발광 곡선·추상 3D가 부유하는 미래 비전 톤.",
+      "미래지향 AI/테크 비전 톤. 채도 높은 다색 메시 효과를 rasterized PNG/Sharp 배경 asset 또는 flat-token fallback으로 슬라이드 배경 전면에 풀블리드로 채우고, 발광 곡선과 추상 3D 형태(구·리본·매끄러운 블롭)가 그 위에 부유한다. 굵은 기하 산세리프가 rasterized/SVG asset 또는 flat-token fallback 위에서 또렷이 외친다 — 한눈에 \"차세대 테크 키노트\"로 식별된다.",
       "diagram.render: svg",
       "diagram.node_shape: glass card radius 20pt, rgba(255,255,255,0.12) fill + 1pt rgba(255,255,255,0.30) border",
       "diagram.connector: vertex-color 2.5pt stroke + outer-glow blur 12pt 40%, glowing arrowhead",
@@ -1473,10 +1473,10 @@ export const RAW_DESIGN_DIVERSITY_STYLES = [
     ],
     "avoid": [
       "디폴트 보라-핑크 2색 그라디언트 금지 — 지정된 4정점 메시 hex만.",
-      "무채색·플랫 단색 배경 금지. 배경은 항상 메시 그라디언트.",
+      "무채색·플랫 단색 배경 금지. 배경은 항상 rasterized PNG/Sharp 메시 asset 또는 flat-token fallback으로 구현.",
       "검정 보더·검정 하드 섀도 금지 — 글로우만.",
       "각진 직각 카드 금지 — 모서리 반경 20pt 유지.",
-      "슬라이드마다 동일 그라디언트 배경 반복 금지.",
+      "슬라이드마다 동일 rasterized PNG/Sharp 메시 배경 asset 반복 금지.",
       "이모지·클립아트·플랫 2D 아이콘 금지. 장식은 3D 형태·발광 곡선으로만.",
       "**차트 금지사항(아마추어 회귀 차단):** 3D 원근 막대·입체 파이 금지(3D처럼 보여도 실제 3D 차트 위젯 금지 — 깊이는 글로우로만). 검정 하드 섀도 금지. 격자선 금지. 범례 박스 금지. 무지개색 다계열 금지 — 지정 정점색만. 잘린 y축 금지. 데이터 영역 테두리 박스 금지. div·표 셀 막대 금지 — SVG 정밀 렌더."
     ],
@@ -2703,22 +2703,22 @@ export const RAW_DESIGN_DIVERSITY_STYLES = [
       "shape.radius: 0px",
       "shape.border: none",
       "shape.shadow: none",
-      "shape.color_block: flat duotone gradient fill, edge-to-edge, overlap 10-20% allowed"
+      "shape.color_block: rasterized PNG/Sharp duotone fill asset, edge-to-edge, overlap 10-20% allowed; flat fallback #FF4D00 or #7C3AED for HTML shapes; no CSS gradient"
     ],
     "signature": [
-      "다크 캔버스에 활기찬 듀오톤 그라디언트를 면적으로 깔고 초대형 와이드 디스플레이로 한 슬라이드 한 메시지를 외치는 표현적 덱.",
-      "한눈에 알아보는 단서: (1) 거의 검정 `#121212` 배경에 듀오톤 그라디언트 컬러 블록을 면적으로 크고 대담하게 깐다, (2) 와이드한 그로테스크 디스플레이를 초대형으로 슬라이드를 꽉 채워 리듬감을 낸다, (3) 큰 숫자 + 짧은 라벨 = 한 슬라이드 한 메시지. 컬러 블록을 겹치고 차트는 채도 높은 그라디언트가 주인공이다.",
-      "diagram.language: 0px-radius square block nodes, emphasis node gradient_a fill / others #1E1E1E, 6pt #FFFFFF thick connectors with large filled arrowhead, 64pt Black oversized step numbers",
+      "다크 캔버스에 활기찬 듀오톤 면 효과를 rasterized PNG/Sharp asset 또는 flat-token fallback으로 깔고 초대형 와이드 디스플레이로 한 슬라이드 한 메시지를 외치는 표현적 덱.",
+      "한눈에 알아보는 단서: (1) 거의 검정 `#121212` 배경에 듀오톤 컬러 블록을 rasterized PNG/Sharp asset 또는 flat-token fallback으로 크고 대담하게 깐다, (2) 와이드한 그로테스크 디스플레이를 초대형으로 슬라이드를 꽉 채워 리듬감을 낸다, (3) 큰 숫자 + 짧은 라벨 = 한 슬라이드 한 메시지. 컬러 블록을 겹치고 차트는 채도 높은 rasterized/SVG asset 또는 flat-token fallback이 주인공이다.",
+      "diagram.language: 0px-radius square block nodes, emphasis node uses rasterized PNG/Sharp gradient_a asset or flat #FF4D00 fallback / others #1E1E1E, 6pt #FFFFFF thick connectors with large filled arrowhead, 64pt Black oversized step numbers; no CSS gradients",
       "diagram.node: square block radius 0px, #1E1E1E fill, 2.4in x 1.4in process node",
       "diagram.number_badge: 64pt Archivo Black oversized number inside node",
       "diagram.connector: 6pt #FFFFFF thick line, 14px filled triangle arrowhead, block overlap 10-20% allowed",
-      "diagram.process: horizontal 3-5 square blocks, key step gradient_a fill",
-      "diagram.timeline: horizontal, 8pt thick baseline gradient_a, milestone 18px square #1E1E1E fill, current gradient_a fill",
-      "diagram.comparison: 2-3 square block cols #1E1E1E, gutter 0.16in no border, winning col gradient_a fill",
-      "diagram.matrix: 2x2, 1pt #3A3A3A axes, no quadrant fill, points 0.6in square #2E2E2E, 1-2 highlight gradient_a"
+      "diagram.process: horizontal 3-5 square blocks, key step uses rasterized PNG/Sharp gradient_a asset or flat #FF4D00 fallback; no CSS gradients",
+      "diagram.timeline: horizontal, 8pt thick baseline uses rasterized/SVG gradient_a asset or flat #FF4D00 fallback, milestone 18px square #1E1E1E fill, current marker uses the same rasterized/SVG asset; no CSS gradients",
+      "diagram.comparison: 2-3 square block cols #1E1E1E, gutter 0.16in no border, winning col uses rasterized PNG/Sharp gradient_a asset or flat #FF4D00 fallback; no CSS gradients",
+      "diagram.matrix: 2x2, 1pt #3A3A3A axes, no quadrant fill, points 0.6in square #2E2E2E, 1-2 highlights using rasterized PNG/Sharp gradient_a asset or flat #FF4D00 fallback; no CSS gradients"
     ],
     "avoid": [
-      "듀오톤을 무시하고 3색 이상 무지개 그라디언트 쓰기 — 그라디언트는 항상 2스톱 듀오톤, 슬라이드당 페어 최대 2개(A·B).",
+      "듀오톤을 무시하고 3색 이상 무지개 효과 쓰기 금지 — rasterized PNG/Sharp 또는 SVG/local asset은 항상 2스톱 듀오톤, 슬라이드당 페어 최대 2개(A·B), HTML은 flat-token fallback.",
       "영감 브랜드의 시그니처 그린을 그대로 쓰기 — 듀오톤은 명시된 코랄→바이올렛 / 청록→블루 페어만.",
       "라이트 모드로 회귀, 흰 배경. 둥근 모서리, 그림자, 텍스처·노이즈.",
       "음파·플레이리스트·재생바 같은 음악 UI 직접 모사.",
@@ -2910,11 +2910,11 @@ export const RAW_DESIGN_DIVERSITY_STYLES = [
       "diagram.matrix: 1pt #262626 cross axes, no quadrant fill, #4A4A4E point circles + highlight #E8B341 (88pt giant number overlay allowed)"
     ],
     "avoid": [
-      "배경을 회색·네이비·그라디언트로 — 반드시 순흑 `#000000`.",
+      "배경을 회색·네이비·CSS gradient로 처리 금지 — 반드시 순흑 `#000000`.",
       "슬라이드를 불릿 리스트로 채우기 — 한 슬라이드 한 메시지, 텍스트 3줄 이하.",
       "강조색 2개 이상, 본문 텍스트에 컬러.",
       "인공 글로우·렌즈플레어·네온 외곽선·과한 그림자.",
-      "**아마추어 차트 회귀 금지:** 3D·입체 막대, 막대 그림자·광택·베벨, 무지개·계열별 색칠, 격자선, 차트 테두리 박스, 배경 채움, 범례 박스, 잘린 y축, div 블록 막대, 그라디언트 채움 막대.",
+      "**아마추어 차트 회귀 금지:** 3D·입체 막대, 막대 그림자·광택·베벨, 무지개·계열별 색칠, 격자선, 차트 테두리 박스, 배경 채움, 범례 박스, 잘린 y축, div 블록 막대, CSS gradient 막대.",
       "클립아트·이모지·스톡 아이콘으로 무대 채우기.",
       "슬라이드마다 같은 레이아웃 반복 — 비주얼 위치(중앙/좌/우/풀블리드)를 슬라이드마다 의도적으로 바꾼다."
     ],
@@ -3023,7 +3023,7 @@ export const RAW_DESIGN_DIVERSITY_STYLES = [
       "컬러 텍스트 — 텍스트는 흰 면 위 잉크 블랙, 블록 위 화이트 둘뿐.",
       "모든 요소 중앙 정렬 — 헤드라인·본문 전부 좌측 정렬, 블록 안에서도 좌측·상하 치우침.",
       "슬라이드마다 같은 컬러 블록 위치 반복 — 4가지 블록 패턴을 의도적으로 교차한다.",
-      "**아마추어 차트 회귀 금지:** 3D·입체 막대, 막대 그림자·광택·베벨, 무지개·계열별 색칠, 격자선, 차트 테두리 박스, 배경 채움, 범례 박스, 잘린 y축, div 블록 막대, 둥근 막대, 그라디언트 채움.",
+      "**아마추어 차트 회귀 금지:** 3D·입체 막대, 막대 그림자·광택·베벨, 무지개·계열별 색칠, 격자선, 차트 테두리 박스, 배경 채움, 범례 박스, 잘린 y축, div 블록 막대, 둥근 막대, CSS gradient 사용.",
       "이모지 불릿·클립아트·스톡 아이콘."
     ],
     "collection": "design-diversity"
@@ -3749,10 +3749,10 @@ export const RAW_DESIGN_DIVERSITY_STYLES = [
       "spacing.margin_y: 0.55in",
       "spacing.grid: 12-column block grid",
       "slide.size: 13.33x7.5in",
-      "slide.grid: 12-column block grid, rounded cards/chips as modules, light canvas (gradient never fills background)",
+      "slide.grid: 12-column block grid, rounded cards/chips as modules, light canvas (duotone assets never fill background; no CSS gradients)",
       "slide.chart.data_duotone_asset: rasterized #7C3AED-to-#FB6F5C PNG fill; flat fallback #7C3AED for HTML shapes",
       "slide.chart.deemphasis: #E9E0FB",
-      "slide.chart.encoding: single gradient scale; 1 emphasis bar full-saturation gradient, rest pastel tint #E9E0FB (no rainbow / no per-series color)",
+      "slide.chart.encoding: single duotone scale; 1 emphasis bar uses a rasterized/Sharp full-saturation asset or flat #7C3AED fallback, rest pastel tint #E9E0FB (no rainbow / no per-series color; no CSS gradients)",
       "slide.chart.bar: round-cap (4px top radius), rasterized duotone PNG fill or flat #7C3AED fallback, bar:gap = 3:2",
       "slide.chart.donut: <=3 slices using rasterized duotone arc PNGs or flat token fills, 2px white gap, center metric 32pt + 11pt label",
       "slide.chart.area: 1.5pt duotone line rendered as rasterized PNG asset + flat translucent area fallback (25%->0% alpha)",
@@ -3762,23 +3762,23 @@ export const RAW_DESIGN_DIVERSITY_STYLES = [
       "slide.chart.baseline: 0 (no truncated y-axis)"
     ],
     "signature": [
-      "밝은 캔버스 위 채도 높은 듀오톤 그라디언트가 둥근 알약 노드·아이콘 칩·KPI 링을 채우는 VC 피치형 인포그래픽 키트 덱 — 모든 다이어그램 도형이 그라디언트 채움을 공유한다.",
-      "밝은 캔버스 위에 채도 높은 듀오톤 그라디언트(바이올렛 → 코랄)가 다이어그램 노드·아이콘 칩·KPI 링을 채운다. 둥근 알약·원형 노드, 굵은 지오메트릭 산세리프, 부드러운 소프트 섀도가 한 키트로 묶인다 — 모든 다이어그램 도형이 같은 그라디언트 채움을 공유한다는 점이 표식이다. VC 피치 덱·KPI 대시보드의 활기찬 인포그래픽이되 배경은 라이트로 유지된다.",
-      "diagram.language: rounded pills / circular nodes, gradient fill, 4pt round-cap gradient arrows, soft shadow on cards/floating nodes only",
-      "diagram.process_flow: rounded pill nodes 0.9in tall full-radius (gradient fill or white fill + gradient border), 4pt round-cap gradient arrow connectors, 0.4in circular gradient number badge (white 16pt Bold digit), active node full-saturation gradient / rest white fill + gradient border",
-      "diagram.timeline: S-curve 1.5pt gradient base line, 0.22in circular gradient dots milestones, current dot pulse ring, dates 11pt / events 14pt",
-      "diagram.comparison: 2-3 rounded cards 16px (white fill + soft shadow), recommended card gradient fill + 1.08x scale + top gradient chip",
-      "diagram.matrix_2x2: rounded 2x2 cells 12px, 4 quadrants pastel tint (violet/coral 12%), gradient bubbles 0.3-0.55in (size = 3rd var) + 14pt label",
-      "diagram.hierarchy_funnel: rounded funnel 4-5 tier trapezoids narrowing down, gradient lightness shifts per tier (violet-end top, coral-end bottom), 14pt label + conversion value",
-      "diagram.kpi_card: rounded card 16px white fill + soft shadow, top-left gradient icon chip 0.5in circle (white line icon), 44pt big number (mono color or 1 gradient-text), bottom-right donut progress ring (gradient arc), 3-4 per slide",
-      "diagram.divider: giant gradient-text section number + large gradient pill background block"
+      "밝은 캔버스 위 채도 높은 듀오톤 효과를 rasterized PNG/Sharp 또는 SVG/local asset으로 만든 뒤 둥근 알약 노드·아이콘 칩·KPI 링에 적용하는 VC 피치형 인포그래픽 키트 덱 — HTML 도형은 flat-token fallback을 쓰고 CSS gradient는 금지한다.",
+      "밝은 캔버스 위에 채도 높은 듀오톤(바이올렛 → 코랄)을 rasterized PNG/Sharp 또는 SVG/local asset으로 준비해 다이어그램 노드·아이콘 칩·KPI 링에 적용한다. 둥근 알약·원형 노드, 굵은 지오메트릭 산세리프, 부드러운 소프트 섀도가 한 키트로 묶인다 — 모든 HTML 도형은 flat-token fallback을 갖고 CSS gradient는 쓰지 않는다는 점이 표식이다. VC 피치 덱·KPI 대시보드의 활기찬 인포그래픽이되 배경은 라이트로 유지된다.",
+      "diagram.language: rounded pills / circular nodes using rasterized PNG/Sharp duotone fills or flat-token fallbacks, 4pt round-cap SVG/local-asset arrows, soft shadow on cards/floating nodes only; no CSS gradients",
+      "diagram.process_flow: rounded pill nodes 0.9in tall full-radius (rasterized PNG/Sharp duotone fill or white fill + SVG/local-asset border), 4pt round-cap SVG/local-asset arrow connectors, 0.4in circular rasterized number badge (white 16pt Bold digit), active node full-saturation raster asset / rest white fill + flat-token border fallback; no CSS gradients",
+      "diagram.timeline: S-curve 1.5pt rasterized/SVG duotone base line, 0.22in circular rasterized PNG milestone dots or flat-token fallback circles, current dot pulse ring, dates 11pt / events 14pt; no CSS gradients",
+      "diagram.comparison: 2-3 rounded cards 16px (white fill + soft shadow), recommended card uses rasterized PNG/Sharp duotone fill asset + 1.08x scale + top SVG/local-asset chip, with flat #7C3AED fallback; no CSS gradients",
+      "diagram.matrix_2x2: rounded 2x2 cells 12px, 4 quadrants pastel tint (violet/coral 12%), rasterized PNG/Sharp duotone bubbles 0.3-0.55in or flat-token fallback circles (size = 3rd var) + 14pt label; no CSS gradients",
+      "diagram.hierarchy_funnel: rounded funnel 4-5 tier trapezoids narrowing down, rasterized PNG/Sharp tier assets or flat-token fallback lightness shifts per tier (violet-end top, coral-end bottom), 14pt label + conversion value; no CSS gradients",
+      "diagram.kpi_card: rounded card 16px white fill + soft shadow, top-left rasterized PNG/Sharp duotone icon chip 0.5in circle (white line icon), 44pt big number (mono color or 1 rasterized/SVG gradient-text asset), bottom-right donut progress ring (rasterized/SVG arc or flat-token fallback), 3-4 per slide; no CSS gradients",
+      "diagram.divider: giant rasterized/SVG gradient-text asset section number + large rasterized PNG/Sharp duotone pill background block, with flat-token fallback; no CSS gradients"
     ],
     "avoid": [
-      "차트 데이터를 무지개·계열별 다른 색으로 칠하지 말 것 — 데이터 색은 단일 바이올렛→코랄 그라디언트 스케일만. 강조는 풀 채도 vs 파스텔 틴트로.",
-      "배경을 그라디언트로 채우지 말 것 — 캔버스는 라이트(`#FBFAFE`) 유지. 그라디언트는 노드·칩·링·차트 데이터에만(glassmorphism·vivid-gradient-future와의 분기점).",
+      "차트 데이터를 무지개·계열별 다른 색으로 칠하지 말 것 — 데이터 색은 단일 바이올렛→코랄 rasterized/Sharp asset 또는 flat-token fallback 스케일만. 강조는 풀 채도 vs 파스텔 틴트로, CSS gradient는 금지.",
+      "배경 CSS gradient 금지 — 캔버스는 라이트(`#FBFAFE`) 유지. 듀오톤 효과는 노드·칩·링·차트 데이터의 rasterized PNG/Sharp 또는 SVG/local asset에만 적용하고 HTML은 flat-token fallback 사용(glassmorphism·vivid-gradient-future와의 분기점).",
       "3D 차트·과한 그림자 차트·격자선 과다·잘린 y축 금지.",
       "소프트 섀도 남발 금지 — 카드·떠 있는 노드에만, 차트 데이터 요소엔 섀도 없음.",
-      "그라디언트 텍스트는 슬라이드당 1곳(거대 수치 등)만 — 본문·라벨은 무채색.",
+      "rasterized/SVG gradient-text asset은 슬라이드당 1곳(거대 수치 등)만 — 본문·라벨은 무채색, CSS gradient 텍스트 금지.",
       "이모지 불릿·클립아트·의미 없는 스톡 아이콘 금지. 슬라이드를 글로 가득 채우기 금지."
     ],
     "collection": "design-diversity"
@@ -3891,7 +3891,7 @@ export const RAW_DESIGN_DIVERSITY_STYLES = [
       "모든 슬라이드 중앙 정렬, 슬라이드마다 같은 레이아웃 반복 — 색블록 배치를 슬라이드마다 비대칭으로 바꾼다.",
       "색블록을 1~2개만 — 밀도가 정체성, 3~6개 모듈.",
       "이모지 불릿·클립아트·스톡 아이콘. 큼직한 스테이트먼트 한 줄로 슬라이드 비우기(이건 confident-color-block — 이 팩은 빽빽한 인포그래픽).",
-      "차트 회귀: 3D·입체 막대, 막대 그림자·그라디언트 채움, 격자선 과다, 범례 박스, 잘린 y축, 파이/다중 도넛."
+      "차트 회귀: 3D·입체 막대, 막대 그림자·CSS gradient 사용, 격자선 과다, 범례 박스, 잘린 y축, 파이/다중 도넛."
     ],
     "collection": "design-diversity"
   },
@@ -3988,10 +3988,10 @@ export const RAW_DESIGN_DIVERSITY_STYLES = [
       "slide.size: 13.33x7.5in",
       "slide.grid: full-bleed ink-navy-black, 1 glowing diagram + left-aligned text per slide",
       "slide.chart.data: #22D3EE, #D946EF, #FBBF24",
-      "slide.chart.emphasis: single-series cyan #22D3EE solid; 1 emphasis bar gradient fill; multi-series cyan/magenta/amber, max 3",
+      "slide.chart.emphasis: single-series cyan #22D3EE solid; 1 emphasis bar uses rasterized PNG/Sharp prism fill asset or flat #22D3EE fallback; multi-series cyan/magenta/amber, max 3; no CSS gradients",
       "slide.chart.delta.up: #22D3EE",
       "slide.chart.delta.down: #F87171",
-      "slide.chart.glow_control: data line glow weak: blur 4px, gradient 20% alpha; no glow on value/axis labels",
+      "slide.chart.glow_control: data line glow weak: blur 4px, rasterized/SVG prism glow at 20% alpha or flat #22D3EE fallback; no glow on value/axis labels; no CSS gradients",
       "slide.chart.axis: x baseline 0.75pt #1E2336, y-axis omitted",
       "slide.chart.gridline: 2-3 horizontal y major, 0.5pt #1E2336 (0/mid/max)",
       "slide.chart.value_label: JetBrains Mono 13pt 500, #E8EAF0, tabular, direct on bar/vertex/slice",
@@ -3999,16 +3999,16 @@ export const RAW_DESIGN_DIVERSITY_STYLES = [
       "slide.chart.legend: no box; inline color-dot 0.08in + 11pt label above chart"
     ],
     "signature": [
-      "잉크 네이비-블랙 배경에 다이어그램 노드·라인이 시안→마젠타→앰버 프리즘 그라디언트로 발광하는 테크 컨퍼런스 키노트형 다이어그램 키트 덱.",
-      "한눈에 알아보는 단서: (1) 잉크 네이비-블랙 배경에 다이어그램 노드는 채움이 거의 투명하고 1px 프리즘 그라디언트 스트로크 윤곽선만 있다, (2) 커넥터 라인이 시안→마젠타→앰버 그라디언트로 발광하며 끝에 빛 점이 맺힌다, (3) 미디엄 산세리프 + 작은 등폭 라벨. 노드는 칠해진 카드가 아니라 빛으로 그린 윤곽이다.",
-      "diagram.language: all nodes near-transparent fill rgba(20,26,46,0.20) + 1px prism-gradient stroke outline radius 8px, connectors = glowing gradient line 1.5pt + blur 5px glow + endpoint light dot, numbers JetBrains Mono 13pt inside capsule, emphasis = stronger border glow blur 4px->10px",
-      "diagram.process_flow: 4-6 horizontal transparent-fill capsule nodes (0.8in tall, full-round, 1px prism border), glowing gradient line connectors (left-to-right color transition) + 0.06in endpoint light dot, step number mono 13pt in capsule, active step stronger border glow",
-      "diagram.timeline: horizontal gradient beam (3px tall, cyan-left to amber-right + blur 6px glow), milestones 0.18in glowing nodes (transparent fill + gradient border + glow), current node stronger glow + 12pt cyan NOW kicker, dates 11pt mono #8A90A6 below",
-      "diagram.comparison: 2-3 glass panels (rgba(20,26,46,0.60) + 1px gradient hairline border), recommended panel border glow blur 10px, 12pt mono uppercase kicker top, rows divided 0.5pt #1E2336 hairline, winning item cyan text",
-      "diagram.matrix_2x2: 1px gradient cross axis (blur 4px weak glow), 11pt mono #8A90A6 axis labels at 4 ends, glowing dots 0.16-0.32in (gradient fill, brightness = value), no quadrant fill",
-      "diagram.hierarchy_funnel: stacked transparent-fill capsules narrowing downward 4-5 tiers (1px prism border, gradient color position shifts per tier cyan->amber), 13pt mono label + 48pt gradient-text value at right",
-      "diagram.kpi_card: dark glass card rgba(20,26,46,0.60) + 1px gradient hairline border 8px radius, 12pt mono uppercase header top-left, 48pt Inter 700 prism-gradient-text KPI, 13pt delta (cyan up / #F87171 down), donut progress ring bottom-right (gradient arc, track #1E2336)",
-      "diagram.toc_divider_quote: TOC = mono number 01/02 cyan + 18pt item name + right glowing gradient progress bar; divider = full-bleed ink-navy + giant gradient-text section number 120pt + 30pt section name + faint gradient line motif; quote = 0.18in gradient glowing left bar + 28pt Inter pull-quote #E8EAF0"
+      "잉크 네이비-블랙 배경에 다이어그램 노드·라인이 시안→마젠타→앰버 프리즘 효과를 rasterized/SVG local asset 또는 flat-token fallback으로 발광하는 테크 컨퍼런스 키노트형 다이어그램 키트 덱.",
+      "한눈에 알아보는 단서: (1) 잉크 네이비-블랙 배경에 다이어그램 노드는 채움이 거의 투명하고 1px 프리즘 SVG/local-asset 스트로크 윤곽선만 있다, (2) 커넥터 라인이 시안→마젠타→앰버 rasterized/SVG local asset으로 발광하며 끝에 빛 점이 맺힌다, (3) 미디엄 산세리프 + 작은 등폭 라벨. 노드는 칠해진 카드가 아니라 빛으로 그린 윤곽이다. HTML 구현은 flat-token fallback을 포함하고 CSS gradient는 금지한다.",
+      "diagram.language: all nodes near-transparent fill rgba(20,26,46,0.20) + 1px SVG/local-asset prism stroke outline radius 8px, connectors = glowing SVG/local-asset prism line 1.5pt + blur 5px glow + endpoint light dot, numbers JetBrains Mono 13pt inside capsule, emphasis = stronger border glow blur 4px->10px; no CSS gradients",
+      "diagram.process_flow: 4-6 horizontal transparent-fill capsule nodes (0.8in tall, full-round, 1px SVG/local-asset prism border), glowing SVG/local-asset prism line connectors (left-to-right color transition) + 0.06in endpoint light dot, step number mono 13pt in capsule, active step stronger border glow; no CSS gradients",
+      "diagram.timeline: horizontal rasterized/SVG prism beam (3px tall, cyan-left to amber-right + blur 6px glow), milestones 0.18in glowing nodes (transparent fill + SVG/local-asset border + glow), current node stronger glow + 12pt cyan NOW kicker, dates 11pt mono #8A90A6 below; no CSS gradients",
+      "diagram.comparison: 2-3 glass panels (rgba(20,26,46,0.60) + 1px SVG/local-asset prism hairline border), recommended panel border glow blur 10px, 12pt mono uppercase kicker top, rows divided 0.5pt #1E2336 hairline, winning item cyan text; no CSS gradients",
+      "diagram.matrix_2x2: 1px rasterized/SVG prism cross axis (blur 4px weak glow), 11pt mono #8A90A6 axis labels at 4 ends, glowing dots 0.16-0.32in (rasterized PNG/Sharp prism fill or flat-token fallback, brightness = value), no quadrant fill; no CSS gradients",
+      "diagram.hierarchy_funnel: stacked transparent-fill capsules narrowing downward 4-5 tiers (1px SVG/local-asset prism border, rasterized/flat-token color position shifts per tier cyan->amber), 13pt mono label + 48pt rasterized/SVG gradient-text asset value at right; no CSS gradients",
+      "diagram.kpi_card: dark glass card rgba(20,26,46,0.60) + 1px SVG/local-asset prism hairline border 8px radius, 12pt mono uppercase header top-left, 48pt Inter 700 rasterized/SVG prism-gradient-text asset KPI, 13pt delta (cyan up / #F87171 down), donut progress ring bottom-right (rasterized/SVG arc or flat-token fallback, track #1E2336); no CSS gradients",
+      "diagram.toc_divider_quote: TOC = mono number 01/02 cyan + 18pt item name + right glowing rasterized/SVG prism progress bar; divider = full-bleed ink-navy + giant rasterized/SVG gradient-text asset section number 120pt + 30pt section name + faint SVG/local-asset prism line motif; quote = 0.18in rasterized/SVG glowing left bar + 28pt Inter pull-quote #E8EAF0; no CSS gradients"
     ],
     "avoid": [
       "노드를 솔리드 색으로 채우기 — 채움은 거의 투명, 빛(스트로크·글로우)으로 그린다.",
@@ -4135,7 +4135,7 @@ export const RAW_DESIGN_DIVERSITY_STYLES = [
     "avoid": [
       "각진 모서리·하드 섀도(`Npx Npx 0` 한 줄 그림자) — 통통한 라운드 + 부드러운 멀티 섀도가 정체성.",
       "원색·네온·고채도 색, 파스텔 3색군 외 4번째 색.",
-      "그라디언트 채움·베벨·입체 효과.",
+      "CSS gradient·베벨·입체 효과.",
       "데이터 요소 섀도를 강하게 — 약하게(`0 3px 8px` 18%). 값 라벨엔 섀도 금지.",
       "슬라이드를 글로 가득 채우기 — 여백과 통통한 도형이 숨 쉬게.",
       "모든 슬라이드 완전 중앙 정렬 반복 — 본문은 비대칭 허용.",
@@ -4246,7 +4246,7 @@ export const RAW_DESIGN_DIVERSITY_STYLES = [
       "diagram.toc_divider_quote: TOC = monospace number column + serif item name + dotted leader (....) + monospace page number; divider = beige bg + giant 120pt monospace section number + 26pt serif section name + 0.75pt rule; quote = beige cell + monospace code + 22pt serif italic pull-quote + source footnote"
     ],
     "avoid": [
-      "컬러 강조·그라디언트·발광 — 강조는 잉크 브라운 솔리드 또는 빗금 해치뿐.",
+      "컬러 강조·CSS gradient·발광 — 강조는 잉크 브라운 솔리드 또는 빗금 해치뿐.",
       "둥근 모서리, 그림자, 입체 효과 — 종이는 평면·각짐.",
       "화살표 커넥터를 다이어그램에 — 흐름은 등폭 번호 연속성과 룰 라인이 만든다.",
       "본문 전체를 등폭으로(이건 minimal-mono-note) — 본문은 세리프, 등폭은 인덱스·수치·코드에만.",
@@ -4344,7 +4344,7 @@ export const RAW_DESIGN_DIVERSITY_STYLES = [
     "avoid": [
       "도형을 솔리드로 채우기 — 채움보다 1pt 윤곽선이 기본, 채움은 강조 1요소만 테라코타.",
       "2번째 강조색 추가 — 테라코타 단 1색. 무지개·다색 차트 금지.",
-      "그라디언트·발광·베벨·강한 그림자.",
+      "CSS gradient·발광·베벨·강한 그림자.",
       "슬라이드를 글로·도형으로 가득 채우기 — 여백이 절반 이상, 모듈 2~4개만.",
       "굵은 보더(1.5pt 초과), 통통한 큰 라운드(반경 14px 초과).",
       "풀블리드 사진 배경(이건 warm-hospitality-deck — 이 팩은 라인 다이어그램 키트가 정체성).",
@@ -5776,19 +5776,19 @@ export const RAW_DESIGN_DIVERSITY_STYLES = [
     ],
     "signature": [
       "현대차 인베스터데이처럼 다크 네이비 무대에 미래적 사이안 라인이 흐르는 컨퍼런스 키노트 톤. 거대한 흰색 숫자, ∞ 모양 컨셉 다이어그램, 7장 카드에 큰 사이안 숫자가 박힌 양식 — AI·EV·미래 모빌리티·신사업 발표, 테크 컨퍼런스 키노트에 어울립니다.",
-      "한눈에 알아보는 단서: (1) 배경은 **다크 네이비 `#101030`** (R=16 G=16 B=48 — 순흑이 아니라 푸른 톤이 살짝 도는 짙은 네이비) 단 하나로 71페이지 전부를 통일한다. 라이트 모드·회색 BG·그라디언트 BG 일체 금지. (2) 시그니처 액센트는 **밝은 민트-사이안 `#66FFFF`** 단 하나 — 모든 챕터 슬레이트 영문 타이틀, 좌상단 헤더 chevron 글로우, 강조 차트 데이터, 카드 enumerator가 이 색으로 발광한다. **Hyundai N Blue `#002C5F`는 이 덱에 0건 — 절대 쓰지 말 것**. (3) 챕터 디바이더의 지배적 모티프는 **chevron**(중첩된 우향 `>` 3~5개 스택 + 안쪽 V-vertex에 흰-사이안 글로우 + 바깥으로 미디엄 블루 → 다크 네이비 fade). **거대 outline 숫자(240~360pt)는 이 덱에 절대 존재하지 않는다 — 큰 사이안 숫자는 오직 p-64 카드 안 enumerator(80~100pt SOLID fill)로만 등장**. (4) **HYUNDAI WAY ∞ 다이어그램**(좌 사이안-블루 lobe = Mobility Game Changer + 우 teal-green lobe = Energy Mobilizer)이 이 덱 전체의 컨셉 아키텍처를 정의 — high-concept hero 자리에 1순위 사용. (5) **풀-블리드 단일 사진 0장** — 사진/렌더링은 5종 양식(하단 반 히어로 / 인라인 cut-out / dim underlay ≤30% / 좌 50% 분할 패널 / 로고 인라인)으로 분산.",
-      "diagram.language: 다크 네이비 무대 + 사이안 chevron + 헤어라인 골격 + 단일 사이안-블루 패밀리 그라디언트. 노드는 #14274A 면 + 1px #1E2A52 보더, 활성 요소만 #66FFFF border + cyan glow. NO rainbow, NO per-category color.",
+      "한눈에 알아보는 단서: (1) 배경은 **다크 네이비 `#101030`** (R=16 G=16 B=48 — 순흑이 아니라 푸른 톤이 살짝 도는 짙은 네이비) 단 하나로 71페이지 전부를 통일한다. 라이트 모드·회색 BG·CSS gradient BG 일체 금지. (2) 시그니처 액센트는 **밝은 민트-사이안 `#66FFFF`** 단 하나 — 모든 챕터 슬레이트 영문 타이틀, 좌상단 헤더 chevron 글로우, 강조 차트 데이터, 카드 enumerator가 이 색으로 발광한다. **Hyundai N Blue `#002C5F`는 이 덱에 0건 — 절대 쓰지 말 것**. (3) 챕터 디바이더의 지배적 모티프는 **chevron**(중첩된 우향 `>` 3~5개 스택 + 안쪽 V-vertex에 흰-사이안 글로우 + 바깥으로 미디엄 블루 → 다크 네이비 fade). **거대 outline 숫자(240~360pt)는 이 덱에 절대 존재하지 않는다 — 큰 사이안 숫자는 오직 p-64 카드 안 enumerator(80~100pt SOLID fill)로만 등장**. (4) **HYUNDAI WAY ∞ 다이어그램**(좌 사이안-블루 lobe = Mobility Game Changer + 우 teal-green lobe = Energy Mobilizer)이 이 덱 전체의 컨셉 아키텍처를 정의 — high-concept hero 자리에 1순위 사용. (5) **풀-블리드 단일 사진 0장** — 사진/렌더링은 5종 양식(하단 반 히어로 / 인라인 cut-out / dim underlay ≤30% / 좌 50% 분할 패널 / 로고 인라인)으로 분산.",
+      "diagram.language: 다크 네이비 무대 + 사이안 chevron + 헤어라인 골격 + 단일 사이안-블루 패밀리 rasterized/SVG asset 또는 flat-token fallback. 노드는 #14274A 면 + 1px #1E2A52 보더, 활성 요소만 #66FFFF border + cyan glow. NO rainbow, NO per-category color.",
       "diagram.node: #14274A fill + 1px #1E2A52 border, 6-8px radius, padding 0.28-0.32in",
       "diagram.connector_straight: 1pt #1E2A52 solid hairline OR 1.5-2pt #66FFFF straight (for timeline arrow, p-65 left→right)",
       "diagram.connector_curved: 1.5-2pt #66FFFF curved arc (for hub-spoke flow, p-35 card→vehicle) + filled triangle arrowhead 0.10in",
       "diagram.chevron_corner_mark: miniaturized 3-stack chevron at top-left x=3%/y=4%, ~50px wide, white-cyan inner glow fading to #00B0F0; PRESENT on every Mode B page next to '2024 CEO Investor Day' header label",
       "diagram.chevron_chapter_motif: 3-5 nested right-pointing > shapes on chapter-slate edge. Cover/closing (p-01/p-71): LEFT 5-stack ~80% canvas height (mirror = bookend). Single-word chapter slates (p-02/p-58): RIGHT 4-stack ~60% canvas height. Multi-word chapter slates (p-08/p-33/p-45): RIGHT 2-3 arcs + LEFT small starburst glow. Stroke 8-20px. Inner V-vertex #F5FBFF → mid #00B0F0 → outer fades to #101030",
-      "diagram.hyundai_way_infinity: SIGNATURE DIAGRAM (p-07 mirror). Two horizontal interlocking lobes forming ∞: LEFT lobe cyan-blue radial gradient (#0060A8→#002C5F with #66FFFF top inner glow) labeled 'MOBILITY GAME CHANGER' (ALL CAPS 22-26pt bold white inside) / RIGHT lobe teal-green radial gradient (#189078→#0E5645 with #66FFFF top inner glow) labeled 'ENERGY MOBILIZER' (ALL CAPS 22-26pt bold white inside). Crossing center labeled 'HYUNDAI DYNAMIC CAPABILITIES' in #66FFFF Title Case 22-24pt above infinity. Above the ∞: giant white 'HYUNDAI WAY' ALL CAPS 64-72pt. Position: center, y≈40-78%, width≈70% canvas. THIS IS THE DECK'S CONCEPTUAL ARCHITECTURE — must appear in diagram primary slot. ONLY 1 instance in entire deck. #189078 teal is used ONLY here.",
+      "diagram.hyundai_way_infinity: SIGNATURE DIAGRAM (p-07 mirror). Two horizontal interlocking lobes forming ∞: LEFT lobe uses rasterized PNG/Sharp cyan-blue radial asset (#0060A8→#002C5F with #66FFFF top inner glow) with flat #0060A8 fallback labeled 'MOBILITY GAME CHANGER' (ALL CAPS 22-26pt bold white inside) / RIGHT lobe uses rasterized PNG/Sharp teal-green radial asset (#189078→#0E5645 with #66FFFF top inner glow) with flat #189078 fallback labeled 'ENERGY MOBILIZER' (ALL CAPS 22-26pt bold white inside). Crossing center labeled 'HYUNDAI DYNAMIC CAPABILITIES' in #66FFFF Title Case 22-24pt above infinity. Above the ∞: giant white 'HYUNDAI WAY' ALL CAPS 64-72pt. Position: center, y≈40-78%, width≈70% canvas. THIS IS THE DECK'S CONCEPTUAL ARCHITECTURE — must appear in diagram primary slot. ONLY 1 instance in entire deck. #189078 teal is used ONLY here.",
       "diagram.chevron_tabbed_stage_band: Hyundai signature progress primitive (p-48/p-52 mirror). Horizontal row of 3 trapezoidal chevron tabs above a chart/table (active filled #66FFFF #101030 text; inactive filled #14274A #A8B4C8 text); each tab leads-into the next like > > >. Used for stage progressions (초기→성장기→성숙기, Upstream→Midstream→Downstream). y position ≈18-22%. Tab width = label text + 0.6in."
     ],
     "avoid": [
       "Hyundai N Blue `#002C5F`를 기본 배경·강조색으로 대체하기 — 이 덱의 무대는 #101030, 액센트는 #66FFFF로 고정.",
-      "라이트 모드, 회색 배경, CSS 그라디언트 배경 사용 — 모든 배경은 다크 네이비 단색 또는 래스터 자산으로만 처리.",
+      "라이트 모드, 회색 배경, CSS gradient 배경 사용 — 모든 배경은 다크 네이비 단색 또는 래스터 자산으로만 처리.",
       "풀-블리드 사진 한 장으로 히어로를 채우기 — 사진은 하단 반 히어로, 인라인 컷아웃, dim underlay 등 지정된 5종 양식으로 제한.",
       "거대 outline 숫자나 무지개 카테고리 색상 — 큰 숫자는 p-64 카드 enumerator처럼 솔리드 사이안 숫자에만 사용.",
       "부드러운 소비재 톤, 둥근 파스텔 카드, 장식적 아이콘 과다 — 컨퍼런스 키노트의 헤어라인·chevron·사이안 글로우를 유지."
@@ -5939,14 +5939,14 @@ export const RAW_DESIGN_DIVERSITY_STYLES = [
       "shape.radius_circle: 999px"
     ],
     "signature": [
-      "네이버 2024 통합보고서(iF Design Award 수상작) 스타일. 페이지 가득 채우는 큰 영문 디스플레이 글씨, 부드러운 그린 안개 그라디언트, 5개 사업부문이 각자 색을 갖는 카드, 한국식 숫자+단위 표기('4천 8백만 명') — 어워드급 디자인이 필요한 통합보고서·ESG 리포트·연간 리뷰에 어울립니다.",
+      "네이버 2024 통합보고서(iF Design Award 수상작) 스타일. 페이지 가득 채우는 큰 영문 디스플레이 글씨, 부드러운 그린 안개 효과를 rasterized PNG/Sharp asset 또는 flat-token fallback으로 처리, 5개 사업부문이 각자 색을 갖는 카드, 한국식 숫자+단위 표기('4천 8백만 명') — 어워드급 디자인이 필요한 통합보고서·ESG 리포트·연간 리뷰에 어울립니다.",
       "diagram.node_shape_rule: 세 종만 반복 — 원형(사업부문·기술·서비스 노드 직경 100~120px), 둥근 사각형(인물 카드·정보 카드 라운드 8~10px), 라운드 라벨 박스(영문 카테고리 태그 라운드 12px 솔리드 채움)",
       "diagram.connector_rule: 1pt 검은 직선만. 화살표 없음. 곡선 거의 없음 (Next, N 무한대 곡선만 예외, v3 10장 덱 외).",
       "diagram.v3_diagrams_used: horizontal_milestone_timeline_s4, on_service_ai_4color_node_network_s9, segment_pill_label_on_photo_s10",
       "diagram.horizontal_milestone_timeline.where: s4 ← p8 KEY MILESTONES",
       "diagram.horizontal_milestone_timeline.form: 페이지 폭 풀로 0.5pt #E8E8E8 수평 라인(y=42%) + 4구간(2008-2014/2015-2019/2020-2022/2023-2024) 거대 32pt Bold 검정 시기 라벨 가로 4등분 중앙 정렬(y=30%) + 마일스톤 그린 도트(직경 8~10px 채움 #03C75A) + 도트에서 위로 짧은 회색 0.5pt 수직 라인 + 도트 아래 연도(Bold 11pt)+항목 본문(Regular 11pt #0A0A0A) 리스트",
       "diagram.on_service_ai_4color_node_network.where: s9 ← p10",
-      "diagram.on_service_ai_4color_node_network.form: 좌측 2x2 4개 솔리드 컬러 원 노드(직경 ~100~120px / PPT 환산 1.0~1.2in) — SEARCH #03C75A / COMMERCE #7C5BFF (우상) / ADVERTISING #4FB8FF (좌하) / PLACE #3D8BFF (우하) + 노드 안 흰 SemiBold 영문 라벨 + 1pt 검은 직선 커넥터 + 중앙 그라디언트 텍스트 hub 'On-Service AI' 24pt Bold (그라디언트 그린→퍼플→블루) + 작은 아이콘 + 우측 옅은 시안 보조 원 노드 2개(직경 60~80px, 한글 라벨 '초개인화 탐색 서비스' / '파트너 비즈니스 성과 극대화') + 좌하 'AI 원천 기술' / 우하 '사용자 의도·맥락 이해' 라벨 11pt SemiBold",
+      "diagram.on_service_ai_4color_node_network.form: 좌측 2x2 4개 솔리드 컬러 원 노드(직경 ~100~120px / PPT 환산 1.0~1.2in) — SEARCH #03C75A / COMMERCE #7C5BFF (우상) / ADVERTISING #4FB8FF (좌하) / PLACE #3D8BFF (우하) + 노드 안 흰 SemiBold 영문 라벨 + 1pt 검은 직선 커넥터 + 중앙 rasterized/SVG gradient-text asset hub 'On-Service AI' 24pt Bold (PNG/Sharp 또는 SVG/local asset 그린→퍼플→블루, flat #03C75A fallback) + 작은 아이콘 + 우측 옅은 시안 보조 원 노드 2개(직경 60~80px, 한글 라벨 '초개인화 탐색 서비스' / '파트너 비즈니스 성과 극대화') + 좌하 'AI 원천 기술' / 우하 '사용자 의도·맥락 이해' 라벨 11pt SemiBold",
       "diagram.segment_pill_label_on_photo.where: s10 ← p47 Commerce 지속가능"
     ],
     "avoid": [
@@ -6252,7 +6252,7 @@ export const RAW_DESIGN_DIVERSITY_STYLES = [
     ],
     "avoid": [
       "평범한 비즈니스 보고서 표·막대차트 중심 구성 — 이 스타일은 슬로건, 지도, 실루엣, 큰 숫자 카드가 주역.",
-      "CSS 그라디언트나 블러 배경 직접 구현 — 빛 효과가 필요하면 Sharp로 래스터 PNG를 만든 뒤 배치.",
+      "CSS gradient나 블러 배경 직접 구현 — 빛 효과가 필요하면 Sharp로 래스터 PNG를 만든 뒤 배치.",
       "파스텔 소비재 팔레트, 카카오/네이버식 친근 일러스트, 이모지 — 다크 네이비 정부 비전 톤을 유지.",
       "작은 본문을 빽빽하게 채우기 — 슬로건과 상징 이미지를 위해 넓은 여백과 큰 타이포그래피를 남긴다.",
       "복잡한 범례·축·격자선 차트 — 수치는 1~3개 대형 KPI 카드나 지도 핀 콜아웃으로 표현."
@@ -6571,14 +6571,14 @@ export const RAW_DESIGN_DIVERSITY_STYLES = [
     ],
     "signature": [
       "한국 기획재정부 업무보고처럼 다크 네이비 표지·구분면과 오프화이트 본문이 교차하는 시네마틱 정부 브리핑 톤. 매 페이지마다 핵심 단어 1~3글자에 노란 형광펜을 그어 강조하고, 가로 화살표 리본·라인 차트·거대 원 다이어그램이 시그니처 — 정부 거시 정책 발표, 경제 전망, 예산 브리핑에 어울립니다.",
-      "한눈에 알아보는 단서: (1) 표지·목차·디바이더·마무리는 다크 네이비 `#05091A` 라디얼 스포트라이트 배경(중앙-하단 cyan 글로우 + 코너 동심원 arc), 본문 페이지는 상단 다크네이비 헤더바(12.8%) · 중앙 오프화이트 `#F2F3F4` 플레이트(80%) · 하단 다크네이비 푸터바(7%)의 3단 샌드위치 — 슬라이드를 펴면 시네마처럼 어둠 → 종이 → 어둠 순으로 흐른다, (2) 본문 모든 페이지의 헤더 제목 끝에 콜론 `:`을 두고 1~3 글자 핵심 키워드를 **노란 `#FFFF00` 형광 마커** 사각 배지(z-order 맨 뒤) 위에 검정 텍스트로 얹은 한 구절이 박혀 있다 — 표지의 한자 `大`도 96pt로 노란 형광 위에 흰 텍스트로 얹히고, 마무리에서도 `大` 60pt가 한 번 더 echo된다. 이 노란 한 구절이 덱의 알파-오메가 시그니처, (3) 4색 브랜드 팔레트(sky `#1F91DF` / teal `#20988F` / royal `#4472C4` / purple `#5464A6`)의 둥근 모서리 컬러 필 pill 박스 헤더 + 가로 그라데이션 화살표 리본(navy→teal→cyan) + 중앙 거대 원·다이아몬드 + 3패널 단일 라인 차트 + 5단 수직 그라데이션 밴드 + 손글씨 메모 오버레이 6종이 다이어그램 키트의 전부다 — **헤어라인 격자 표 한 장 없고 IBM Plex Mono 한 글자 없고 96pt Light 로마숫자 디바이더 없다**. 타 정부 팩(보수 흑백 백서, 산업부 슬로건 일러스트, 과기부 거대 수치 인포그래픽, 국토부 5극 지도, 고용부 친근 메시지)과 달리 이 팩은 \"다크 시네마틱 + 형광 마커 + 컬러 필 모듈\"이 정체성이다.",
-      "diagram.language: rounded color-filled pill headers (radius 24px) in 4 brand colors + content boxes (radius 6-10px) with white fill + 0.5pt hairline border or micro shadow; yellow fluorescent highlight rectangle on header keyword (MANDATORY per body page, exception slide 4 p-04 mirror and slide 5 p-05 mirror where yellow appears in body callouts instead); central giant circles/diamonds for conceptual diagrams; horizontal gradient arrow ribbons for timelines; 5-tier vertical gradient band stacks for diplomacy/security pages; tilted handwritten memo overlay for narrative one-off",
+      "한눈에 알아보는 단서: (1) 표지·목차·디바이더·마무리는 다크 네이비 `#05091A` 라디얼 스포트라이트 배경(중앙-하단 cyan 글로우 + 코너 동심원 arc), 본문 페이지는 상단 다크네이비 헤더바(12.8%) · 중앙 오프화이트 `#F2F3F4` 플레이트(80%) · 하단 다크네이비 푸터바(7%)의 3단 샌드위치 — 슬라이드를 펴면 시네마처럼 어둠 → 종이 → 어둠 순으로 흐른다, (2) 본문 모든 페이지의 헤더 제목 끝에 콜론 `:`을 두고 1~3 글자 핵심 키워드를 **노란 `#FFFF00` 형광 마커** 사각 배지(z-order 맨 뒤) 위에 검정 텍스트로 얹은 한 구절이 박혀 있다 — 표지의 한자 `大`도 96pt로 노란 형광 위에 흰 텍스트로 얹히고, 마무리에서도 `大` 60pt가 한 번 더 echo된다. 이 노란 한 구절이 덱의 알파-오메가 시그니처, (3) 4색 브랜드 팔레트(sky `#1F91DF` / teal `#20988F` / royal `#4472C4` / purple `#5464A6`)의 둥근 모서리 컬러 필 pill 박스 헤더 + 가로 rasterized/SVG 화살표 리본(navy→teal→cyan, flat #20988F fallback) + 중앙 거대 원·다이아몬드 + 3패널 단일 라인 차트 + 5단 수직 rasterized PNG/Sharp 밴드(flat-token fallback) + 손글씨 메모 오버레이 6종이 다이어그램 키트의 전부다 — **헤어라인 격자 표 한 장 없고 IBM Plex Mono 한 글자 없고 96pt Light 로마숫자 디바이더 없다**. 타 정부 팩(보수 흑백 백서, 산업부 슬로건 일러스트, 과기부 거대 수치 인포그래픽, 국토부 5극 지도, 고용부 친근 메시지)과 달리 이 팩은 \"다크 시네마틱 + 형광 마커 + 컬러 필 모듈\"이 정체성이다.",
+      "diagram.language: rounded color-filled pill headers (radius 24px) in 4 brand colors + content boxes (radius 6-10px) with white fill + 0.5pt hairline border or micro shadow; yellow fluorescent highlight rectangle on header keyword (MANDATORY per body page, exception slide 4 p-04 mirror and slide 5 p-05 mirror where yellow appears in body callouts instead); central giant circles/diamonds for conceptual diagrams; horizontal rasterized/SVG arrow ribbons for timelines; 5-tier vertical rasterized PNG/Sharp band stacks for diplomacy/security pages with flat-token fallback; tilted handwritten memo overlay for narrative one-off; no CSS gradients",
       "diagram.kit_a_arrow_ribbon_milestones: horizontal arrow shape (width 90% slide, height ~16%), fill with a pre-rendered navy #425C8C → teal #20988F → cyan #04AFE3 PNG ribbon asset (Sharp rasterization; flat #20988F fallback), arrowhead at end; 6 drop-pin icon containers at x centers [10, 24, 40, 56, 70, 86]% above the ribbon (fill #E0E5EB, dark line-art glyph inside, tip touches ribbon); month label 16pt Bold white above each pin; 2-line callout INSIDE ribbon per pin (line 1 on yellow fluorescent rect 14pt Bold black on 3 of 6, line 2 white bold 16pt). Mirrors p-04. Variation: vertical 5-tier policy banner stack on slide 8 (each tier a different brand pill).",
       "diagram.kit_b_central_giant_circle_dual: two giant circles in central horizontal band, diameter ~28% slide width, slightly adjacent or overlapping. Left = sky #1F91DF solid with '기회' Black 56pt white (x center 36%, y center 50%). Right = deep blue #283473 solid with '도전' Black 56pt white (x center 62%, y center 50%). 3 satellite boxes radiate from each circle (white fill + 0.5pt #D1D5DB border + optional mini chart icon). Bottom auxiliary callout below 기회 circle. Mirrors p-06.",
       "diagram.kit_c_central_diamond_quadrants: single diamond (45deg rotated square) at slide center, fill deep navy #1A223F, w ≈ 22%, h ≈ 30%, with 3-line slogan in white Bold 16pt (text in non-rotated text box overlaid). 4 quadrant rectangles orbit: TOP wide (royal #4472C4 pill), RIGHT tall (purple #564C92 pill), BOTTOM wide (royal pill), LEFT tall (royal pill). Mirrors p-18 (조달청).",
       "diagram.kit_d_color_fill_box_module: pill header (radius 24px, 4-color brand fill, white bold 20pt) + small yellow/amber category badge to the LEFT or top-left ('국정과제 N' / '2026 업무추진방향:' / '1월중, 관계부처 합동') + content box (white fill, radius 6-10px, 0.5pt hairline or micro shadow) with body paragraph and inline yellow fluorescent keyword highlight. Arranged in 2-column / 2x2 / 2x3 / 3-column / 2-col-plus-bottom-band grids. Mirrors p-09 (slide 7) and p-11/p-13 patterns. THE workhorse module of body pages.",
       "diagram.kit_e_3panel_single_line_chart: see chart.signature — 3 equal-width panels (widths 31% each, gap 2.5%) with pill header + bracketed topic label + monochrome line (sky/green/purple) + emphasis point with big bold panel-color value + 2-line takeaway. Mirrors p-05.",
-      "diagram.kit_f_five_tier_band_stack: 5 horizontal bands stacked vertically (each h ≈ 13%, y start 18%). Each band = left 30% colored label section (vertical gradient sequence top-to-bottom: royal #4987BF → purple #5464A6 → teal #20988F → cyan #28A4CA → lighter cyan #04AFE3) + right 70% white content section with bullets. Tier label white Bold 18pt inside colored band. Header has TWO yellow keywords (e.g. '전략투자' + '경제안보'). Mirrors p-12.",
+      "diagram.kit_f_five_tier_band_stack: 5 horizontal bands stacked vertically (each h ≈ 13%, y start 18%). Each band = left 30% colored label section (rasterized PNG/Sharp or SVG/local asset vertical tier sequence top-to-bottom: royal #4987BF → purple #5464A6 → teal #20988F → cyan #28A4CA → lighter cyan #04AFE3, with flat-token fallback per band; no CSS gradients) + right 70% white content section with bullets. Tier label white Bold 18pt inside colored band. Header has TWO yellow keywords (e.g. '전략투자' + '경제안보'). Mirrors p-12.",
       "diagram.kit_g_handwritten_memo_overlay: ONE-OFF creative motif — used only on slide 9 narrative. Header subthesis: ''26년을 \"한국경제 [大] 도약 원년\"으로' with '大' at 36pt yellow fluorescent echo of cover signature. Central tilted (-8deg) cream paper (#FCFCF6, w ≈ 35%, h ≈ 55%) + soft drop shadow + red+black marker-style handwritten content. 6 small numbered circular badges (diameter ~8%, fan arrangement 3 left + 3 right) in colors [sky, teal, purple, royal, sky, purple] each labeled with one of the 6 policy axes (01 경제활력 / 02 잠재성장률 / 03 민생안정 / 04 전략적 글로벌 / 05 적극적 국부 / 06 재정·세제·공공 혁신). Hairline gray dotted connectors from badge to memo. Mirrors p-07."
     ],
     "avoid": [
@@ -6591,7 +6591,7 @@ export const RAW_DESIGN_DIVERSITY_STYLES = [
       "❌ 단색 진청 `#1E3A8A` 한 점만 액센트(반드시 4색 브랜드 팔레트 sky/teal/royal/purple 사용). `#003478` 보조 진청도 금지.",
       "❌ **노란 형광 시그니처 누락** — 매 본문 페이지 헤더 키워드 + 표지·마무리 `大`자에 노란 `#FFFF00` 배지 의무. 누락 시 슬라이드 불합격.",
       "❌ **거대 96pt Light 로마 숫자 디바이더** — 디바이더 헤딩은 ~42pt Bold + 화면 정중앙 정렬 2줄, 로마 숫자만 한글보다 ~10pt 큼. 96pt Light·흰 배경·진청 1pt rule·영문 라벨(`SECTION 02 — FISCAL POLICY` 같은 라인) 일체 금지.",
-      "❌ 그라디언트 fill을 컬러 필 박스에 사용(라인 chart 영역, 화살표 리본, 표지·디바이더 라디얼 글로우, p-12 수직 시퀀스 외 모두 금지).",
+      "❌ CSS gradient를 컬러 필 박스에 사용 금지. 예외 영역(라인 chart, 화살표 리본, 표지·디바이더 라디얼 글로우, p-12 수직 시퀀스)은 rasterized PNG/Sharp 또는 SVG/local asset과 flat-token fallback으로만 구현.",
       "❌ 드롭 섀도우 과다, 글로우 효과(헤더바 좌상 라디얼 글로우와 표지·디바이더·마무리 라디얼 스포트라이트, 손글씨 메모 soft shadow, 콘텐츠 박스 미세 shadow 외 모두 금지).",
       "❌ 발표 영상에서 흐릿해지는 12pt 이하 본문 텍스트. 슬라이드당 핵심 메시지 1개."
     ],
@@ -6751,7 +6751,7 @@ export const RAW_DESIGN_DIVERSITY_STYLES = [
       "diagram.kit_e_chart_kpi_cta: p-20 = p05-chart — see chart.signature. Five elements: line chart + future zone + X2 markers + KPI card + red CTA button.",
       "diagram.lavender_indicator_signature: MANDATORY top-left eyebrow lavender #7285E4 dot/bar on every body page. Pack identity rule — if missing, slide fails QA.",
       "diagram.section_divider_veil: MANDATORY full-bleed K-culture photo + #BCC4F2 alpha 0.65 lavender veil on every Ⅰ~Ⅳ section divider. Four occurrences (one per section).",
-      "diagram.render: SVG/PPT shapes — no div blocks, no anti-aliased fallback, micro shadows OK on card body, gradients allowed only on cover sweep BG (NOT on pills/cards/CTA)"
+      "diagram.render: SVG/PPT shapes — no div blocks, no anti-aliased fallback, micro shadows OK on card body, cover sweep must be rasterized PNG/Sharp or SVG asset with flat fallback (NOT on pills/cards/CTA); no CSS gradients"
     ],
     "avoid": [
       "라벤더 `#7285E4` 누락 — 매 본문 페이지 상단 이브라우 좌측에 라벤더 점/막대 의무. 누락 시 슬라이드 불합격.",
@@ -6763,7 +6763,7 @@ export const RAW_DESIGN_DIVERSITY_STYLES = [
       "일반 ●·▶·■ 불릿 사용 — 핵심 정책 페이지(p04 형식 / p09 형식)에는 ▶▶ 갈매기 의무. 일반 불릿은 카드 내부 본문에만.",
       "페이지 번호 푸터 인디케이터 추가 금지 — 이 덱은 페이지 번호 표시 없음. 푸터는 모서리 도트 데코만.",
       "영문 워드마크 라인(`MCST 2026 ANNUAL POLICY BRIEF` 같은) 추가 금지. 헤더·푸터에 영문 라벨 일체 없음.",
-      "그라데이션 fill을 카드·pill·다이어그램에 사용 금지. 표지 sweep BG·차트 미래 음영(단색) 외 그라데이션 일체 금지.",
+      "CSS gradient를 카드·pill·다이어그램에 사용 금지. 표지 sweep BG는 rasterized PNG/Sharp 또는 SVG/local asset과 flat fallback으로만 구현하고, 차트 미래 음영은 단색만 허용.",
       "드롭 섀도우 과다·글로우·블러 효과. 카드 본체의 매우 옅은 rgba(50,53,93,0.06) 그림자만 허용.",
       "24pt 이하 본문 텍스트(발표 거리 6m에서 흐릿). 슬라이드당 핵심 메시지 1개."
     ],
