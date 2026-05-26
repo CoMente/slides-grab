@@ -22,9 +22,19 @@ export const DESIGN_STYLES_SOURCE = Object.freeze({
   citation: 'Design collections derived from corazzon/pptx-design-styles. Styles 31–35 are slides-grab originals.',
 });
 
+export const SLIDES_GRAB_ORIGINAL_STYLES_SOURCE = Object.freeze({
+  name: 'slides-grab original styles',
+  repo: 'NomaDamas/slides-grab',
+  url: 'https://github.com/NomaDamas/slides-grab',
+  license: 'MIT',
+  citation: 'slides-grab original bundled styles 31–35.',
+});
+
 function getStyleSource(style) {
   if (style.source) return style.source;
   if (style.collection === 'design-diversity') return DESIGN_DIVERSITY_SOURCE;
+  const styleNumber = Number(style.number);
+  if (styleNumber >= 31 && styleNumber <= 35) return SLIDES_GRAB_ORIGINAL_STYLES_SOURCE;
   return DESIGN_STYLES_SOURCE;
 }
 

@@ -52,13 +52,18 @@ test('design-diversity PPT packs are bundled as selectable slide design styles',
 });
 
 test('legacy themes are included as styles 31–35', () => {
-  const ids = listDesignStyles().map((s) => s.id);
+  const originalStyles = listDesignStyles().filter((style) => Number(style.number) >= 31 && Number(style.number) <= 35);
+  const ids = originalStyles.map((s) => s.id);
 
   assert.ok(ids.includes('executive-minimal'));
   assert.ok(ids.includes('sage-professional'));
   assert.ok(ids.includes('modern-dark'));
   assert.ok(ids.includes('corporate-blue'));
   assert.ok(ids.includes('warm-neutral'));
+  for (const style of originalStyles) {
+    assert.equal(style.source.repo, 'NomaDamas/slides-grab');
+    assert.match(style.source.citation, /slides-grab original/i);
+  }
 });
 
 test('bundled preview html file exists and identifies the expanded style catalog', () => {
@@ -72,6 +77,17 @@ test('bundled preview html file exists and identifies the expanded style catalog
   assert.match(html, /CORPORATE BLUE/i);
   assert.match(html, /design-diversity/i);
   assert.match(html, /corazzon\/pptx-design-styles/);
+});
+
+test('bundled preview html maps every runtime style by exact id or title', () => {
+  const html = buildStylePreviewHtml();
+
+  for (const style of listDesignStyles()) {
+    assert.ok(
+      html.includes(style.id) || html.includes(style.title),
+      `preview.html should include exact id or title for ${style.id} (${style.title})`,
+    );
+  }
 });
 
 test('slides-grab help exposes style discovery commands', () => {
@@ -130,4 +146,23 @@ test('slides-grab show-design prints a design-diversity pack summary', () => {
   assert.match(output, /epoko77-ai\/design-diversity/);
   assert.match(output, /#0B5FFF/);
   assert.match(output, /grid_columns: 12/);
+  assert.match(output, /## Signature/);
+  assert.match(output, /액션 타이틀/);
+  assert.match(output, /## Avoid/);
+  assert.match(output, /무지개/);
+});
+
+test('slides-grab show-design reports slides-grab original source metadata', () => {
+  const output = execFileSync(
+    process.execPath,
+    [cliPath, 'show-design', 'executive-minimal'],
+    {
+      cwd: repoRoot,
+      encoding: 'utf-8',
+    },
+  );
+
+  assert.match(output, /Bundled style: Executive Minimal/);
+  assert.match(output, /Source: NomaDamas\/slides-grab/);
+  assert.doesNotMatch(output, /Source: corazzon\/pptx-design-styles/);
 });

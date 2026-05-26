@@ -436,6 +436,14 @@ program
           console.log('\n## Layout');
           for (const l of style.layout) console.log(`- ${l}`);
         }
+        if (Array.isArray(style.signature)) {
+          console.log('\n## Signature');
+          for (const s of style.signature) console.log(`- ${s}`);
+        }
+        if (Array.isArray(style.avoid)) {
+          console.log('\n## Avoid');
+          for (const a of style.avoid) console.log(`- ${a}`);
+        }
       }
     } catch (error) {
       reportCliError(error);
