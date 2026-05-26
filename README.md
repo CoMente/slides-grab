@@ -98,13 +98,13 @@ slides-grab image --prompt "..."    # Generate a local slide image with god-tibo
 slides-grab fetch-video --url <youtube-url> --slides-dir decks/my-deck  # Download a local video asset with yt-dlp
 slides-grab tldraw           # Render a .tldr diagram into a slide-sized local SVG asset
 slides-grab list-templates    # Show available slide templates
-slides-grab list-styles       # Show 35 bundled design styles (browse, preview, select)
-slides-grab preview-styles                        # Open the 35-style visual gallery in browser
+slides-grab list-styles       # Show 95 bundled design styles (browse, preview, select)
+slides-grab preview-styles                        # Open the 95-style visual gallery in browser
 ```
 
 ## Design Style Collections
 
-slides-grab bundles 35 design styles: 30 derived from [corazzon/pptx-design-styles](https://github.com/corazzon/pptx-design-styles) plus 5 slides-grab originals. Agents can also create fully custom designs beyond the bundled collection.
+slides-grab bundles 95 design styles: 30 derived from [corazzon/pptx-design-styles](https://github.com/corazzon/pptx-design-styles), 5 slides-grab originals, and 60 PPT packs derived from [epoko77-ai/design-diversity](https://github.com/epoko77-ai/design-diversity). Agents can also create fully custom designs beyond the bundled collection.
 
 ```bash
 slides-grab list-styles                           # Browse the catalog

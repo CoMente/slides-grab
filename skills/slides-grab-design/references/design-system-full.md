@@ -105,7 +105,7 @@ All color palettes are now bundled as design styles accessible via `slides-grab 
 - **corporate-blue** — Traditional business (white + blue accent)
 - **warm-neutral** — Warm and approachable (cream + terracotta)
 
-Run `slides-grab list-styles` to browse all 35 bundled styles, or design a fully custom palette when none fit.
+Run `slides-grab list-styles` to browse all 95 bundled styles, or design a fully custom palette when none fit.
 
 ---
 

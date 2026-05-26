@@ -2,6 +2,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { basename, dirname, isAbsolute, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { DESIGN_DIVERSITY_SOURCE, RAW_DESIGN_DIVERSITY_STYLES } from './design-diversity-data.js';
 import { RAW_DESIGN_STYLES } from './design-styles-data.js';
 import { parseDesignMarkdownFile } from './design-md-parser.js';
 
@@ -21,9 +22,15 @@ export const DESIGN_STYLES_SOURCE = Object.freeze({
   citation: 'Design collections derived from corazzon/pptx-design-styles. Styles 31–35 are slides-grab originals.',
 });
 
-const DESIGN_STYLES = RAW_DESIGN_STYLES.map((style) => Object.freeze({
+function getStyleSource(style) {
+  if (style.source) return style.source;
+  if (style.collection === 'design-diversity') return DESIGN_DIVERSITY_SOURCE;
+  return DESIGN_STYLES_SOURCE;
+}
+
+const DESIGN_STYLES = [...RAW_DESIGN_STYLES, ...RAW_DESIGN_DIVERSITY_STYLES].map((style) => Object.freeze({
   ...style,
-  source: DESIGN_STYLES_SOURCE,
+  source: getStyleSource(style),
 }));
 
 const DESIGN_STYLES_BY_ID = new Map(DESIGN_STYLES.map((style) => [style.id, style]));

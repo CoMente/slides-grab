@@ -90,13 +90,13 @@ slides-grab image --prompt "..."    # 로컬 슬라이드 이미지 생성
 slides-grab fetch-video --url <youtube-url> --slides-dir decks/my-deck  # yt-dlp로 동영상 에셋 다운로드
 slides-grab tldraw            # .tldr 다이어그램을 슬라이드 크기의 로컬 SVG로 렌더링
 slides-grab list-templates    # 사용 가능한 슬라이드 템플릿 표시
-slides-grab list-styles       # 번들된 35개 디자인 스타일 표시
-slides-grab preview-styles    # 35개 스타일 미리보기 갤러리를 브라우저에서 열기
+slides-grab list-styles       # 번들된 95개 디자인 스타일 표시
+slides-grab preview-styles    # 95개 스타일 미리보기 갤러리를 브라우저에서 열기
 ```
 
 ## 디자인 스타일 모음
 
-slides-grab은 [corazzon/pptx-design-styles](https://github.com/corazzon/pptx-design-styles)에서 파생된 30개 스타일과 slides-grab 고유 스타일 5개, 총 35개 디자인 스타일을 제공합니다. 에이전트에게 특정 스타일을 요청하거나 완전히 커스텀 디자인을 요청할 수 있습니다.
+slides-grab은 [corazzon/pptx-design-styles](https://github.com/corazzon/pptx-design-styles)에서 파생된 30개 스타일, slides-grab 고유 스타일 5개, [epoko77-ai/design-diversity](https://github.com/epoko77-ai/design-diversity)에서 파생된 PPT 팩 60개를 포함해 총 95개 디자인 스타일을 제공합니다. 에이전트에게 특정 스타일을 요청하거나 완전히 커스텀 디자인을 요청할 수 있습니다.
 
 ```bash
 slides-grab list-styles
