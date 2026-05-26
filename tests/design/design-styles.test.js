@@ -90,6 +90,46 @@ test('bundled preview html maps every runtime style by exact id or title', () =>
   }
 });
 
+test('design-diversity style guidance avoids direct gradient implementation instructions', () => {
+  const directGradientPatterns = [
+    /linear-gradient/i,
+    /full-bleed\s+[^\n]*mesh gradient/i,
+    /gradient vertical fill/i,
+    /gradient arcs/i,
+    /gradient fade area/i,
+  ];
+
+  for (const style of listDesignStyles().filter((entry) => entry.collection === 'design-diversity')) {
+    const guidance = [
+      ...style.background,
+      ...style.layout,
+      ...style.signature,
+      ...style.avoid,
+    ].join('\n');
+
+    for (const pattern of directGradientPatterns) {
+      assert.doesNotMatch(
+        guidance,
+        pattern,
+        `${style.id} should describe rasterized gradient assets or flat tokens instead of direct gradient implementation guidance`,
+      );
+    }
+  }
+});
+
+test('design-diversity style specs include required agent-facing guidance arrays', () => {
+  const requiredGuidanceFields = ['background', 'colors', 'fonts', 'layout', 'signature', 'avoid'];
+
+  for (const style of listDesignStyles().filter((entry) => entry.collection === 'design-diversity')) {
+    for (const field of requiredGuidanceFields) {
+      assert.ok(
+        Array.isArray(style[field]) && style[field].length > 0,
+        `${style.id} should include non-empty ${field} guidance`,
+      );
+    }
+  }
+});
+
 test('slides-grab help exposes style discovery commands', () => {
   const output = execFileSync(process.execPath, ['bin/ppt-agent.js', '--help'], {
     cwd: repoRoot,

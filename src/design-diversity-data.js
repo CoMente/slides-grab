@@ -395,7 +395,7 @@ export const RAW_DESIGN_DIVERSITY_STYLES = [
     "bestFor": "design-diversity standard · glassmorphism",
     "id": "ppt-glassmorphism",
     "background": [
-      "Bg: `linear-gradient mesh: #7B5BFF, #3FA9FF, #FF6FB5, #48E1C8`",
+      "Bg asset: rasterized PNG mesh generated with Sharp from #7B5BFF, #3FA9FF, #FF6FB5, #48E1C8; CSS fallback #7B5BFF",
       "Surface: `rgba(255,255,255,0.55)`"
     ],
     "colors": [
@@ -439,7 +439,7 @@ export const RAW_DESIGN_DIVERSITY_STYLES = [
       "spacing.panel_gap: 0.25in",
       "spacing.panel_overlap: 0.2-0.4in",
       "slide.size: 13.33x7.5in",
-      "slide.background: full-bleed 4-stop mesh gradient",
+      "slide.background: full-bleed rasterized 4-stop mesh PNG asset; never implement as CSS gradient",
       "slide.panels_per_slide: 1-3, slightly overlapping",
       "slide.transition: fade 0.4s + scale 0.97->1.0",
       "shape.radius: 24px",
@@ -3750,12 +3750,12 @@ export const RAW_DESIGN_DIVERSITY_STYLES = [
       "spacing.grid: 12-column block grid",
       "slide.size: 13.33x7.5in",
       "slide.grid: 12-column block grid, rounded cards/chips as modules, light canvas (gradient never fills background)",
-      "slide.chart.data_gradient: linear-gradient(135deg, #7C3AED, #FB6F5C)",
+      "slide.chart.data_duotone_asset: rasterized #7C3AED-to-#FB6F5C PNG fill; flat fallback #7C3AED for HTML shapes",
       "slide.chart.deemphasis: #E9E0FB",
       "slide.chart.encoding: single gradient scale; 1 emphasis bar full-saturation gradient, rest pastel tint #E9E0FB (no rainbow / no per-series color)",
-      "slide.chart.bar: round-cap (4px top radius), gradient vertical fill, bar:gap = 3:2",
-      "slide.chart.donut: <=3 slices gradient arcs, 2px white gap, center gradient-text metric 32pt + 11pt label",
-      "slide.chart.area: 1.5pt gradient line + gradient fade area (25%->0% alpha)",
+      "slide.chart.bar: round-cap (4px top radius), rasterized duotone PNG fill or flat #7C3AED fallback, bar:gap = 3:2",
+      "slide.chart.donut: <=3 slices using rasterized duotone arc PNGs or flat token fills, 2px white gap, center metric 32pt + 11pt label",
+      "slide.chart.area: 1.5pt duotone line rendered as rasterized PNG asset + flat translucent area fallback (25%->0% alpha)",
       "slide.chart.axis: x baseline 1pt #ECE8F4, y-axis omitted",
       "slide.chart.gridline: removed (or 2 y hairlines #ECE8F4)",
       "slide.chart.value_label: Poppins SemiBold 14pt tabular, direct above bar/vertex",
@@ -5786,7 +5786,13 @@ export const RAW_DESIGN_DIVERSITY_STYLES = [
       "diagram.hyundai_way_infinity: SIGNATURE DIAGRAM (p-07 mirror). Two horizontal interlocking lobes forming ∞: LEFT lobe cyan-blue radial gradient (#0060A8→#002C5F with #66FFFF top inner glow) labeled 'MOBILITY GAME CHANGER' (ALL CAPS 22-26pt bold white inside) / RIGHT lobe teal-green radial gradient (#189078→#0E5645 with #66FFFF top inner glow) labeled 'ENERGY MOBILIZER' (ALL CAPS 22-26pt bold white inside). Crossing center labeled 'HYUNDAI DYNAMIC CAPABILITIES' in #66FFFF Title Case 22-24pt above infinity. Above the ∞: giant white 'HYUNDAI WAY' ALL CAPS 64-72pt. Position: center, y≈40-78%, width≈70% canvas. THIS IS THE DECK'S CONCEPTUAL ARCHITECTURE — must appear in diagram primary slot. ONLY 1 instance in entire deck. #189078 teal is used ONLY here.",
       "diagram.chevron_tabbed_stage_band: Hyundai signature progress primitive (p-48/p-52 mirror). Horizontal row of 3 trapezoidal chevron tabs above a chart/table (active filled #66FFFF #101030 text; inactive filled #14274A #A8B4C8 text); each tab leads-into the next like > > >. Used for stage progressions (초기→성장기→성숙기, Upstream→Midstream→Downstream). y position ≈18-22%. Tab width = label text + 0.6in."
     ],
-    "avoid": [],
+    "avoid": [
+      "Hyundai N Blue `#002C5F`를 기본 배경·강조색으로 대체하기 — 이 덱의 무대는 #101030, 액센트는 #66FFFF로 고정.",
+      "라이트 모드, 회색 배경, CSS 그라디언트 배경 사용 — 모든 배경은 다크 네이비 단색 또는 래스터 자산으로만 처리.",
+      "풀-블리드 사진 한 장으로 히어로를 채우기 — 사진은 하단 반 히어로, 인라인 컷아웃, dim underlay 등 지정된 5종 양식으로 제한.",
+      "거대 outline 숫자나 무지개 카테고리 색상 — 큰 숫자는 p-64 카드 enumerator처럼 솔리드 사이안 숫자에만 사용.",
+      "부드러운 소비재 톤, 둥근 파스텔 카드, 장식적 아이콘 과다 — 컨퍼런스 키노트의 헤어라인·chevron·사이안 글로우를 유지."
+    ],
     "collection": "design-diversity"
   },
   {
@@ -5943,7 +5949,13 @@ export const RAW_DESIGN_DIVERSITY_STYLES = [
       "diagram.on_service_ai_4color_node_network.form: 좌측 2x2 4개 솔리드 컬러 원 노드(직경 ~100~120px / PPT 환산 1.0~1.2in) — SEARCH #03C75A / COMMERCE #7C5BFF (우상) / ADVERTISING #4FB8FF (좌하) / PLACE #3D8BFF (우하) + 노드 안 흰 SemiBold 영문 라벨 + 1pt 검은 직선 커넥터 + 중앙 그라디언트 텍스트 hub 'On-Service AI' 24pt Bold (그라디언트 그린→퍼플→블루) + 작은 아이콘 + 우측 옅은 시안 보조 원 노드 2개(직경 60~80px, 한글 라벨 '초개인화 탐색 서비스' / '파트너 비즈니스 성과 극대화') + 좌하 'AI 원천 기술' / 우하 '사용자 의도·맥락 이해' 라벨 11pt SemiBold",
       "diagram.segment_pill_label_on_photo.where: s10 ← p47 Commerce 지속가능"
     ],
-    "avoid": [],
+    "avoid": [
+      "네이버 그린 `#03C75A`를 일반 장식색처럼 남발하기 — 핵심 도트·서비스 노드·브랜드 강조에만 제한.",
+      "카드마다 임의 색상을 추가하거나 무지개 팔레트를 만들기 — 5개 사업부문 색과 흑백 보고서 톤을 유지.",
+      "화살표가 많은 플로우차트, 굵은 곡선 커넥터, 복잡한 3D 차트 — 커넥터는 1pt 검은 직선 중심.",
+      "극단적 여백이 필요한 표지·섹션 슬레이트를 정보 카드 밀도로 채우기 — 페이지 유형별 콘텐츠 점유율을 지킨다.",
+      "한국식 숫자+단위 표기 대신 영문 약어/KPI만 쓰기 — 통합보고서의 현지화된 숫자 리듬을 유지."
+    ],
     "collection": "design-diversity"
   },
   {
@@ -6217,12 +6229,34 @@ export const RAW_DESIGN_DIVERSITY_STYLES = [
         "hex": "#0060C0"
       }
     ],
-    "fonts": [],
-    "layout": [],
+    "fonts": [
+      "slogan_display: brush/calligraphy-style Korean lettering, 64-96pt, weight 900 visual mass, fallback Pretendard Black for editable text",
+      "title: Pretendard ExtraBold, 34-44pt, tracking -0.02em, leading 1.12",
+      "body: Pretendard Medium, 18-22pt, leading 1.45",
+      "label: Pretendard SemiBold, 12-14pt, tracking 0.04em",
+      "number: Pretendard Black, 52-72pt, tabular figures"
+    ],
+    "layout": [
+      "slide.size: 13.33x7.5in",
+      "spacing.margin_x_pct: 5",
+      "spacing.margin_y_pct: 6",
+      "slide.mode_slogan: full-screen calligraphy wordmark occupying 55-70% canvas width, supporting text in lower third",
+      "slide.mode_map: Korea/world map silhouette as raster or SVG-like flat asset with 3-6 pin callouts, no chart grid",
+      "slide.mode_card_grid: 2x2 or 3-column white cards on #001838/#002858 navy canvas, card padding 0.28-0.34in",
+      "diagram.connector: thin cyan #00D8FF or yellow-green #B7F000 straight lines only; avoid curved spaghetti",
+      "shape.radius: 8-14px for cards, 999px for pin badges",
+      "image.treatment: heroic silhouette or monument cutout with navy overlay <=30%, never stock-photo collage"
+    ],
     "signature": [
       "한국 정부 부처 업무보고 톤. 거대한 한글 캘리그래피 손글씨 슬로건이 풀스크린으로 박히고, 한반도·세계지도 인포그래픽과 영웅 실루엣(이순신 등), 시안+옐로그린 빛이 흐르는 다이어그램이 등장. 차트·표 없이 큰 숫자 카드만 — 정부·공공·정책 비전 발표, 국가 전략 보고에 어울립니다."
     ],
-    "avoid": [],
+    "avoid": [
+      "평범한 비즈니스 보고서 표·막대차트 중심 구성 — 이 스타일은 슬로건, 지도, 실루엣, 큰 숫자 카드가 주역.",
+      "CSS 그라디언트나 블러 배경 직접 구현 — 빛 효과가 필요하면 Sharp로 래스터 PNG를 만든 뒤 배치.",
+      "파스텔 소비재 팔레트, 카카오/네이버식 친근 일러스트, 이모지 — 다크 네이비 정부 비전 톤을 유지.",
+      "작은 본문을 빽빽하게 채우기 — 슬로건과 상징 이미지를 위해 넓은 여백과 큰 타이포그래피를 남긴다.",
+      "복잡한 범례·축·격자선 차트 — 수치는 1~3개 대형 KPI 카드나 지도 핀 콜아웃으로 표현."
+    ],
     "collection": "design-diversity"
   },
   {
@@ -6539,7 +6573,7 @@ export const RAW_DESIGN_DIVERSITY_STYLES = [
       "한국 기획재정부 업무보고처럼 다크 네이비 표지·구분면과 오프화이트 본문이 교차하는 시네마틱 정부 브리핑 톤. 매 페이지마다 핵심 단어 1~3글자에 노란 형광펜을 그어 강조하고, 가로 화살표 리본·라인 차트·거대 원 다이어그램이 시그니처 — 정부 거시 정책 발표, 경제 전망, 예산 브리핑에 어울립니다.",
       "한눈에 알아보는 단서: (1) 표지·목차·디바이더·마무리는 다크 네이비 `#05091A` 라디얼 스포트라이트 배경(중앙-하단 cyan 글로우 + 코너 동심원 arc), 본문 페이지는 상단 다크네이비 헤더바(12.8%) · 중앙 오프화이트 `#F2F3F4` 플레이트(80%) · 하단 다크네이비 푸터바(7%)의 3단 샌드위치 — 슬라이드를 펴면 시네마처럼 어둠 → 종이 → 어둠 순으로 흐른다, (2) 본문 모든 페이지의 헤더 제목 끝에 콜론 `:`을 두고 1~3 글자 핵심 키워드를 **노란 `#FFFF00` 형광 마커** 사각 배지(z-order 맨 뒤) 위에 검정 텍스트로 얹은 한 구절이 박혀 있다 — 표지의 한자 `大`도 96pt로 노란 형광 위에 흰 텍스트로 얹히고, 마무리에서도 `大` 60pt가 한 번 더 echo된다. 이 노란 한 구절이 덱의 알파-오메가 시그니처, (3) 4색 브랜드 팔레트(sky `#1F91DF` / teal `#20988F` / royal `#4472C4` / purple `#5464A6`)의 둥근 모서리 컬러 필 pill 박스 헤더 + 가로 그라데이션 화살표 리본(navy→teal→cyan) + 중앙 거대 원·다이아몬드 + 3패널 단일 라인 차트 + 5단 수직 그라데이션 밴드 + 손글씨 메모 오버레이 6종이 다이어그램 키트의 전부다 — **헤어라인 격자 표 한 장 없고 IBM Plex Mono 한 글자 없고 96pt Light 로마숫자 디바이더 없다**. 타 정부 팩(보수 흑백 백서, 산업부 슬로건 일러스트, 과기부 거대 수치 인포그래픽, 국토부 5극 지도, 고용부 친근 메시지)과 달리 이 팩은 \"다크 시네마틱 + 형광 마커 + 컬러 필 모듈\"이 정체성이다.",
       "diagram.language: rounded color-filled pill headers (radius 24px) in 4 brand colors + content boxes (radius 6-10px) with white fill + 0.5pt hairline border or micro shadow; yellow fluorescent highlight rectangle on header keyword (MANDATORY per body page, exception slide 4 p-04 mirror and slide 5 p-05 mirror where yellow appears in body callouts instead); central giant circles/diamonds for conceptual diagrams; horizontal gradient arrow ribbons for timelines; 5-tier vertical gradient band stacks for diplomacy/security pages; tilted handwritten memo overlay for narrative one-off",
-      "diagram.kit_a_arrow_ribbon_milestones: horizontal arrow shape (width 90% slide, height ~16%), fill linear-gradient navy #425C8C → teal #20988F → cyan #04AFE3 left-to-right (angle 90, stops 0/50/100), arrowhead at end; 6 drop-pin icon containers at x centers [10, 24, 40, 56, 70, 86]% above the ribbon (fill #E0E5EB, dark line-art glyph inside, tip touches ribbon); month label 16pt Bold white above each pin; 2-line callout INSIDE ribbon per pin (line 1 on yellow fluorescent rect 14pt Bold black on 3 of 6, line 2 white bold 16pt). Mirrors p-04. Variation: vertical 5-tier policy banner stack on slide 8 (each tier a different brand pill).",
+      "diagram.kit_a_arrow_ribbon_milestones: horizontal arrow shape (width 90% slide, height ~16%), fill with a pre-rendered navy #425C8C → teal #20988F → cyan #04AFE3 PNG ribbon asset (Sharp rasterization; flat #20988F fallback), arrowhead at end; 6 drop-pin icon containers at x centers [10, 24, 40, 56, 70, 86]% above the ribbon (fill #E0E5EB, dark line-art glyph inside, tip touches ribbon); month label 16pt Bold white above each pin; 2-line callout INSIDE ribbon per pin (line 1 on yellow fluorescent rect 14pt Bold black on 3 of 6, line 2 white bold 16pt). Mirrors p-04. Variation: vertical 5-tier policy banner stack on slide 8 (each tier a different brand pill).",
       "diagram.kit_b_central_giant_circle_dual: two giant circles in central horizontal band, diameter ~28% slide width, slightly adjacent or overlapping. Left = sky #1F91DF solid with '기회' Black 56pt white (x center 36%, y center 50%). Right = deep blue #283473 solid with '도전' Black 56pt white (x center 62%, y center 50%). 3 satellite boxes radiate from each circle (white fill + 0.5pt #D1D5DB border + optional mini chart icon). Bottom auxiliary callout below 기회 circle. Mirrors p-06.",
       "diagram.kit_c_central_diamond_quadrants: single diamond (45deg rotated square) at slide center, fill deep navy #1A223F, w ≈ 22%, h ≈ 30%, with 3-line slogan in white Bold 16pt (text in non-rotated text box overlaid). 4 quadrant rectangles orbit: TOP wide (royal #4472C4 pill), RIGHT tall (purple #564C92 pill), BOTTOM wide (royal pill), LEFT tall (royal pill). Mirrors p-18 (조달청).",
       "diagram.kit_d_color_fill_box_module: pill header (radius 24px, 4-color brand fill, white bold 20pt) + small yellow/amber category badge to the LEFT or top-left ('국정과제 N' / '2026 업무추진방향:' / '1월중, 관계부처 합동') + content box (white fill, radius 6-10px, 0.5pt hairline or micro shadow) with body paragraph and inline yellow fluorescent keyword highlight. Arranged in 2-column / 2x2 / 2x3 / 3-column / 2-col-plus-bottom-band grids. Mirrors p-09 (slide 7) and p-11/p-13 patterns. THE workhorse module of body pages.",
