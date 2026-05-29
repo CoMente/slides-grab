@@ -320,7 +320,7 @@ program
 
 program
   .command('preview-styles')
-  .description('Print the path to the bundled 35-style visual preview gallery')
+  .description('Print the path to the bundled 95-style visual preview gallery')
   .action(async () => {
     try {
       const { getPreviewHtmlPath } = await import('../src/design-styles.js');
@@ -418,6 +418,8 @@ program
         console.log(`# Bundled style: ${style.title} (${style.id})`);
         console.log(`Mood: ${style.mood}`);
         console.log(`Best for: ${style.bestFor}`);
+        if (style.source?.repo) console.log(`Source: ${style.source.repo}`);
+        if (style.source?.url) console.log(`Source URL: ${style.source.url}`);
         if (Array.isArray(style.background)) {
           console.log('\n## Background');
           for (const b of style.background) console.log(`- ${b}`);
@@ -433,6 +435,14 @@ program
         if (Array.isArray(style.layout)) {
           console.log('\n## Layout');
           for (const l of style.layout) console.log(`- ${l}`);
+        }
+        if (Array.isArray(style.signature)) {
+          console.log('\n## Signature');
+          for (const s of style.signature) console.log(`- ${s}`);
+        }
+        if (Array.isArray(style.avoid)) {
+          console.log('\n## Avoid');
+          for (const a of style.avoid) console.log(`- ${a}`);
         }
       }
     } catch (error) {

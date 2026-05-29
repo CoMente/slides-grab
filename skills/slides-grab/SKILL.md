@@ -18,7 +18,7 @@ Guides you through the complete presentation pipeline from topic to exported fil
 Use the installed **slides-grab-plan** skill.
 
 1. Take user's topic, audience, and tone.
-2. **Style selection (mandatory before outline):** Run `slides-grab list-styles`, analyze the topic/tone, and shortlist 2–3 bundled styles that fit. Present the shortlist with reasons. Optionally offer `slides-grab preview-styles` for visual preview. If none of the 35 bundled styles fit, propose a fully custom visual direction. **Get explicit style approval before writing the outline.**
+2. **Style selection (mandatory before outline):** Run `slides-grab list-styles`, analyze the topic/tone, and shortlist 2–3 bundled styles that fit. Present the shortlist with reasons. Optionally offer `slides-grab preview-styles` for visual preview. If none of the 95 bundled styles fit, propose a fully custom visual direction. **Get explicit style approval before writing the outline.**
 3. Create `slide-outline.md` with the chosen style ID in the meta section (`style: <id>`).
 4. Present outline to user.
 5. Revise until user explicitly approves.
