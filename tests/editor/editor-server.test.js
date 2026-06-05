@@ -29,6 +29,7 @@ async function writeMockCli(workspace, fileName) {
   const mockPath = join(workspace, fileName);
   const script = `#!/usr/bin/env node
 const prompt = process.argv[process.argv.length - 1] || '';
+process.stdout.write(process.argv.slice(2).join(' ') + '\\n');
 process.stdout.write(prompt);
 process.exit(0);
 `;
@@ -140,7 +141,7 @@ test('refuses to open a second editor when another slides-grab editor already ow
   }
 });
 
-test('/api/models exposes claude-opus-4-7 so the bbox editor can route edits to Opus 4.7 (issue #69)', async () => {
+test('/api/models exposes claude-opus-4-8 so the bbox editor can route edits to Opus 4.8 (issue #88)', async () => {
   const workspace = await createWorkspace();
   const port = await getAvailablePort();
   const server = spawnEditorServer(workspace, port);
@@ -154,12 +155,12 @@ test('/api/models exposes claude-opus-4-7 so the bbox editor can route edits to 
 
     assert.ok(Array.isArray(body.models), '/api/models must return a models array');
     assert.ok(
-      body.models.includes('claude-opus-4-7'),
-      `/api/models should include 'claude-opus-4-7' after the Opus 4.7 upgrade. Got: ${JSON.stringify(body.models)}`,
+      body.models.includes('claude-opus-4-8'),
+      `/api/models should include 'claude-opus-4-8' after the Opus 4.8 upgrade. Got: ${JSON.stringify(body.models)}`,
     );
     assert.ok(
-      !body.models.includes('claude-opus-4-6'),
-      `/api/models should no longer include 'claude-opus-4-6'. Got: ${JSON.stringify(body.models)}`,
+      !body.models.includes('claude-opus-4-7'),
+      `/api/models should no longer include 'claude-opus-4-7'. Got: ${JSON.stringify(body.models)}`,
     );
     assert.ok(
       body.models.includes('claude-sonnet-4-6'),
@@ -247,7 +248,7 @@ test('/api/apply injects DESIGN.slides.md from the active --slides-dir, not laun
   }
 });
 
-test('/api/apply routes claude-opus-4-7 through the claude CLI with --model claude-opus-4-7 (issue #69)', async () => {
+test('/api/apply routes claude-opus-4-8 through the claude CLI with --model claude-opus-4-8 (issue #88)', async () => {
   const workspace = await createWorkspace();
   const mockClaude = await writeMockCli(workspace, 'mock-claude.js');
   const port = await getAvailablePort();
@@ -266,7 +267,7 @@ test('/api/apply routes claude-opus-4-7 through the claude CLI with --model clau
       body: JSON.stringify({
         slide: 'slide-01.html',
         prompt: 'Upgrade the title styling.',
-        model: 'claude-opus-4-7',
+        model: 'claude-opus-4-8',
         selections: [
           {
             x: 40,
@@ -287,20 +288,21 @@ test('/api/apply routes claude-opus-4-7 through the claude CLI with --model clau
 
     const applyBody = await applyRes.json();
     assert.equal(applyRes.status, 200, JSON.stringify(applyBody));
-    assert.equal(applyBody.success, true, `claude-opus-4-7 edit should succeed: ${JSON.stringify(applyBody)}`);
+    assert.equal(applyBody.success, true, `claude-opus-4-8 edit should succeed: ${JSON.stringify(applyBody)}`);
 
     const logRes = await fetch(`http://localhost:${port}/api/runs/${applyBody.runId}/log`);
     assert.equal(logRes.status, 200);
     const log = await logRes.text();
 
     assert.match(log, /Upgrade the title styling\./);
+    assert.match(log, /--model claude-opus-4-8/);
   } finally {
     await stopChild(server.child);
     await rm(workspace, { recursive: true, force: true });
   }
 });
 
-test('/api/apply rejects the superseded claude-opus-4-6 identifier (issue #69)', async () => {
+test('/api/apply rejects the superseded claude-opus-4-7 identifier (issue #88)', async () => {
   const workspace = await createWorkspace();
   const port = await getAvailablePort();
   const server = spawnEditorServer(workspace, port);
@@ -314,7 +316,7 @@ test('/api/apply rejects the superseded claude-opus-4-6 identifier (issue #69)',
       body: JSON.stringify({
         slide: 'slide-01.html',
         prompt: 'Try a dropped model.',
-        model: 'claude-opus-4-6',
+        model: 'claude-opus-4-7',
         selections: [
           {
             x: 40,
@@ -327,16 +329,16 @@ test('/api/apply rejects the superseded claude-opus-4-6 identifier (issue #69)',
       }),
     });
 
-    assert.equal(applyRes.status, 400, 'claude-opus-4-6 should be rejected with 400 now that it is removed');
+    assert.equal(applyRes.status, 400, 'claude-opus-4-7 should be rejected with 400 now that it is removed');
     const body = await applyRes.json();
     assert.match(body.error || '', /Invalid `model`/);
     assert.ok(
-      !(body.error || '').includes('claude-opus-4-6'),
-      `error.Allowed models list should no longer mention 'claude-opus-4-6'. Got: ${body.error}`,
+      !(body.error || '').includes('claude-opus-4-7'),
+      `error.Allowed models list should no longer mention 'claude-opus-4-7'. Got: ${body.error}`,
     );
     assert.ok(
-      (body.error || '').includes('claude-opus-4-7'),
-      `error.Allowed models list should mention 'claude-opus-4-7'. Got: ${body.error}`,
+      (body.error || '').includes('claude-opus-4-8'),
+      `error.Allowed models list should mention 'claude-opus-4-8'. Got: ${body.error}`,
     );
   } finally {
     await stopChild(server.child);
