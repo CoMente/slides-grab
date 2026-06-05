@@ -486,10 +486,35 @@ export function buildCodexExecArgs({ prompt, imagePath, model }) {
 
 export { CLAUDE_MODELS, isClaudeModel } from './js/model-registry.js';
 
+const CLAUDE_PERMISSION_MODES = new Set([
+  'acceptEdits',
+  'auto',
+  'bypassPermissions',
+  'default',
+  'dontAsk',
+  'plan',
+]);
+
+function buildClaudePermissionArgs() {
+  if (process.env.PPT_AGENT_CLAUDE_SKIP_PERMISSIONS === '1') {
+    return ['--dangerously-skip-permissions'];
+  }
+
+  const permissionMode = process.env.PPT_AGENT_CLAUDE_PERMISSION_MODE?.trim() || 'acceptEdits';
+  if (!CLAUDE_PERMISSION_MODES.has(permissionMode)) {
+    throw new Error(
+      `Invalid PPT_AGENT_CLAUDE_PERMISSION_MODE: ${permissionMode}. ` +
+      `Allowed values: ${Array.from(CLAUDE_PERMISSION_MODES).join(', ')}`,
+    );
+  }
+
+  return ['--permission-mode', permissionMode];
+}
+
 export function buildClaudeExecArgs({ prompt, imagePath, model }) {
   const args = [
     '-p',
-    '--dangerously-skip-permissions',
+    ...buildClaudePermissionArgs(),
     '--model', model.trim(),
     '--max-turns', '30',
     '--verbose',

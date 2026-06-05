@@ -31,6 +31,39 @@ async function importFreshCodexEditModule() {
   return import(moduleUrl.href);
 }
 
+function withClaudePermissionEnv(env, callback) {
+  const originalPermissionMode = process.env.PPT_AGENT_CLAUDE_PERMISSION_MODE;
+  const originalSkip = process.env.PPT_AGENT_CLAUDE_SKIP_PERMISSIONS;
+
+  try {
+    if (env.permissionMode === undefined) {
+      delete process.env.PPT_AGENT_CLAUDE_PERMISSION_MODE;
+    } else {
+      process.env.PPT_AGENT_CLAUDE_PERMISSION_MODE = env.permissionMode;
+    }
+
+    if (env.skipPermissions === undefined) {
+      delete process.env.PPT_AGENT_CLAUDE_SKIP_PERMISSIONS;
+    } else {
+      process.env.PPT_AGENT_CLAUDE_SKIP_PERMISSIONS = env.skipPermissions;
+    }
+
+    return callback();
+  } finally {
+    if (originalPermissionMode === undefined) {
+      delete process.env.PPT_AGENT_CLAUDE_PERMISSION_MODE;
+    } else {
+      process.env.PPT_AGENT_CLAUDE_PERMISSION_MODE = originalPermissionMode;
+    }
+
+    if (originalSkip === undefined) {
+      delete process.env.PPT_AGENT_CLAUDE_SKIP_PERMISSIONS;
+    } else {
+      process.env.PPT_AGENT_CLAUDE_SKIP_PERMISSIONS = originalSkip;
+    }
+  }
+}
+
 test('normalizeSelection rounds values and clamps to slide bounds', () => {
   const selection = normalizeSelection(
     {
@@ -252,17 +285,17 @@ test('buildCodexEditPrompt switches sizing guidance for card-news mode', () => {
   assert.match(prompt, /Keep slide dimensions at 720pt x 720pt\./);
 });
 
-test('CLAUDE_MODELS exposes claude-opus-4-7 as the bbox-editor Opus option (issue #69)', () => {
+test('CLAUDE_MODELS exposes claude-opus-4-8 as the bbox-editor Opus option (issue #88)', () => {
   assert.ok(
-    CLAUDE_MODELS.includes('claude-opus-4-7'),
-    `CLAUDE_MODELS should include 'claude-opus-4-7' so the editor dropdown can route edits to Opus 4.7. Got: ${JSON.stringify(CLAUDE_MODELS)}`,
+    CLAUDE_MODELS.includes('claude-opus-4-8'),
+    `CLAUDE_MODELS should include 'claude-opus-4-8' so the editor dropdown can route edits to Opus 4.8. Got: ${JSON.stringify(CLAUDE_MODELS)}`,
   );
 });
 
-test('CLAUDE_MODELS drops the superseded claude-opus-4-6 identifier (issue #69)', () => {
+test('CLAUDE_MODELS drops the superseded claude-opus-4-7 identifier (issue #88)', () => {
   assert.ok(
-    !CLAUDE_MODELS.includes('claude-opus-4-6'),
-    `CLAUDE_MODELS should no longer include 'claude-opus-4-6' after the Opus 4.7 upgrade. Got: ${JSON.stringify(CLAUDE_MODELS)}`,
+    !CLAUDE_MODELS.includes('claude-opus-4-7'),
+    `CLAUDE_MODELS should no longer include 'claude-opus-4-7' after the Opus 4.8 upgrade. Got: ${JSON.stringify(CLAUDE_MODELS)}`,
   );
 });
 
@@ -273,27 +306,28 @@ test('CLAUDE_MODELS still exposes claude-sonnet-4-6 (there is no Sonnet 4.7 yet)
   );
 });
 
-test('isClaudeModel recognizes claude-opus-4-7 after the upgrade', () => {
-  assert.equal(isClaudeModel('claude-opus-4-7'), true);
-  assert.equal(isClaudeModel('  claude-opus-4-7  '), true);
+test('isClaudeModel recognizes claude-opus-4-8 after the upgrade', () => {
+  assert.equal(isClaudeModel('claude-opus-4-8'), true);
+  assert.equal(isClaudeModel('  claude-opus-4-8  '), true);
 });
 
-test('isClaudeModel rejects the dropped claude-opus-4-6 identifier', () => {
-  assert.equal(isClaudeModel('claude-opus-4-6'), false);
+test('isClaudeModel rejects the dropped claude-opus-4-7 identifier', () => {
+  assert.equal(isClaudeModel('claude-opus-4-7'), false);
 });
 
-test('buildClaudeExecArgs forwards claude-opus-4-7 to the claude CLI --model flag', () => {
-  const args = buildClaudeExecArgs({
+test('buildClaudeExecArgs forwards claude-opus-4-8 to the claude CLI --model flag', () => {
+  const args = withClaudePermissionEnv({}, () => buildClaudeExecArgs({
     prompt: 'Edit slide',
     imagePath: '/tmp/slide-annotated.png',
-    model: 'claude-opus-4-7',
-  });
+    model: 'claude-opus-4-8',
+  }));
 
   assert.deepEqual(args, [
     '-p',
-    '--dangerously-skip-permissions',
+    '--permission-mode',
+    'acceptEdits',
     '--model',
-    'claude-opus-4-7',
+    'claude-opus-4-8',
     '--max-turns',
     '30',
     '--verbose',
@@ -301,18 +335,64 @@ test('buildClaudeExecArgs forwards claude-opus-4-7 to the claude CLI --model fla
   ]);
 });
 
-test('DEFAULT_MODELS exposes claude-opus-4-7 as the Claude Opus fallback (issue #69)', () => {
+test('buildClaudeExecArgs keeps dangerous skip permissions as an explicit opt-in for legacy sandboxes', () => {
+  const args = withClaudePermissionEnv({ skipPermissions: '1' }, () => buildClaudeExecArgs({
+    prompt: 'Edit slide',
+    imagePath: '',
+    model: 'claude-opus-4-8',
+  }));
+
+  assert.deepEqual(args, [
+    '-p',
+    '--dangerously-skip-permissions',
+    '--model',
+    'claude-opus-4-8',
+    '--max-turns',
+    '30',
+    '--verbose',
+    'Edit slide',
+  ]);
+});
+
+test('buildClaudeExecArgs uses configurable Claude permission mode for OAuth-friendly sessions (issue #88)', () => {
+  const args = withClaudePermissionEnv({ permissionMode: 'acceptEdits' }, () => buildClaudeExecArgs({
+    prompt: 'Edit slide',
+    imagePath: '',
+    model: 'claude-opus-4-8',
+  }));
+
+  assert.deepEqual(args, [
+    '-p',
+    '--permission-mode',
+    'acceptEdits',
+    '--model',
+    'claude-opus-4-8',
+    '--max-turns',
+    '30',
+    '--verbose',
+    'Edit slide',
+  ]);
+});
+
+test('DEFAULT_MODELS exposes claude-opus-4-8 as the Claude Opus fallback (issue #88)', () => {
   assert.ok(
-    DEFAULT_MODELS.includes('claude-opus-4-7'),
-    `DEFAULT_MODELS should include 'claude-opus-4-7' so the editor UI dropdown falls back to Opus 4.7 when /api/models is unreachable. Got: ${JSON.stringify(DEFAULT_MODELS)}`,
+    DEFAULT_MODELS.includes('claude-opus-4-8'),
+    `DEFAULT_MODELS should include 'claude-opus-4-8' so the editor UI dropdown falls back to Opus 4.8 when /api/models is unreachable. Got: ${JSON.stringify(DEFAULT_MODELS)}`,
   );
 });
 
-test('DEFAULT_MODELS drops the superseded claude-opus-4-6 identifier (issue #69)', () => {
+test('DEFAULT_MODELS drops the superseded claude-opus-4-7 identifier (issue #88)', () => {
   assert.ok(
-    !DEFAULT_MODELS.includes('claude-opus-4-6'),
-    `DEFAULT_MODELS should no longer include 'claude-opus-4-6' after the Opus 4.7 upgrade. Got: ${JSON.stringify(DEFAULT_MODELS)}`,
+    !DEFAULT_MODELS.includes('claude-opus-4-7'),
+    `DEFAULT_MODELS should no longer include 'claude-opus-4-7' after the Opus 4.8 upgrade. Got: ${JSON.stringify(DEFAULT_MODELS)}`,
   );
+});
+
+test('static editor fallback select exposes claude-opus-4-8 and not superseded claude-opus-4-7 (issue #88)', () => {
+  const html = readFileSync(new URL('../../src/editor/editor.html', import.meta.url), 'utf8');
+
+  assert.match(html, /<option value="claude-opus-4-8">claude-opus-4-8<\/option>/);
+  assert.doesNotMatch(html, /<option value="claude-opus-4-7">claude-opus-4-7<\/option>/);
 });
 
 test('DEFAULT_MODELS uses gpt-5.5 as the first entry per issue #73 (gpt-5.4 deprecation)', () => {
