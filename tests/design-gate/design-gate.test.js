@@ -1,9 +1,18 @@
 import assert from 'node:assert/strict';
-import { execFileSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import test from 'node:test';
+
+import {
+  captureSlidesGrabFailure,
+  createSlideHtml,
+  designGateArgs,
+  recordProceedGate,
+  runSlidesGrabCli,
+  writeDeck,
+} from '../helpers/design-gate-cli.js';
+import { createPassAReport, createPassBReport } from '../helpers/design-gate-fixtures.js';
 
 test('slides-grab pdf blocks export when no fresh Proceed design gate exists', () => {
   const root = mkdtempSync(join(tmpdir(), 'slides-grab-gate-block-'));
@@ -13,7 +22,7 @@ test('slides-grab pdf blocks export when no fresh Proceed design gate exists', (
   try {
     writeDeck(slidesDir);
 
-    const error = captureCliFailure(['pdf', '--slides-dir', slidesDir, '--output', outputPath]);
+    const error = captureSlidesGrabFailure(['pdf', '--slides-dir', slidesDir, '--output', outputPath]);
 
     assert.match(String(error.stderr), /design[- ]gate/i);
     assert.equal(existsSync(outputPath), false);
@@ -31,103 +40,150 @@ test('slides-grab design-gate records Proceed evidence, unblocks export, and tur
 
   try {
     writeDeck(slidesDir);
-    writeFileSync(passAPath, 'Pass A: System Contract / Constraint Integrity says Proceed.', 'utf-8');
-    writeFileSync(passBPath, 'Pass B: Audience Impact / Expressive Readability says Proceed.', 'utf-8');
+    writeFileSync(passAPath, createPassAReport(slidesDir), 'utf-8');
+    writeFileSync(passBPath, createPassBReport(slidesDir), 'utf-8');
 
-    runCli([
-      'design-gate',
-      '--slides-dir',
-      slidesDir,
-      '--verdict',
-      'proceed',
-      '--pass-a-report',
-      passAPath,
-      '--pass-b-report',
-      passBPath,
-      '--resolution',
-      '720p',
-    ]);
+    runSlidesGrabCli(designGateArgs(slidesDir, passAPath, passBPath));
 
     const statePath = join(slidesDir, '.slides-grab', 'design-gate.json');
     const state = JSON.parse(readFileSync(statePath, 'utf-8'));
+    assert.equal(state.schemaVersion, 2);
     assert.equal(state.verdict, 'proceed');
+    assert.equal(state.gateValidation.status, 'passed');
+    assert.equal(state.passA.verdict, 'PASS');
+    assert.equal(state.passB.verdict, 'PASS');
+    assert.equal(state.passA.slideFingerprints.length, 1);
+    assert.equal(state.passB.slideFingerprints.length, 1);
     assert.equal(state.slideFingerprints.length, 1);
+    assert.equal(state.passReportFingerprints.length, 2);
+    assert.equal(state.previewFingerprints.length, 1);
     assert.equal(existsSync(join(slidesDir, '.slides-grab', 'gate-preview', 'slide-01.png')), true);
 
-    runCli(['pdf', '--slides-dir', slidesDir, '--output', outputPath]);
+    runSlidesGrabCli(['pdf', '--slides-dir', slidesDir, '--output', outputPath]);
     assert.equal(existsSync(outputPath), true);
 
     writeFileSync(join(slidesDir, 'slide-01.html'), createSlideHtml('Changed after gate'), 'utf-8');
-    const staleError = captureCliFailure(['pdf', '--slides-dir', slidesDir, '--output', join(root, 'stale.pdf')]);
+    const staleError = captureSlidesGrabFailure(['pdf', '--slides-dir', slidesDir, '--output', join(root, 'stale.pdf')]);
     assert.match(String(staleError.stderr), /stale|changed/i);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
 });
 
-function runCli(args) {
-  return execFileSync(process.execPath, ['bin/ppt-agent.js', ...args], {
-    cwd: process.cwd(),
-    encoding: 'utf-8',
-  });
-}
+test('slides-grab export blocks when design-gate pass reports or rendered evidence change', { timeout: 90000 }, () => {
+  const root = mkdtempSync(join(tmpdir(), 'slides-grab-gate-evidence-stale-'));
+  const slidesDir = join(root, 'slides');
+  const passAPath = join(root, 'pass-a.md');
+  const passBPath = join(root, 'pass-b.md');
 
-function captureCliFailure(args) {
   try {
-    runCli(args);
-  } catch (error) {
-    return {
-      stderr: error.stderr || error.message,
-      stdout: error.stdout || '',
-    };
+    writeDeck(slidesDir);
+    writeFileSync(passAPath, createPassAReport(slidesDir), 'utf-8');
+    writeFileSync(passBPath, createPassBReport(slidesDir), 'utf-8');
+    recordProceedGate(slidesDir, passAPath, passBPath);
+
+    writeFileSync(passAPath, `${createPassAReport(slidesDir)}\nExtra post-gate edit.\n`, 'utf-8');
+    const reportError = captureSlidesGrabFailure(['pdf', '--slides-dir', slidesDir, '--output', join(root, 'report-stale.pdf')]);
+    assert.match(String(reportError.stderr), /reports changed|Pass A|Pass B/i);
+
+    writeFileSync(passAPath, createPassAReport(slidesDir), 'utf-8');
+    recordProceedGate(slidesDir, passAPath, passBPath);
+
+    writeFileSync(join(slidesDir, '.slides-grab', 'gate-preview', 'slide-01.png'), 'changed evidence', 'utf-8');
+    const previewError = captureSlidesGrabFailure(['pdf', '--slides-dir', slidesDir, '--output', join(root, 'preview-stale.pdf')]);
+    assert.match(String(previewError.stderr), /rendered evidence changed/i);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
   }
-  assert.fail(`Expected slides-grab ${args.join(' ')} to fail`);
-}
+});
 
-function writeDeck(slidesDir) {
-  mkdirSync(slidesDir, { recursive: true });
-  writeFileSync(join(slidesDir, 'slide-01.html'), createSlideHtml('Design Gate Fixture'), 'utf-8');
-}
+const rejectScenarios = [
+  {
+    name: 'stale Pass A and Pass B reports reused after slide edits',
+    prepare(slidesDir, passAPath, passBPath) {
+      writeFileSync(passAPath, createPassAReport(slidesDir), 'utf-8');
+      writeFileSync(passBPath, createPassBReport(slidesDir), 'utf-8');
+      writeFileSync(join(slidesDir, 'slide-01.html'), createSlideHtml('Changed before gate record'), 'utf-8');
+    },
+    stderr: /current slide fingerprint/i,
+  },
+  {
+    name: 'weak Pass A and Pass B reports',
+    prepare(_slidesDir, passAPath, passBPath) {
+      writeFileSync(passAPath, 'Pass A: System Contract / Constraint Integrity says Proceed.', 'utf-8');
+      writeFileSync(passBPath, 'Pass B: Audience Impact / Expressive Readability says Proceed.', 'utf-8');
+    },
+    stderr: /missing|required|criteria|Unresolved Critical/i,
+  },
+  {
+    name: 'proceed verdict with unresolved Critical findings',
+    prepare(slidesDir, passAPath, passBPath) {
+      writeFileSync(passAPath, createPassAReport(slidesDir), 'utf-8');
+      writeFileSync(passBPath, createPassBReport(slidesDir, { unresolvedCritical: 1 }), 'utf-8');
+    },
+    stderr: /blocks proceed|cannot proceed|unresolved/i,
+  },
+  {
+    name: 'reports that list Critical severity findings',
+    prepare(slidesDir, passAPath, passBPath) {
+      writeFileSync(passAPath, createPassAReport(slidesDir), 'utf-8');
+      writeFileSync(passBPath, createPassBReport(slidesDir, { criticalRowOnly: true }), 'utf-8');
+    },
+    stderr: /Critical severity finding/i,
+  },
+  {
+    name: 'contradictory verdicts and unsupported severities',
+    prepare(slidesDir, passAPath, passBPath) {
+      writeFileSync(passAPath, createPassAReport(slidesDir, {
+        verdictLines: ['VERDICT: PASS', '  VERDICT: FAIL'],
+        findingSeverity: 'Blocker',
+      }), 'utf-8');
+      writeFileSync(passBPath, createPassBReport(slidesDir), 'utf-8');
+    },
+    stderr: /exactly one VERDICT|unsupported finding severity/i,
+  },
+  {
+    name: 'deck-wide Critical findings rows',
+    prepare(slidesDir, passAPath, passBPath) {
+      writeFileSync(passAPath, createPassAReport(slidesDir), 'utf-8');
+      writeFileSync(passBPath, createPassBReport(slidesDir, {
+        criticalRowOnly: true,
+        slideCell: 'deck-wide',
+      }), 'utf-8');
+    },
+    stderr: /Critical severity finding/i,
+  },
+  {
+    name: 'duplicate contradictory Critical summary lines',
+    prepare(slidesDir, passAPath, passBPath) {
+      writeFileSync(passAPath, createPassAReport(slidesDir), 'utf-8');
+      writeFileSync(passBPath, createPassBReport(slidesDir, {
+        extraSummaryLines: [
+          '  Unresolved Critical: 1',
+          '  Blocking findings: slide-01: hidden blocking issue',
+        ],
+      }), 'utf-8');
+    },
+    stderr: /exactly one Unresolved Critical|exactly one Blocking findings/i,
+  },
+];
 
-function createSlideHtml(title) {
-  return `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <style>
-    * { box-sizing: border-box; }
-    body {
-      width: 720pt;
-      height: 405pt;
-      margin: 0;
-      padding: 36pt;
-      font-family: Pretendard, sans-serif;
-      background: #ffffff;
-      color: #111111;
-      overflow: hidden;
+for (const scenario of rejectScenarios) {
+  test(`slides-grab design-gate rejects ${scenario.name}`, { timeout: 90000 }, () => {
+    const root = mkdtempSync(join(tmpdir(), 'slides-grab-gate-reject-'));
+    const slidesDir = join(root, 'slides');
+    const passAPath = join(root, 'pass-a.md');
+    const passBPath = join(root, 'pass-b.md');
+
+    try {
+      writeDeck(slidesDir);
+      scenario.prepare(slidesDir, passAPath, passBPath);
+      const error = captureSlidesGrabFailure(designGateArgs(slidesDir, passAPath, passBPath));
+
+      assert.match(String(error.stderr), scenario.stderr);
+      assert.equal(existsSync(join(slidesDir, '.slides-grab', 'design-gate.json')), false);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
     }
-    .frame {
-      width: 100%;
-      height: 100%;
-      border: 1pt solid #222222;
-      padding: 24pt;
-    }
-    h1 {
-      margin: 0 0 12pt;
-      font-size: 24pt;
-    }
-    p {
-      margin: 0;
-      font-size: 14pt;
-      line-height: 1.4;
-    }
-  </style>
-</head>
-<body>
-  <div class="frame">
-    <h1>${title}</h1>
-    <p>All text is in semantic tags and the slide fits the required frame.</p>
-  </div>
-</body>
-</html>`;
+  });
 }

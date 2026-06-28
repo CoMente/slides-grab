@@ -169,6 +169,58 @@ The passes are dialectical roles, not checklist buckets. Pass A asks whether the
 
 Each pass returns: `VERDICT: PASS | REVISE | FAIL`, a confidence, a located findings list with one severity per finding (Critical/Major/Minor/Note), and a BLOCKING list.
 
+For a `Proceed` gate, the CLI enforces the pass-report contract below. A short "looks good / Proceed" note is not enough and `slides-grab design-gate --verdict proceed` rejects it. Every pass report must reference the rendered PNG evidence files that `slides-grab design-gate` creates, for example `slide-01.png`, `slide-02.png`, etc. It must also include the current slide source fingerprint for every `slide-*.html` file in the reviewed deck (`slide-01.html: <sha256>`). If the slide source changes after the reports were written, the old reports cannot be reused.
+
+**Pass A required report skeleton:**
+
+```markdown
+# Pass A: System Contract / Constraint Integrity
+
+VERDICT: PASS
+Confidence: High
+Evidence: <slides-dir>/.slides-grab/gate-preview/slide-01.png, ...
+Slide fingerprints: slide-01.html: <sha256>, ...
+Unresolved Critical: 0
+Blocking findings: None
+
+## Checks
+- [x] System consistency: PASS — <evidence>
+- [x] Color discipline: PASS — <evidence>
+- [x] AI slop tropes: PASS — <evidence>
+- [x] Content discipline: PASS — <evidence>
+
+## Findings
+| Slide | Finding | Severity | Fix | Status |
+|-------|---------|----------|-----|--------|
+| slide-01 | No blocking findings | Note | None | tracked |
+```
+
+**Pass B required report skeleton:**
+
+```markdown
+# Pass B: Audience Impact / Expressive Readability
+
+VERDICT: PASS
+Confidence: High
+Evidence: <slides-dir>/.slides-grab/gate-preview/slide-01.png, ...
+Slide fingerprints: slide-01.html: <sha256>, ...
+Unresolved Critical: 0
+Blocking findings: None
+
+## Checks
+- [x] Composition & hierarchy: PASS — <evidence>
+- [x] Typography & legibility: PASS — <evidence>
+- [x] Korean/CJK word-break integrity: PASS — <evidence>
+- [x] Review Litmus: PASS — <evidence>
+
+## Findings
+| Slide | Finding | Severity | Fix | Status |
+|-------|---------|----------|-----|--------|
+| slide-01 | No blocking findings | Note | None | tracked |
+```
+
+If either pass has an unresolved Critical finding, non-empty blocking findings, a non-`PASS` verdict, missing rendered evidence, missing current slide fingerprints, missing findings table, or missing required checks, fix the slides and run the full loop again. Do not call `slides-grab design-gate --verdict proceed` until both pass reports satisfy this structure.
+
 > **If no image-capable reviewer is available in the harness**, the gate cannot be completed honestly by the orchestrator alone. Do NOT declare `Proceed` from HTML/grep inspection only. Either (a) route Pass B to an image-capable model/agent, or (b) hand the rendered `gate-preview/` PNGs to the user for the visual verdict. Code-level checks (palette grep, slop grep, font/typography floor, validate) may be reported as a **partial** result, but the visual checks (4, 6, 7) stay open until a real viewing happens. An open visual check is not a pass.
 
 ### Step 3 — Synthesize one verdict

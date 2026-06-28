@@ -48,13 +48,19 @@ export async function collectSlideFingerprints(slidesDir) {
   const resolvedSlidesDir = resolve(process.cwd(), slidesDir);
   const files = await findGateSlideFiles(resolvedSlidesDir);
   return Promise.all(files.map(async (fileName) => {
-    const filePath = join(resolvedSlidesDir, fileName);
-    const bytes = await readFile(filePath);
     return {
       file: fileName,
-      sha256: createHash('sha256').update(bytes).digest('hex'),
+      sha256: await hashFile(join(resolvedSlidesDir, fileName)),
     };
   }));
+}
+
+export async function collectFileFingerprints(baseDir, files) {
+  const resolvedBaseDir = resolve(process.cwd(), baseDir);
+  return Promise.all(files.map(async (fileName) => ({
+    file: fileName,
+    sha256: await hashFile(join(resolvedBaseDir, fileName)),
+  })));
 }
 
 export async function readDesignGateState(slidesDir) {
@@ -84,7 +90,7 @@ export async function createDesignGateState(options) {
   const slideFingerprints = await collectSlideFingerprints(slidesDir);
 
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     verdict,
     generatedAt: new Date().toISOString(),
     slideMode: options.slideMode,
@@ -93,7 +99,10 @@ export async function createDesignGateState(options) {
     reportPath: options.reportPath ? relative(slidesDir, options.reportPath) : join(GATE_DIR_NAME, GATE_REPORT_FILE),
     passA: normalizeEvidence(options.passA),
     passB: normalizeEvidence(options.passB),
+    gateValidation: options.gateValidation || { status: verdict === PROCEED ? 'passed' : 'not-run' },
     slideFingerprints,
+    passReportFingerprints: options.passReportFingerprints || [],
+    previewFingerprints: options.previewFingerprints || [],
   };
 }
 
@@ -109,15 +118,46 @@ export async function assertDesignGateReady(slidesDir, options = {}) {
     throw new Error(`${label} blocked: latest design gate verdict is "${state.verdict}", not "proceed".`);
   }
 
+  if (state.schemaVersion !== 2) {
+    throw new Error(`${label} blocked: design gate receipt is from a legacy unenforced schema; rerun slides-grab design-gate.`);
+  }
+
+  if (state.gateValidation?.status !== 'passed') {
+    throw new Error(`${label} blocked: design gate report validation did not pass.`);
+  }
+
   if (!state.passA?.reportPath || !state.passB?.reportPath) {
     throw new Error(`${label} blocked: design gate state is missing dual-oracle Pass A/Pass B evidence.`);
   }
+
+  assertPassReady(state.passA, 'Pass A', label);
+  assertPassReady(state.passB, 'Pass B', label);
 
   const currentFingerprints = await collectSlideFingerprints(paths.slidesDir);
   const previousFingerprints = Array.isArray(state.slideFingerprints) ? state.slideFingerprints : [];
   const staleFiles = diffFingerprints(previousFingerprints, currentFingerprints);
   if (staleFiles.length > 0) {
     throw new Error(`${label} blocked: design gate is stale because slides changed: ${staleFiles.join(', ')}.`);
+  }
+
+  const passReportFingerprints = Array.isArray(state.passReportFingerprints) ? state.passReportFingerprints : [];
+  if (passReportFingerprints.length < 2) {
+    throw new Error(`${label} blocked: design gate receipt is missing Pass A/Pass B report fingerprints.`);
+  }
+  const currentReportFingerprints = await collectFileFingerprints(paths.slidesDir, passReportFingerprints.map((entry) => entry.file));
+  const staleReports = diffFingerprints(passReportFingerprints, currentReportFingerprints);
+  if (staleReports.length > 0) {
+    throw new Error(`${label} blocked: design gate is stale because Pass A/Pass B reports changed: ${staleReports.join(', ')}.`);
+  }
+
+  const previewFingerprints = Array.isArray(state.previewFingerprints) ? state.previewFingerprints : [];
+  if (previewFingerprints.length === 0) {
+    throw new Error(`${label} blocked: design gate receipt is missing rendered evidence fingerprints.`);
+  }
+  const currentPreviewFingerprints = await collectFileFingerprints(paths.slidesDir, previewFingerprints.map((entry) => entry.file));
+  const stalePreviewFiles = diffFingerprints(previewFingerprints, currentPreviewFingerprints);
+  if (stalePreviewFiles.length > 0) {
+    throw new Error(`${label} blocked: design gate is stale because rendered evidence changed: ${stalePreviewFiles.join(', ')}.`);
   }
 
   return state;
@@ -151,7 +191,30 @@ function normalizeEvidence(value = {}) {
   return {
     reportPath: value.reportPath || '',
     summary: value.summary || '',
+    verdict: value.verdict || '',
+    unresolvedCritical: value.unresolvedCritical ?? null,
+    blockingFindings: Array.isArray(value.blockingFindings) ? value.blockingFindings : [],
+    checks: Array.isArray(value.checks) ? value.checks : [],
+    evidenceFiles: Array.isArray(value.evidenceFiles) ? value.evidenceFiles : [],
+    slideFingerprints: Array.isArray(value.slideFingerprints) ? value.slideFingerprints : [],
   };
+}
+
+async function hashFile(filePath) {
+  const bytes = await readFile(filePath);
+  return createHash('sha256').update(bytes).digest('hex');
+}
+
+function assertPassReady(pass, passLabel, exportLabel) {
+  if (pass.verdict !== 'PASS') {
+    throw new Error(`${exportLabel} blocked: ${passLabel} did not record VERDICT: PASS.`);
+  }
+  if (pass.unresolvedCritical !== 0) {
+    throw new Error(`${exportLabel} blocked: ${passLabel} has unresolved Critical findings.`);
+  }
+  if (pass.blockingFindings.length > 0) {
+    throw new Error(`${exportLabel} blocked: ${passLabel} has blocking findings.`);
+  }
 }
 
 function toSlideOrder(fileName) {

@@ -3,14 +3,18 @@
 import { spawn } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { mkdir, readFile } from 'node:fs/promises';
-import { dirname, resolve } from 'node:path';
+import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import { ensureSlidesPassValidation } from './validate-slides.js';
+import { assertProceedReportsComplete } from '../src/design-gate-report.js';
 import {
   buildDesignGatePaths,
   buildDesignGateReport,
+  collectFileFingerprints,
+  collectSlideFingerprints,
   createDesignGateState,
+  findGateSlideFiles,
   normalizeGateVerdict,
   writeDesignGateState,
 } from '../src/design-gate-state.js';
@@ -176,6 +180,25 @@ export async function main(argv = process.argv.slice(2)) {
 
   const passA = await readEvidenceReport(options.passAReport, 'Pass A');
   const passB = await readEvidenceReport(options.passBReport, 'Pass B');
+  let gateValidation = { status: options.verdict === 'proceed' ? 'passed' : 'not-run' };
+  const slideFiles = await findGateSlideFiles(paths.slidesDir);
+  const slideFingerprints = await collectSlideFingerprints(paths.slidesDir);
+  const evidenceFiles = slideFiles.map((fileName) => fileName.replace(/\.html$/i, '.png'));
+  const previewRelativeDir = relative(paths.slidesDir, previewDir);
+  const previewFingerprintFiles = evidenceFiles.map((fileName) => join(previewRelativeDir, fileName));
+  const passReportFingerprintFiles = [
+    relative(paths.slidesDir, passA.resolvedPath),
+    relative(paths.slidesDir, passB.resolvedPath),
+  ];
+
+  if (options.verdict === 'proceed') {
+    gateValidation = assertProceedReportsComplete({
+      passAReport: passA.report,
+      passBReport: passB.report,
+      evidenceFiles,
+      slideFingerprints,
+    });
+  }
   const state = await createDesignGateState({
     slidesDir: paths.slidesDir,
     slideMode: options.slideMode,
@@ -183,8 +206,11 @@ export async function main(argv = process.argv.slice(2)) {
     verdict: options.verdict,
     previewDir,
     reportPath: paths.reportPath,
-    passA: { reportPath: passA.resolvedPath, summary: firstLine(passA.report) },
-    passB: { reportPath: passB.resolvedPath, summary: firstLine(passB.report) },
+    passA: { reportPath: passA.resolvedPath, summary: firstLine(passA.report), ...gateValidation.passA },
+    passB: { reportPath: passB.resolvedPath, summary: firstLine(passB.report), ...gateValidation.passB },
+    gateValidation,
+    passReportFingerprints: await collectFileFingerprints(paths.slidesDir, passReportFingerprintFiles),
+    previewFingerprints: await collectFileFingerprints(paths.slidesDir, previewFingerprintFiles),
   });
   const report = buildDesignGateReport(state, passA.report, passB.report);
   await writeDesignGateState(paths.slidesDir, state, report);
