@@ -9,6 +9,7 @@ import {
   getFigmaImportCaveats,
   getFigmaManualImportInstructions,
 } from '../src/figma.js';
+import { assertDesignGateReady } from '../src/design-gate-state.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const packageRoot = resolve(__dirname, '..');
@@ -64,6 +65,17 @@ async function runCommand(relativePath, args = []) {
   }
 }
 
+async function ensureDesignGateForExport(slidesDir, label) {
+  try {
+    await assertDesignGateReady(resolve(process.cwd(), slidesDir), { label });
+  } catch (error) {
+    console.error(`[slides-grab] ${error.message}`);
+    process.exitCode = 1;
+    return false;
+  }
+  return true;
+}
+
 function collectRepeatedOption(value, previous = []) {
   return [...previous, value];
 }
@@ -110,6 +122,66 @@ program
   });
 
 program
+  .command('design-gate')
+  .description('Record the required visual QA gate evidence before export')
+  .option('--slides-dir <path>', 'Slide directory', 'slides')
+  .option('--slide-mode <mode>', 'Slide mode: presentation or card-news', 'presentation')
+  .option('--resolution <preset>', 'PNG evidence resolution preset: 720p, 1080p, 1440p, 2160p, or 4k', '2160p')
+  .requiredOption('--verdict <verdict>', 'Gate verdict: proceed, revise, or rethink')
+  .requiredOption('--pass-a-report <path>', 'Pass A review report file')
+  .requiredOption('--pass-b-report <path>', 'Pass B review report file')
+  .option('--output-dir <path>', 'PNG evidence directory (default: <slides-dir>/.slides-grab/gate-preview)')
+  .action(async (options = {}) => {
+    const args = [
+      '--slides-dir',
+      options.slidesDir,
+      '--slide-mode',
+      options.slideMode,
+      '--resolution',
+      options.resolution,
+      '--verdict',
+      options.verdict,
+      '--pass-a-report',
+      options.passAReport,
+      '--pass-b-report',
+      options.passBReport,
+    ];
+    if (options.outputDir) {
+      args.push('--output-dir', String(options.outputDir));
+    }
+    await runCommand('scripts/design-gate.js', args);
+  });
+
+function registerInstallSkillsCommand(commandName) {
+  program
+    .command(commandName)
+    .description('Install slides-grab skills and lightweight runtime adapters for Codex and Claude Code')
+    .option('--target <target>', 'Runtime target: all, codex, or claude-code', 'all')
+    .option('--runtime <target>', 'Alias for --target')
+    .option('--scope <scope>', 'Install scope: project or user', 'project')
+    .option('--project-dir <path>', 'Project directory for project scope')
+    .option('--target-root <path>', 'Root directory for user-style installs')
+    .option('--dry-run', 'Print planned writes without copying')
+    .option('--json', 'Print JSON result')
+    .action(async (options = {}) => {
+      const args = [
+        '--target',
+        String(options.runtime || options.target),
+        '--scope',
+        String(options.scope),
+      ];
+      if (options.projectDir) args.push('--project-dir', String(options.projectDir));
+      if (options.targetRoot) args.push('--target-root', String(options.targetRoot));
+      if (options.dryRun) args.push('--dry-run');
+      if (options.json) args.push('--json');
+      await runCommand('scripts/install-runtime.js', args);
+    });
+}
+
+registerInstallSkillsCommand('install-skills');
+registerInstallSkillsCommand('install-runtime');
+
+program
   .command('convert')
   .description('Convert slide HTML files to experimental / unstable PPTX')
   .option('--slides-dir <path>', 'Slide directory', 'slides')
@@ -117,6 +189,7 @@ program
   .option('--mode <mode>', 'Slide mode: presentation or card-news', 'presentation')
   .option('--resolution <preset>', 'Raster size preset: 720p, 1080p, 1440p, 2160p, or 4k (default: 2160p)')
   .action(async (options = {}) => {
+    if (!(await ensureDesignGateForExport(options.slidesDir, 'PPTX export'))) return;
     const args = ['--slides-dir', options.slidesDir, '--mode', options.mode];
     if (options.output) {
       args.push('--output', String(options.output));
@@ -136,6 +209,7 @@ program
   .option('--slide-mode <mode>', 'Slide mode: presentation or card-news', 'presentation')
   .option('--resolution <preset>', 'Capture raster size preset: 720p, 1080p, 1440p, 2160p, or 4k (default: 2160p in capture mode)')
   .action(async (options = {}) => {
+    if (!(await ensureDesignGateForExport(options.slidesDir, 'PDF export'))) return;
     const args = ['--slides-dir', options.slidesDir];
     if (options.output) {
       args.push('--output', String(options.output));
@@ -196,6 +270,7 @@ program
   .option('--mode <mode>', 'Slide mode: presentation or card-news', 'presentation')
   .addHelpText('after', figmaHelpText)
   .action(async (options = {}) => {
+    if (!(await ensureDesignGateForExport(options.slidesDir, 'Figma export'))) return;
     const args = ['--slides-dir', options.slidesDir, '--mode', options.mode];
     if (options.output) {
       args.push('--output', String(options.output));

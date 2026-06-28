@@ -131,6 +131,7 @@ test('slides-grab figma creates missing parent directories for nested output pat
   try {
     mkdirSync(slidesDir, { recursive: true });
     writeFileSync(join(slidesDir, 'slide-01.html'), createTestSlideHtml(), 'utf-8');
+    recordProceedGate(root, slidesDir);
 
     execFileSync(
       process.execPath,
@@ -208,6 +209,35 @@ test('packed npm install can execute slides-grab figma without missing runtime m
     rmSync(join(process.cwd(), 'slides-grab-1.0.0.tgz'), { force: true });
   }
 });
+
+function recordProceedGate(root, slidesDir) {
+  const passAPath = join(root, 'pass-a.md');
+  const passBPath = join(root, 'pass-b.md');
+  writeFileSync(passAPath, 'Pass A: System Contract / Constraint Integrity says Proceed.', 'utf-8');
+  writeFileSync(passBPath, 'Pass B: Audience Impact / Expressive Readability says Proceed.', 'utf-8');
+
+  execFileSync(
+    process.execPath,
+    [
+      'bin/ppt-agent.js',
+      'design-gate',
+      '--slides-dir',
+      slidesDir,
+      '--verdict',
+      'proceed',
+      '--pass-a-report',
+      passAPath,
+      '--pass-b-report',
+      passBPath,
+      '--resolution',
+      '720p',
+    ],
+    {
+      cwd: process.cwd(),
+      encoding: 'utf-8',
+    },
+  );
+}
 
 function extractZipEntry(zipBuffer, entryName) {
   let offset = 0;
