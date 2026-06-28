@@ -1,11 +1,11 @@
 ---
 name: slides-grab-design
-description: Stage 2 design skill for Codex. Generate and iterate slide-XX.html files in the selected slides workspace.
+description: Stage 2 design skill usable in Codex and Claude Code. Generate and iterate slide-XX.html files in the selected slides workspace.
 metadata:
   short-description: Build HTML slides and viewer for review loop
 ---
 
-# slides-grab Design Skill (Codex)
+# slides-grab Design Skill
 
 Use this after `slide-outline.md` is approved.
 
@@ -38,10 +38,12 @@ Generate high-quality `slide-XX.html` files in the selected slides workspace (`s
 11. Run `slides-grab validate --slides-dir <path>` after generation or edits.
 12. If validation fails, automatically fix the source slide HTML/CSS and re-run validation until it passes.
 13. Run the slide litmus check from `references/beautiful-slide-defaults.md` before presenting the deck for review.
-14. Launch the interactive editor for visual review: `slides-grab edit --slides-dir <path>`
-15. Iterate on user feedback by editing only requested slide files, then re-run validation after each edit round.
-16. When the user confirms editing is complete, suggest: build the viewer (`slides-grab build-viewer --slides-dir <path>`) for a final read-only preview, or proceed to export (PDF/PPTX).
-17. Keep revising until user approves conversion stage.
+14. **Run the design gate as an adversarial quality loop** (`references/design-gate.md`) before showing the deck: (a) capture render evidence with `slides-grab png --slides-dir <path> --output-dir <path>/gate-preview --resolution 1080p`; (b) run two read-only reviewer passes — Pass A (System Contract / Constraint Integrity) and Pass B (Audience Impact / Expressive Readability) — that open the rendered PNGs directly, using runtime-native subagents/tasks in parallel when available or sequential passes when not; (c) synthesize contract coherence against audience impact into a single Design Gate Report ending in a verdict (`Proceed` / `Revise and re-review` / `Rethink approach`). Review Litmus is the shared audience-success tie-breaker, not a third pass. Keep the two reviewer passes distinct from the slide-building pass. The render evidence aims the reviewers; it is not the verdict.
+15. **Repeat until the latest rendered state survives the gate.** Critical findings (unreadable text, palette violation, an AI slop trope used as a slide's primary treatment, a key slide with no real visual anchor, invented data shown as real) hard-block progress. Fix the source HTML/CSS, re-run `slides-grab validate`, capture fresh PNGs, then re-run both adversarial passes until the verdict is `Proceed` (zero unresolved Critical) or `Rethink approach` requires redesigning the visual thesis/system. When the verdict is `Proceed`, write the export-unlocking receipt with `slides-grab design-gate --slides-dir <path> --verdict proceed --pass-a-report <pass-a.md> --pass-b-report <pass-b.md>`. Record deferred Minor/Note findings in `<slides-dir>/design-debt.md`; never silently drop a finding.
+16. Launch the interactive editor for visual review: `slides-grab edit --slides-dir <path>`
+17. Iterate on user feedback by editing only requested slide files, then re-run validation and the design gate after each edit round that changes layout, color, typography, imagery, or content density.
+18. When the user confirms editing is complete, suggest: build the viewer (`slides-grab build-viewer --slides-dir <path>`) for a final read-only preview, or proceed to export (PDF/PPTX).
+19. Keep revising until user approves conversion stage.
 
 ## Rules
 - Keep slide size 720pt x 405pt.
@@ -66,6 +68,7 @@ Generate high-quality `slide-XX.html` files in the selected slides workspace (`s
 - Prefer `tldraw` for complex diagrams instead of recreating dense node/edge diagrams directly in HTML/CSS.
 - Use `slides-grab tldraw` plus `templates/diagram-tldraw.html` when that gives a cleaner, more export-friendly result.
 - Do not present slides for review until `slides-grab validate --slides-dir <path>` passes.
+- Do not present slides for review, and do not advance toward export, while any **Critical** design-gate finding is unresolved (`references/design-gate.md`). Critical hard-blocks; Major findings are listed for user acceptance; Minor/Note findings may be tracked. `slides-grab pdf`, `slides-grab convert`, and `slides-grab figma` require a fresh `slides-grab design-gate` Proceed receipt.
 - Do not start conversion before approval.
 - Use the packaged CLI and bundled references only; do not depend on unpublished agent-specific files.
 
@@ -74,4 +77,5 @@ For full constraints and style system, follow:
 - `references/design-rules.md`
 - `references/detailed-design-rules.md`
 - `references/beautiful-slide-defaults.md` — slide-specific art direction defaults adapted from OpenAI's frontend design guidance and Anthropic's Claude design system guidance (content/color discipline, system declaration, AI slop tropes)
+- `references/design-gate.md` — the structured design-quality gate run after validation and before export: severity rubric (Critical/Major/Minor/Note), the seven checks, evidence-before-shipping, design-debt log, and the gate report/verdict format. Run with runtime-native subagents/tasks when available, or as two explicit sequential reviewer passes, then record Proceed with `slides-grab design-gate`.
 - `references/design-system-full.md` — archived full design system, templates, and advanced pattern guidance

@@ -1,11 +1,11 @@
 ---
 name: slides-grab-plan
-description: Stage 1 planning skill for Codex. Build and iterate slide-outline.md until explicit user approval.
+description: Stage 1 planning skill usable in Codex and Claude Code. Build and iterate slide-outline.md until explicit user approval.
 metadata:
   short-description: Create and revise slide outline before design stage
 ---
 
-# slides-grab Plan Skill (Codex)
+# slides-grab Plan Skill
 
 Use this when the user asks to start a new presentation from scratch.
 
@@ -51,5 +51,5 @@ Produce an approved `slide-outline.md` before any slide HTML generation.
 ## Reference
 If needed, use the bundled outline reference:
 - `references/outline-format.md`
-- `references/plan-workflow-reference.md` — archived detailed planning workflow and organizer-agent guidance
+- `references/plan-workflow-reference.md` — archived detailed planning workflow and runtime-neutral outline-worker guidance
 - `references/design-md-to-slides-conversion.md` — DESIGN.md (web) → DESIGN.slides.md (slide) translation guide, including the structured output template and the web → slide mapping table

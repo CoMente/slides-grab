@@ -37,10 +37,7 @@ If prerequisites are not met, guide the user to review slides in `<slides-dir>/v
    ```bash
    slides-grab convert --slides-dir <path> --output presentation.pptx
    ```
-   - Script-level alternative:
-   ```bash
-   node .claude/skills/pptx-skill/scripts/html2pptx.js
-   ```
+   - Use the packaged `slides-grab convert` command rather than runtime-local skill scripts.
 
 3. **Verify results**
    - Check generated PPTX file carefully; expect best-effort fidelity only
@@ -48,51 +45,19 @@ If prerequisites are not met, guide the user to review slides in `<slides-dir>/v
 
 ## Script Usage
 
-### html2pptx.js
-Convert HTML files to PPTX
-
-```javascript
-import { html2pptx } from './.claude/skills/pptx-skill/scripts/html2pptx.js';
-import PptxGenJS from 'pptxgenjs';
-
-const pres = new PptxGenJS();
-pres.layout = 'LAYOUT_WIDE'; // 16:9
-
-// Convert each slide
-await html2pptx('<slides-dir>/slide-01.html', pres);
-await html2pptx('<slides-dir>/slide-02.html', pres);
-
-// Save
-await pres.writeFile({ fileName: 'presentation.pptx' });
-```
-
-### thumbnail.py
-Generate presentation thumbnail grid
+### Programmatic Conversion Note
+The packaged runtime exposes PPTX conversion through `slides-grab convert`. Do not import converter files from runtime-local skill directories in installed-agent workflows.
 
 ```bash
-python .claude/skills/pptx-skill/scripts/thumbnail.py presentation.pptx output-thumbnail
+slides-grab convert --slides-dir <path> --output presentation.pptx
 ```
 
-Options:
-- `--cols N`: Number of columns (default 5, range 3-6)
-- `--outline-placeholders`: Show placeholder regions
+### Thumbnail / OOXML Inspection
 
-### pack.py / unpack.py
-PPTX file packaging/unpackaging
+Use standard local tools such as LibreOffice, Poppler, or OOXML unzip/zip inspection when you need thumbnails or package-level debugging. These steps are diagnostic aids, not required packaged runtime commands.
 
 ```bash
-# Unpack
-python .claude/skills/pptx-skill/ooxml/scripts/unpack.py presentation.pptx output_dir
-
-# Pack
-python .claude/skills/pptx-skill/ooxml/scripts/pack.py input_dir presentation.pptx
-```
-
-### validate.py
-PPTX structure validation
-
-```bash
-python .claude/skills/pptx-skill/ooxml/scripts/validate.py unpacked_dir --original presentation.pptx
+unzip presentation.pptx -d output_dir
 ```
 
 ## Reference Documents
