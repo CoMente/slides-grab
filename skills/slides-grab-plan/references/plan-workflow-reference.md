@@ -2,7 +2,7 @@
 
 A **supervisor skill** that takes a user topic, generates a `slide-outline.md` outline, and manages a revision loop until the user approves.
 
-Does not write the outline directly — delegates the work to `organizer-agent`.
+Keeps the outline process separate from slide design. Use a runtime-native subagent/task for drafting when available, or draft directly from this reference when the current runtime has no subagent mechanism.
 
 ---
 
@@ -11,14 +11,14 @@ Does not write the outline directly — delegates the work to `organizer-agent`.
 | Role | Owner | Responsibility |
 |------|-------|----------------|
 | **Supervisor** | plan-skill (you) | User communication, quality control, revision loop management |
-| **Worker** | organizer-agent | Draft and revise `slide-outline.md` |
+| **Worker** | Outline worker | Draft and revise `slide-outline.md` |
 
 ---
 
 ## Input
 
 - User topic (required)
-- Research results (optional — research-agent output)
+- Research results (optional)
 - Reference materials, tone/mood requests, etc.
 
 ## Output
@@ -29,9 +29,9 @@ Does not write the outline directly — delegates the work to `organizer-agent`.
 
 ## Workflow
 
-### 1. Delegate Draft Creation to organizer-agent
+### 1. Create the Outline Draft
 
-Use the Task tool to call `organizer-agent` and generate a `slide-outline.md` draft.
+Use a runtime-native task/subagent to generate a `slide-outline.md` draft when available. If the runtime has no such mechanism, write the draft directly using the format below.
 
 **Include in the prompt:**
 - User topic and requirements
@@ -52,7 +52,7 @@ Read the generated `slide-outline.md` and present to the user:
 
 When user provides feedback:
 1. Organize the feedback
-2. Call `organizer-agent` again with the existing `slide-outline.md` and feedback
+2. Revise the existing `slide-outline.md` with the feedback, using a runtime-native task/subagent when available
 3. Present the revised outline to the user
 4. Repeat until user approves
 
@@ -65,7 +65,7 @@ Complete the outline stage when the user explicitly approves.
 ## Absolute Rules
 
 1. **Never proceed to the next stage without approval** — Maintain the revision loop until the user explicitly signals approval ("looks good", "approved", "OK", "proceed", etc.).
-2. **Never write the outline directly** — Always delegate to `organizer-agent`.
+2. **Keep the outline stage separate** — Do not generate slide HTML while drafting or revising the outline.
 3. **Never start HTML generation** — This skill's scope ends at `slide-outline.md` approval. HTML generation is the responsibility of `design-skill`.
 
 ---
@@ -109,12 +109,12 @@ Complete the outline stage when the user explicitly approves.
 
 ---
 
-## organizer-agent Call Examples
+## Outline Worker Prompt Examples
 
 ```
-Task tool call:
-- subagent_type: "organizer-agent"
-- prompt: |
+Runtime-native task/subagent prompt:
+
+```text
     Create a presentation outline for the following topic.
 
     Topic: [user topic]
@@ -128,9 +128,9 @@ Task tool call:
 For feedback revisions:
 
 ```
-Task tool call:
-- subagent_type: "organizer-agent"
-- prompt: |
+Runtime-native task/subagent prompt:
+
+```text
     Revise the existing outline.
 
     Current outline: [slide-outline.md content]

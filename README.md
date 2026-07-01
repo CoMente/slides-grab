@@ -64,8 +64,10 @@ npm ci && npx playwright install chromium
 ```bash
 npm install slides-grab
 npx playwright install chromium
-npx skills add ./node_modules/slides-grab -g -a codex -a claude-code --yes --copy
+npx slides-grab install-skills --target all --scope user
 ```
+
+This installs the same shared Agent Skills plus lightweight runtime adapters into Codex and Claude Code locations. The packaged workflow relies on bundled `SKILL.md` files, bundled `references/`, and the `slides-grab` CLI. Exports through `slides-grab pdf`, `slides-grab convert`, and `slides-grab figma` are blocked until `slides-grab design-gate` records a fresh `proceed` receipt for the current slide files.
 
 ## Why This Project?
 
@@ -80,7 +82,7 @@ There are many AI tools that generate slide HTML. Almost none let you **visually
 
 Workflow commands support `--slides-dir <path>` (default: `slides`).
 
-On a fresh clone, the discovery commands (`--help`, `list-templates`, `list-styles`, and `preview-styles`) work without a deck. `edit`, `build-viewer`, `validate`, `convert`, and `pdf` require an existing slides workspace containing `slide-*.html`.
+On a fresh clone, the discovery commands (`--help`, `list-templates`, `list-styles`, and `preview-styles`) work without a deck. `edit`, `build-viewer`, `validate`, `png`, and `design-gate` require an existing slides workspace containing `slide-*.html`; `convert`, `pdf`, and `figma` additionally require a fresh `Proceed` design gate.
 
 ```bash
 slides-grab edit              # Launch visual slide editor
@@ -237,7 +239,7 @@ npm install slides-grab
 Install shared agent skills with Vercel Agent Skills:
 
 ```bash
-npx skills add ./node_modules/slides-grab -g -a codex -a claude-code --yes --copy
+npx skills add ./node_modules/slides-grab -g -a codex -a claude-code --yes --copy --full-depth
 ```
 
 This npm-install path is enough for normal usage. Clone the repo only when you want to modify or contribute to `slides-grab` itself.

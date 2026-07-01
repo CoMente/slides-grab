@@ -191,7 +191,7 @@ test('buildCodexExecArgs attaches image and prompt to codex exec', () => {
 test('getPptDesignSkillPrompt loads bundled ppt design skill guidance', () => {
   const skillPrompt = getPptDesignSkillPrompt();
 
-  assert.match(skillPrompt, /# slides-grab Design Skill \(Codex\)/);
+  assert.match(skillPrompt, /# slides-grab Design Skill/);
   assert.match(skillPrompt, /Keep slide size 720pt x 405pt\./);
   assert.match(skillPrompt, /reference them as `\.\/assets\/<file>`\./);
   assert.match(skillPrompt, /local videos/i);

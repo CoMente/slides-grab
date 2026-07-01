@@ -54,10 +54,12 @@ CLI와 공유 에이전트 스킬만 사용하려면 npm 패키지를 설치하�
 ```bash
 npm install slides-grab
 npx playwright install chromium
-npx skills add ./node_modules/slides-grab -g -a codex -a claude-code --yes --copy
+npx slides-grab install-skills --target all --scope user
 ```
 
 이 방법은 일반적인 사용에 충분합니다. slides-grab 자체를 수정하거나 기여하려는 경우에만 저장소를 클론하세요.
+
+이 명령은 같은 공유 Agent Skills와 얇은 런타임 adapter를 Codex 런타임과 Claude Code 런타임 위치에 모두 설치합니다. 패키지된 워크플로우는 번들된 `SKILL.md`, `references/`, `slides-grab` CLI만 사용합니다. `slides-grab pdf`, `slides-grab convert`, `slides-grab figma` export는 현재 슬라이드 파일에 대한 최신 `slides-grab design-gate` `proceed` 기록이 없으면 차단됩니다.
 
 ## 왜 slides-grab인가요?
 
@@ -72,7 +74,7 @@ npx skills add ./node_modules/slides-grab -g -a codex -a claude-code --yes --cop
 
 워크플로 명령은 `--slides-dir <path>`를 지원하며 기본값은 `slides`입니다.
 
-새 클론에서는 `--help`, `list-templates`, `list-styles`, `preview-styles` 같은 탐색 명령은 덱 없이도 동작합니다. `edit`, `build-viewer`, `validate`, `convert`, `pdf`는 `slide-*.html` 파일이 들어 있는 슬라이드 작업공간이 필요합니다.
+새 클론에서는 `--help`, `list-templates`, `list-styles`, `preview-styles` 같은 탐색 명령은 덱 없이도 동작합니다. `edit`, `build-viewer`, `validate`, `png`, `design-gate`는 `slide-*.html` 파일이 들어 있는 슬라이드 작업공간이 필요하고, `convert`, `pdf`, `figma`는 추가로 최신 `Proceed` design gate가 필요합니다.
 
 ```bash
 slides-grab edit              # 시각적 슬라이드 편집기 실행
@@ -229,7 +231,7 @@ npm install slides-grab
 Vercel Agent Skills로 공유 에이전트 스킬을 설치하려면 다음을 실행하세요.
 
 ```bash
-npx skills add ./node_modules/slides-grab -g -a codex -a claude-code --yes --copy
+npx skills add ./node_modules/slides-grab -g -a codex -a claude-code --yes --copy --full-depth
 ```
 
 이 npm 설치 경로는 일반적인 사용에 충분합니다. slides-grab 자체를 수정하거나 기여하려는 경우에만 저장소를 클론하세요.

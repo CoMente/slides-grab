@@ -20,10 +20,21 @@ slides-grab --help
 From the local npm install:
 
 ```bash
-npx skills add ./node_modules/slides-grab -g -a claude-code --yes --copy
+npx slides-grab install-skills --target claude-code --scope user
 ```
 
 Then restart Claude Code so the shared skills are loaded.
+
+Runtime contract:
+
+- Claude Code loads these shared Agent Skills from `~/.claude/skills/`.
+- The packaged workflow uses bundled skills, bundled references, lightweight runtime adapters, and the `slides-grab` CLI.
+- `slides-grab pdf`, `slides-grab convert`, and `slides-grab figma` require a fresh `slides-grab design-gate` `proceed` receipt for the current slide files.
+- To install the same package for both Claude Code and Codex from one environment, run:
+
+```bash
+npx slides-grab install-skills --target all --scope user
+```
 
 ## 3) Developer / Repo Clone Path
 
@@ -33,7 +44,7 @@ If you want to work on `slides-grab` itself:
 git clone https://github.com/NomaDamas/slides-grab.git && cd slides-grab
 npm ci
 npx playwright install chromium
-npx skills add . -g -a claude-code --yes --copy
+npx slides-grab install-skills --target claude-code --scope user
 ```
 
 Installed skill names:
