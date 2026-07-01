@@ -159,8 +159,10 @@ async function copyDirectory(source, destination, dryRun) {
 async function installTarget(options, target) {
   const roots = runtimeRoots(options, target);
   const writes = [];
-  await mkdir(roots.skillsDir, { recursive: true });
-  await mkdir(roots.agentsDir, { recursive: true });
+  if (!options.dryRun) {
+    await mkdir(roots.skillsDir, { recursive: true });
+    await mkdir(roots.agentsDir, { recursive: true });
+  }
 
   for (const skillName of SKILL_NAMES) {
     const source = join(packageRoot, 'skills', skillName);
