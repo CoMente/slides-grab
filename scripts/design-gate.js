@@ -175,7 +175,11 @@ export async function main(argv = process.argv.slice(2)) {
 
   const paths = buildDesignGatePaths(options.slidesDir);
   const previewDir = options.outputDir ? resolve(process.cwd(), options.outputDir) : paths.previewDir;
-  await ensureSlidesPassValidation(paths.slidesDir, { exportLabel: 'design gate', slideMode: options.slideMode });
+  await ensureSlidesPassValidation(paths.slidesDir, {
+    exportLabel: 'design gate',
+    slideMode: options.slideMode,
+    shouldBlockIssue: () => true,
+  });
   await renderGateEvidence(options, previewDir);
 
   const passA = await readEvidenceReport(options.passAReport, 'Pass A');

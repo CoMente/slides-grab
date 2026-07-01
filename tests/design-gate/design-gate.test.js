@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import test from 'node:test';
@@ -65,6 +65,56 @@ test('slides-grab design-gate records Proceed evidence, unblocks export, and tur
     writeFileSync(join(slidesDir, 'slide-01.html'), createSlideHtml('Changed after gate'), 'utf-8');
     const staleError = captureSlidesGrabFailure(['pdf', '--slides-dir', slidesDir, '--output', join(root, 'stale.pdf')]);
     assert.match(String(staleError.stderr), /stale|changed/i);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('slides-grab design-gate blocks Proceed when slide validation fails', () => {
+  const root = mkdtempSync(join(tmpdir(), 'slides-grab-gate-invalid-slide-'));
+  const slidesDir = join(root, 'slides');
+  const passAPath = join(root, 'pass-a.md');
+  const passBPath = join(root, 'pass-b.md');
+
+  try {
+    writeDeck(slidesDir);
+    writeFileSync(
+      join(slidesDir, 'slide-01.html'),
+      createInvalidOverflowSlideHtml(),
+      'utf-8',
+    );
+    writeFileSync(passAPath, createPassAReport(slidesDir), 'utf-8');
+    writeFileSync(passBPath, createPassBReport(slidesDir), 'utf-8');
+
+    const error = captureSlidesGrabFailure(designGateArgs(slidesDir, passAPath, passBPath));
+
+    assert.match(String(error.stderr), /validation|overflow-outside-frame|blocked/i);
+    assert.equal(existsSync(join(slidesDir, '.slides-grab', 'design-gate.json')), false);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('slides-grab export blocks when a design-gated local asset changes', { timeout: 90000 }, () => {
+  const root = mkdtempSync(join(tmpdir(), 'slides-grab-gate-asset-stale-'));
+  const slidesDir = join(root, 'slides');
+  const assetsDir = join(slidesDir, 'assets');
+  const assetPath = join(assetsDir, 'box.svg');
+  const passAPath = join(root, 'pass-a.md');
+  const passBPath = join(root, 'pass-b.md');
+
+  try {
+    mkdirSync(assetsDir, { recursive: true });
+    writeFileSync(assetPath, createBoxSvg('#FF0000'), 'utf-8');
+    writeFileSync(join(slidesDir, 'slide-01.html'), createSlideHtmlWithAsset('Asset Gate Fixture'), 'utf-8');
+    writeFileSync(passAPath, createPassAReport(slidesDir), 'utf-8');
+    writeFileSync(passBPath, createPassBReport(slidesDir), 'utf-8');
+    recordProceedGate(slidesDir, passAPath, passBPath);
+
+    writeFileSync(assetPath, createBoxSvg('#0000FF'), 'utf-8');
+    const staleError = captureSlidesGrabFailure(['pdf', '--slides-dir', slidesDir, '--output', join(root, 'asset-stale.pdf')]);
+
+    assert.match(String(staleError.stderr), /assets changed|box\.svg|stale/i);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -186,4 +236,92 @@ for (const scenario of rejectScenarios) {
       rmSync(root, { recursive: true, force: true });
     }
   });
+}
+
+function createInvalidOverflowSlideHtml() {
+  return `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      width: 720pt;
+      height: 405pt;
+      margin: 0;
+      font-family: Pretendard, sans-serif;
+      overflow: hidden;
+    }
+    .overflow {
+      position: absolute;
+      left: 700pt;
+      top: 20pt;
+      width: 80pt;
+      height: 40pt;
+      background: #FF0000;
+    }
+  </style>
+</head>
+<body>
+  <div class="overflow"><p>Outside</p></div>
+</body>
+</html>`;
+}
+
+function createSlideHtmlWithAsset(title) {
+  return `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      width: 720pt;
+      height: 405pt;
+      margin: 0;
+      padding: 36pt;
+      font-family: Pretendard, sans-serif;
+      background: #ffffff;
+      color: #111111;
+      overflow: hidden;
+    }
+    .frame {
+      display: grid;
+      grid-template-columns: 1fr 160pt;
+      gap: 24pt;
+      width: 100%;
+      height: 100%;
+      border: 1pt solid #222222;
+      padding: 24pt;
+    }
+    h1 {
+      margin: 0 0 12pt;
+      font-size: 24pt;
+    }
+    p {
+      margin: 0;
+      font-size: 14pt;
+      line-height: 1.4;
+    }
+    img {
+      width: 120pt;
+      height: 120pt;
+      align-self: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <div>
+      <h1>${title}</h1>
+      <p>Local asset changes must keep the design gate stale.</p>
+    </div>
+    <img src="./assets/box.svg" alt="Color box">
+  </div>
+</body>
+</html>`;
+}
+
+function createBoxSvg(color) {
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160" viewBox="0 0 160 160"><rect width="160" height="160" fill="${color}"/></svg>`;
 }

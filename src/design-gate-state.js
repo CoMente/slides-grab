@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import { existsSync } from 'node:fs';
 import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
 import { basename, join, relative, resolve } from 'node:path';
+import { classifyImageSource, extractCssUrls } from './image-contract.js';
 
 const SLIDE_FILE_PATTERN = /^slide-.*\.html$/i;
 const GATE_DIR_NAME = '.slides-grab';
@@ -55,6 +56,21 @@ export async function collectSlideFingerprints(slidesDir) {
   }));
 }
 
+export async function collectLocalAssetFingerprints(slidesDir) {
+  const resolvedSlidesDir = resolve(process.cwd(), slidesDir);
+  const slideFiles = await findGateSlideFiles(resolvedSlidesDir);
+  const localAssets = new Set();
+
+  for (const fileName of slideFiles) {
+    const html = await readFile(join(resolvedSlidesDir, fileName), 'utf-8');
+    for (const source of extractLocalAssetSources(html)) {
+      localAssets.add(source);
+    }
+  }
+
+  return collectFileFingerprints(resolvedSlidesDir, Array.from(localAssets).sort(sortSlideFiles));
+}
+
 export async function collectFileFingerprints(baseDir, files) {
   const resolvedBaseDir = resolve(process.cwd(), baseDir);
   return Promise.all(files.map(async (fileName) => ({
@@ -101,6 +117,7 @@ export async function createDesignGateState(options) {
     passB: normalizeEvidence(options.passB),
     gateValidation: options.gateValidation || { status: verdict === PROCEED ? 'passed' : 'not-run' },
     slideFingerprints,
+    localAssetFingerprints: options.localAssetFingerprints || await collectLocalAssetFingerprints(slidesDir),
     passReportFingerprints: options.passReportFingerprints || [],
     previewFingerprints: options.previewFingerprints || [],
   };
@@ -138,6 +155,21 @@ export async function assertDesignGateReady(slidesDir, options = {}) {
   const staleFiles = diffFingerprints(previousFingerprints, currentFingerprints);
   if (staleFiles.length > 0) {
     throw new Error(`${label} blocked: design gate is stale because slides changed: ${staleFiles.join(', ')}.`);
+  }
+
+  const localAssetFingerprints = Array.isArray(state.localAssetFingerprints) ? state.localAssetFingerprints : null;
+  if (!localAssetFingerprints) {
+    throw new Error(`${label} blocked: design gate receipt is missing local asset fingerprints; rerun slides-grab design-gate.`);
+  }
+  let currentAssetFingerprints = [];
+  try {
+    currentAssetFingerprints = await collectLocalAssetFingerprints(paths.slidesDir);
+  } catch (error) {
+    throw new Error(`${label} blocked: design gate is stale because local assets changed. ${error.message}`);
+  }
+  const staleAssets = diffFingerprints(localAssetFingerprints, currentAssetFingerprints);
+  if (staleAssets.length > 0) {
+    throw new Error(`${label} blocked: design gate is stale because local assets changed: ${staleAssets.join(', ')}.`);
   }
 
   const passReportFingerprints = Array.isArray(state.passReportFingerprints) ? state.passReportFingerprints : [];
@@ -198,6 +230,29 @@ function normalizeEvidence(value = {}) {
     evidenceFiles: Array.isArray(value.evidenceFiles) ? value.evidenceFiles : [],
     slideFingerprints: Array.isArray(value.slideFingerprints) ? value.slideFingerprints : [],
   };
+}
+
+function extractLocalAssetSources(html) {
+  const sources = new Set();
+  const attributePattern = /\b(?:src|poster)\s*=\s*(['"])(.*?)\1/gi;
+  let match;
+
+  while ((match = attributePattern.exec(html)) !== null) {
+    addLocalAssetSource(sources, match[2]);
+  }
+
+  for (const source of extractCssUrls(html)) {
+    addLocalAssetSource(sources, source);
+  }
+
+  return Array.from(sources);
+}
+
+function addLocalAssetSource(sources, source) {
+  const value = String(source || '').trim();
+  if (classifyImageSource(value).kind === 'local-asset-path') {
+    sources.add(value);
+  }
 }
 
 async function hashFile(filePath) {
