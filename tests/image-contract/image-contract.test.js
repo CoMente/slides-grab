@@ -223,7 +223,7 @@ test('build-viewer injects slide runtime html for local assets', () => {
   const viewerHtml = buildViewerHtml(slides);
 
   assert.equal(slides.length, 1);
-  assert.match(slides[0].html, /<base href="\.\//);
+  assert.match(slides[0].html, /<base href="file:\/\//);
   assert.match(viewerHtml, /srcdoc="/);
   assert.match(viewerHtml, /\[slides-grab:image\]/);
 });

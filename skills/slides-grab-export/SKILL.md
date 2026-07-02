@@ -30,16 +30,18 @@ Convert reviewed slide HTML into PDF or per-slide PNG reliably, and into experim
 4. If the user also wants a PDF deck:
    - `slides-grab pdf --slides-dir <path> --output <name>.pdf`
    - Add `--slide-mode card-news` when the deck is square.
-5. If the user wants PPTX (experimental / unstable):
+5. For decks with Chart.js or other `<canvas>` charts, confirm `slides-grab validate --slides-dir <path>` passes without `empty-canvas`, then build/open `viewer.html` once before export. Chart.js charts should use disabled animation so PDF/PNG capture sees the final painted state.
+6. If the user wants PPTX (experimental / unstable):
    - `slides-grab convert --slides-dir <path> --output <name>.pptx`
-6. If the user wants Figma-importable PPTX (experimental / unstable):
+7. If the user wants Figma-importable PPTX (experimental / unstable):
    - `slides-grab figma --slides-dir <path> --output <name>-figma.pptx`
-7. Report success/failure with actionable errors.
+8. Report success/failure with actionable errors.
 
 ## Rules
 - Do not export while any **Critical** design-gate finding is unresolved (`../slides-grab-design/references/design-gate.md`). The design gate is a hard precondition for this stage, and `slides-grab pdf`, `slides-grab convert`, and `slides-grab figma` block if the latest receipt is missing or stale.
 - Do not modify slide content during conversion stage unless explicitly requested.
 - If conversion fails, diagnose and fix root causes in source HTML/CSS.
+- For chart-heavy decks, treat a blank exported chart as a source rendering bug first: re-run validation, inspect `empty-canvas`, and verify the same slide in `viewer.html` before retrying PDF/PNG/PPTX export.
 - Always tell the user that PPTX and Figma export are experimental / unstable and may require manual cleanup.
 - Use the packaged CLI and bundled references only; do not depend on unpublished agent-specific files.
 

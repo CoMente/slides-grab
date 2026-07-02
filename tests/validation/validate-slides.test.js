@@ -2,6 +2,8 @@ import assert from 'node:assert/strict';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import test from 'node:test';
 
 import { chromium } from 'playwright';
@@ -16,6 +18,52 @@ import { createValidationResult, findSlideFiles, scanSlides, selectSlideFiles } 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const fixtureDeckDir = path.join(__dirname, 'fixtures', 'sample-deck');
 const repoRoot = path.join(__dirname, '..', '..');
+
+function writeCanvasSlide(slidesDir, bodyScript = '') {
+  writeFileSync(
+    path.join(slidesDir, 'slide-01.html'),
+    `<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      width: 720pt;
+      height: 405pt;
+      overflow: hidden;
+      background: #ffffff;
+      font-family: sans-serif;
+    }
+    .slide {
+      width: 720pt;
+      height: 405pt;
+      padding: 36pt;
+    }
+    h1 {
+      margin: 0 0 18pt;
+      font-size: 26pt;
+      line-height: 1.25;
+    }
+    canvas {
+      display: block;
+      width: 460pt;
+      height: 220pt;
+    }
+  </style>
+</head>
+<body>
+  <div class="slide">
+    <h1>Canvas chart validation</h1>
+    <canvas id="chart" width="640" height="320"></canvas>
+  </div>
+  ${bodyScript}
+</body>
+</html>`,
+    'utf8',
+  );
+}
 
 test('parseValidateCliArgs applies defaults and reads --slides-dir', () => {
   assert.deepEqual(parseValidateCliArgs([]), {
@@ -80,6 +128,93 @@ test('scanSlides returns stable issue codes for regression fixtures', async () =
     );
   } finally {
     await browser.close();
+  }
+});
+
+test('validate CLI fails a visible canvas with an empty drawing buffer', () => {
+  const slidesDir = mkdtempSync(path.join(tmpdir(), 'slides-grab-empty-canvas-'));
+
+  try {
+    writeCanvasSlide(slidesDir);
+
+    const command = spawnSync(
+      process.execPath,
+      ['scripts/validate-slides.js', '--slides-dir', slidesDir],
+      {
+        cwd: repoRoot,
+        encoding: 'utf8',
+      },
+    );
+
+    assert.equal(command.status, 1);
+    assert.equal(command.stderr, '');
+    assert.match(command.stdout, /^slide-01\.html:error\[empty-canvas\]/m);
+    assert.match(command.stdout, /summary: 1 slide\(s\) checked, 0 passed, 1 failed, 1 error\(s\), 0 warning\(s\)/);
+  } finally {
+    rmSync(slidesDir, { recursive: true, force: true });
+  }
+});
+
+test('validate CLI fails a visible canvas with a zero-size drawing buffer', () => {
+  const slidesDir = mkdtempSync(path.join(tmpdir(), 'slides-grab-zero-canvas-'));
+
+  try {
+    writeFileSync(
+      path.join(slidesDir, 'slide-01.html'),
+      `<!doctype html>
+<html>
+<head><meta charset="utf-8"><style>
+  html, body { margin: 0; width: 720pt; height: 405pt; background: #fff; }
+  canvas { display: block; width: 460pt; height: 220pt; }
+</style></head>
+<body>
+  <div><canvas id="chart" width="0" height="0"></canvas></div>
+</body>
+</html>`,
+      'utf8',
+    );
+
+    const command = spawnSync(
+      process.execPath,
+      ['scripts/validate-slides.js', '--slides-dir', slidesDir],
+      { cwd: repoRoot, encoding: 'utf8' },
+    );
+
+    assert.equal(command.status, 1);
+    assert.equal(command.stderr, '');
+    assert.match(command.stdout, /^slide-01\.html:error\[empty-canvas\]/m);
+  } finally {
+    rmSync(slidesDir, { recursive: true, force: true });
+  }
+});
+
+test('validate CLI passes a painted canvas chart', () => {
+  const slidesDir = mkdtempSync(path.join(tmpdir(), 'slides-grab-painted-canvas-'));
+
+  try {
+    writeCanvasSlide(
+      slidesDir,
+      `<script>
+        const context = document.getElementById('chart').getContext('2d');
+        context.fillStyle = '#2563EB';
+        context.fillRect(40, 40, 180, 220);
+      </script>`,
+    );
+
+    const command = spawnSync(
+      process.execPath,
+      ['scripts/validate-slides.js', '--slides-dir', slidesDir],
+      {
+        cwd: repoRoot,
+        encoding: 'utf8',
+      },
+    );
+
+    assert.equal(command.status, 0);
+    assert.equal(command.stderr, '');
+    assert.match(command.stdout, /summary: 1 slide\(s\) checked, 1 passed, 0 failed, 0 error\(s\), 0 warning\(s\)/);
+  } finally {
+    rmSync(slidesDir, { recursive: true, force: true });
   }
 });
 

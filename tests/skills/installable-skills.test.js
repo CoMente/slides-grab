@@ -203,6 +203,26 @@ test('slides-grab orchestration skill keeps packaged style/image/video workflows
   assert.equal((text.match(/For complex diagrams/gi) || []).length, 1);
 });
 
+test('slides-grab skills document Chart.js chart workflow and empty-canvas validation', () => {
+  const expectations = [
+    ['skills/slides-grab/SKILL.md', [/Chart\.js/, /build-viewer/i, /empty-canvas/]],
+    ['skills/slides-grab-plan/SKILL.md', [/chart type/i, /data payload/i, /Chart\.js/]],
+    ['skills/slides-grab-design/SKILL.md', [/Chart\.js/, /templates\/chart\.html/, /empty-canvas/]],
+    ['skills/slides-grab-export/SKILL.md', [/Chart\.js/, /empty-canvas/, /viewer\.html/]],
+    ['skills/slides-grab/references/presentation-workflow-reference.md', [/Chart\.js/, /empty-canvas/, /viewer\.html/]],
+    ['skills/slides-grab-design/references/design-rules.md', [/Chart\.js/, /templates\/chart\.html/, /empty-canvas/]],
+    ['skills/slides-grab-design/references/detailed-design-rules.md', [/Chart\.js/, /templates\/chart\.html/, /empty-canvas/]],
+    ['skills/slides-grab-export/references/export-rules.md', [/Chart\.js/, /empty-canvas/, /viewer\.html/]],
+  ];
+
+  for (const [file, patterns] of expectations) {
+    const text = readFileSync(file, 'utf-8');
+    for (const pattern of patterns) {
+      assert.match(text, pattern, `${file} should include ${pattern}`);
+    }
+  }
+});
+
 test('slides-grab design rules advertise both packaged image and video asset commands', () => {
   const text = readFileSync('skills/slides-grab-design/references/design-rules.md', 'utf-8');
 

@@ -63,6 +63,15 @@ slide-outline.md
 thumbnail-grid.png
 screenshots/
 
+# Checked-in chart integration showcase for issue #92
+!showcase/presentations/chart-integration/
+!showcase/presentations/chart-integration/slide-outline.md
+!showcase/presentations/chart-integration/meta.json
+!showcase/presentations/chart-integration/slides/
+!showcase/presentations/chart-integration/slides/*.html
+!showcase/presentations/chart-integration/out-png/
+!showcase/presentations/chart-integration/out-png/*.png
+
 # Internal state
 .ralph/
 .omx/
