@@ -18,7 +18,7 @@ export const CODEX_MODELS = [
   'gpt-5.3-codex-spark',
 ];
 
-export const CLAUDE_MODELS = ['claude-opus-4-7', 'claude-sonnet-4-6'];
+export const CLAUDE_MODELS = ['claude-opus-4-8', 'claude-sonnet-4-6'];
 
 export const ALL_MODELS = [...CODEX_MODELS, ...CLAUDE_MODELS];
 

@@ -64,8 +64,10 @@ npm ci && npx playwright install chromium
 ```bash
 npm install slides-grab
 npx playwright install chromium
-npx skills add ./node_modules/slides-grab -g -a codex -a claude-code --yes --copy
+npx slides-grab install-skills --target all --scope user
 ```
+
+This installs the same shared Agent Skills plus lightweight runtime adapters into Codex and Claude Code locations. The packaged workflow relies on bundled `SKILL.md` files, bundled `references/`, and the `slides-grab` CLI. Exports through `slides-grab pdf`, `slides-grab convert`, and `slides-grab figma` are blocked until `slides-grab design-gate` records a fresh `proceed` receipt for the current slide files.
 
 ## Why This Project?
 
@@ -80,7 +82,7 @@ There are many AI tools that generate slide HTML. Almost none let you **visually
 
 Workflow commands support `--slides-dir <path>` (default: `slides`).
 
-On a fresh clone, the discovery commands (`--help`, `list-templates`, `list-styles`, and `preview-styles`) work without a deck. `edit`, `build-viewer`, `validate`, `convert`, and `pdf` require an existing slides workspace containing `slide-*.html`.
+On a fresh clone, the discovery commands (`--help`, `list-templates`, `list-styles`, and `preview-styles`) work without a deck. `edit`, `build-viewer`, `validate`, `png`, and `design-gate` require an existing slides workspace containing `slide-*.html`; `convert`, `pdf`, and `figma` additionally require a fresh `Proceed` design gate.
 
 ```bash
 slides-grab edit              # Launch visual slide editor
@@ -98,13 +100,13 @@ slides-grab image --prompt "..."    # Generate a local slide image with god-tibo
 slides-grab fetch-video --url <youtube-url> --slides-dir decks/my-deck  # Download a local video asset with yt-dlp
 slides-grab tldraw           # Render a .tldr diagram into a slide-sized local SVG asset
 slides-grab list-templates    # Show available slide templates
-slides-grab list-styles       # Show 35 bundled design styles (browse, preview, select)
-slides-grab preview-styles                        # Open the 35-style visual gallery in browser
+slides-grab list-styles       # Show 95 bundled design styles (browse, preview, select)
+slides-grab preview-styles                        # Open the 95-style visual gallery in browser
 ```
 
 ## Design Style Collections
 
-slides-grab bundles 35 design styles: 30 derived from [corazzon/pptx-design-styles](https://github.com/corazzon/pptx-design-styles) plus 5 slides-grab originals. Agents can also create fully custom designs beyond the bundled collection.
+slides-grab bundles 95 design styles: 30 derived from [corazzon/pptx-design-styles](https://github.com/corazzon/pptx-design-styles), 5 slides-grab originals, and 60 PPT packs derived from [epoko77-ai/design-diversity](https://github.com/epoko77-ai/design-diversity). Agents can also create fully custom designs beyond the bundled collection.
 
 ```bash
 slides-grab list-styles                           # Browse the catalog
@@ -237,7 +239,7 @@ npm install slides-grab
 Install shared agent skills with Vercel Agent Skills:
 
 ```bash
-npx skills add ./node_modules/slides-grab -g -a codex -a claude-code --yes --copy
+npx skills add ./node_modules/slides-grab -g -a codex -a claude-code --yes --copy --full-depth
 ```
 
 This npm-install path is enough for normal usage. Clone the repo only when you want to modify or contribute to `slides-grab` itself.

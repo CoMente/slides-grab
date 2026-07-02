@@ -5,7 +5,7 @@ metadata:
   short-description: Square card-news workflow on top of slides-grab (PNG by default)
 ---
 
-# slides-grab Card News Skill (Codex)
+# slides-grab Card News Skill
 
 Use this when the user wants card news instead of a widescreen presentation.
 

@@ -52,9 +52,9 @@ These are the packaged design rules for installable `slides-grab` skills.
 - `templates/diagram.html`
 - `templates/diagram-tldraw.html`
 - `templates/custom/`
-- `templates/design-styles/README.md` — bundled design collection reference derived from `corazzon/pptx-design-styles`
-- `templates/design-styles/preview.html` — visual gallery of all 35 styles (open with `slides-grab preview-styles`)
-- `src/design-styles-data.js` — full style specs (colors, fonts, layout, signature elements, things to avoid) for all 35 bundled styles; read this after the user picks a style to ground your design tokens
+- `templates/design-styles/README.md` — bundled design collection reference derived from `corazzon/pptx-design-styles` and `epoko77-ai/design-diversity`
+- `templates/design-styles/preview.html` — visual gallery of all 95 styles (open with `slides-grab preview-styles`)
+- `src/design-styles-data.js` and `src/design-diversity-data.js` — full style specs (colors, fonts, layout, signature elements, things to avoid) for all 95 bundled styles; read these after the user picks a style to ground your design tokens
 
 ## Review loop
 - The design style is chosen in Stage 1 (Plan) and recorded in `slide-outline.md`'s meta section (`style: <id>`). Do not re-open style selection in Stage 2 — read and apply the already-approved style.

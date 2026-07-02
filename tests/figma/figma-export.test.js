@@ -4,7 +4,6 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import test from 'node:test';
-import { inflateRawSync } from 'node:zlib';
 
 import PptxGenJS from 'pptxgenjs';
 
@@ -20,6 +19,8 @@ import {
   SLIDE_WIDTH_INCHES,
   sortFigmaSlideFiles,
 } from '../../src/figma.js';
+import { createPassAReport, createPassBReport } from '../helpers/design-gate-fixtures.js';
+import { createTestSlideHtml, extractZipEntry } from '../helpers/figma-fixtures.js';
 
 test('buildDefaultFigmaOutput places figma pptx next to slides dir', () => {
   const output = buildDefaultFigmaOutput('/tmp/decks/q1-review');
@@ -131,6 +132,7 @@ test('slides-grab figma creates missing parent directories for nested output pat
   try {
     mkdirSync(slidesDir, { recursive: true });
     writeFileSync(join(slidesDir, 'slide-01.html'), createTestSlideHtml(), 'utf-8');
+    recordProceedGate(root, slidesDir);
 
     execFileSync(
       process.execPath,
@@ -209,75 +211,31 @@ test('packed npm install can execute slides-grab figma without missing runtime m
   }
 });
 
-function extractZipEntry(zipBuffer, entryName) {
-  let offset = 0;
+function recordProceedGate(root, slidesDir) {
+  const passAPath = join(root, 'pass-a.md');
+  const passBPath = join(root, 'pass-b.md');
+  writeFileSync(passAPath, createPassAReport(slidesDir), 'utf-8');
+  writeFileSync(passBPath, createPassBReport(slidesDir), 'utf-8');
 
-  while (offset + 30 <= zipBuffer.length) {
-    const signature = zipBuffer.readUInt32LE(offset);
-    if (signature !== 0x04034b50) {
-      break;
-    }
-
-    const compressionMethod = zipBuffer.readUInt16LE(offset + 8);
-    const compressedSize = zipBuffer.readUInt32LE(offset + 18);
-    const fileNameLength = zipBuffer.readUInt16LE(offset + 26);
-    const extraFieldLength = zipBuffer.readUInt16LE(offset + 28);
-    const fileNameStart = offset + 30;
-    const fileNameEnd = fileNameStart + fileNameLength;
-    const dataStart = fileNameEnd + extraFieldLength;
-    const dataEnd = dataStart + compressedSize;
-    const fileName = zipBuffer.subarray(fileNameStart, fileNameEnd).toString('utf-8');
-
-    if (fileName === entryName) {
-      const payload = zipBuffer.subarray(dataStart, dataEnd);
-      if (compressionMethod === 0) return payload;
-      if (compressionMethod === 8) return inflateRawSync(payload);
-      throw new Error(`Unsupported ZIP compression method ${compressionMethod} for ${entryName}`);
-    }
-
-    offset = dataEnd;
-  }
-
-  throw new Error(`ZIP entry not found: ${entryName}`);
-}
-
-function createTestSlideHtml() {
-  return `<!DOCTYPE html>
-<html>
-<head>
-  <style>
-    * { box-sizing: border-box; }
-    body {
-      width: 720pt;
-      height: 405pt;
-      margin: 0;
-      padding: 36pt;
-      font-family: Pretendard, sans-serif;
-      background: #ffffff;
-    }
-    .frame {
-      width: 100%;
-      height: 100%;
-      border: 1pt solid #222222;
-      padding: 24pt;
-    }
-    h1 {
-      margin: 0 0 12pt;
-      font-size: 24pt;
-      color: #111111;
-    }
-    p {
-      margin: 0;
-      font-size: 14pt;
-      color: #444444;
-    }
-  </style>
-</head>
-<body>
-  <div class="frame">
-    <h1>Figma Export Proof</h1>
-    <p>Repo-standard slide dimensions should be preserved.</p>
-  </div>
-</body>
-</html>`;
+  execFileSync(
+    process.execPath,
+    [
+      'bin/ppt-agent.js',
+      'design-gate',
+      '--slides-dir',
+      slidesDir,
+      '--verdict',
+      'proceed',
+      '--pass-a-report',
+      passAPath,
+      '--pass-b-report',
+      passBPath,
+      '--resolution',
+      '720p',
+    ],
+    {
+      cwd: process.cwd(),
+      encoding: 'utf-8',
+    },
+  );
 }

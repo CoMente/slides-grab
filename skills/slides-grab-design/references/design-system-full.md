@@ -105,7 +105,7 @@ All color palettes are now bundled as design styles accessible via `slides-grab 
 - **corporate-blue** — Traditional business (white + blue accent)
 - **warm-neutral** — Warm and approachable (cream + terracotta)
 
-Run `slides-grab list-styles` to browse all 35 bundled styles, or design a fully custom palette when none fit.
+Run `slides-grab list-styles` to browse all 95 bundled styles, or design a fully custom palette when none fit.
 
 ---
 
@@ -538,7 +538,7 @@ This skill is **Stage 2**. It works from the `slide-outline.md` approved by the 
 4. **Auto-fix validation issues**: If validation fails, fix the source HTML/CSS and re-run validation until it passes
 5. **Auto-build viewer**: After validation passes, automatically run:
    ```bash
-   node scripts/build-viewer.js --slides-dir <path>
+   slides-grab build-viewer --slides-dir <path>
    ```
 6. **Guide user to review**: Tell the user to check slides in the browser:
    ```
@@ -547,7 +547,7 @@ This skill is **Stage 2**. It works from the `slide-outline.md` approved by the 
 7. **Revision loop**: When the user requests changes to specific slides:
    - Edit only the relevant HTML file
    - Re-run `slides-grab validate --slides-dir <path>` and fix any failures
-   - Re-run `node scripts/build-viewer.js --slides-dir <path>` to rebuild the viewer
+   - Re-run `slides-grab build-viewer --slides-dir <path>` to rebuild the viewer
    - Guide user to review again
 8. **Completion**: Repeat the revision loop until the user signals approval for PPTX conversion
 
@@ -555,7 +555,7 @@ This skill is **Stage 2**. It works from the `slide-outline.md` approved by the 
 - **Never start PPTX conversion without approval** — PPTX conversion is the responsibility of `pptx-skill` and requires explicit user approval.
 - **Prefer tldraw for complex diagrams** — Use `slides-grab tldraw` when the slide needs a non-trivial diagram instead of forcing dense diagram geometry into HTML/CSS.
 - **Never skip validation** — Run `slides-grab validate --slides-dir <path>` after generation or edits and fix failures before review.
-- **Never forget to build the viewer** — Run `node scripts/build-viewer.js --slides-dir <path>` every time slides are generated or modified.
+- **Never forget to build the viewer** — Run `slides-grab build-viewer --slides-dir <path>` every time slides are generated or modified.
 
 ---
 

@@ -4,21 +4,42 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'nod
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
-
-const INSTALLABLE_SKILLS = [
-  'skills/slides-grab/SKILL.md',
-  'skills/slides-grab-plan/SKILL.md',
-  'skills/slides-grab-design/SKILL.md',
-  'skills/slides-grab-export/SKILL.md',
-  'skills/slides-grab-card-news/SKILL.md',
-];
+import {
+  INSTALLABLE_SKILLS,
+  PACKAGED_RUNTIME_FORBIDDEN_PATTERNS,
+  PACKAGED_SKILL_MARKDOWN,
+} from './installable-skill-fixtures.js';
 
 test('installable skills use packaged commands and avoid .claude runtime paths', () => {
   for (const file of INSTALLABLE_SKILLS) {
     const text = readFileSync(file, 'utf-8');
     assert.doesNotMatch(text, /\.claude\/skills\//, `${file} should not reference .claude skill paths`);
+    assert.doesNotMatch(text, /design-critic-agent/, `${file} should not require unpublished runtime-specific agents`);
     assert.doesNotMatch(text, /node scripts\//, `${file} should not execute repo-local scripts directly`);
     assert.match(text, /slides-grab|Use the installed/, `${file} should describe installed CLI usage`);
+  }
+});
+
+test('packaged skill markdown avoids unpublished runtime-specific dependencies', () => {
+  for (const file of PACKAGED_SKILL_MARKDOWN) {
+    const text = readFileSync(file, 'utf-8');
+
+    for (const pattern of PACKAGED_RUNTIME_FORBIDDEN_PATTERNS) {
+      assert.doesNotMatch(text, pattern, `${file} should not require runtime-specific unpublished files or repo scripts`);
+    }
+  }
+});
+
+test('installable skill metadata is runtime-neutral for Codex and Claude Code', () => {
+  for (const file of INSTALLABLE_SKILLS) {
+    const text = readFileSync(file, 'utf-8');
+    const frontmatterMatch = text.match(/^---\n([\s\S]*?)\n---/);
+
+    assert.ok(frontmatterMatch, `${file} should have frontmatter`);
+    const frontmatter = frontmatterMatch[1];
+
+    assert.doesNotMatch(frontmatter, /for Codex/i, `${file} metadata should not describe a shared skill as Codex-only`);
+    assert.doesNotMatch(text, /^# .*Skill \(Codex\)/m, `${file} heading should not describe a shared skill as Codex-only`);
   }
 });
 
@@ -44,9 +65,15 @@ test('npm pack includes bundled skill references for installable skills', () => 
   assert.ok(filePaths.has('skills/slides-grab-card-news/SKILL.md'));
   assert.ok(filePaths.has('templates/design-styles/README.md'));
   assert.ok(filePaths.has('scripts/generate-image.js'));
+  assert.ok(filePaths.has('scripts/design-gate.js'));
+  assert.ok(filePaths.has('scripts/install-runtime.js'));
   assert.ok(filePaths.has('src/pptx-raster-export.cjs'));
   assert.ok(filePaths.has('src/nano-banana.js'));
+  assert.ok(filePaths.has('src/design-gate-state.js'));
+  assert.ok(filePaths.has('runtimes/codex/agents/slides-grab-design-critic.md'));
+  assert.ok(filePaths.has('runtimes/claude-code/agents/design-critic-agent.md'));
   assert.ok(!filePaths.has('scripts/install-codex-skills.js'));
+  assert.ok(!Array.from(filePaths).some((filePath) => filePath.startsWith('.claude/agents/')));
 });
 
 test('packed npm install exposes the packaged image CLI command', () => {
@@ -88,6 +115,20 @@ test('packed npm install exposes the packaged image CLI command', () => {
     assert.match(helpOutput, /Nano Banana image size preset/);
     assert.match(helpOutput, /--prompt <text>/);
     assert.doesNotMatch(helpOutput, /Cannot find module/);
+
+    const gateHelpOutput = execFileSync(cliPath, ['design-gate', '--help'], {
+      cwd: installRoot,
+      encoding: 'utf-8',
+    });
+    const installHelpOutput = execFileSync(cliPath, ['install-skills', '--help'], {
+      cwd: installRoot,
+      encoding: 'utf-8',
+    });
+
+    assert.match(gateHelpOutput, /slides-grab design-gate/);
+    assert.match(gateHelpOutput, /--pass-a-report/);
+    assert.match(installHelpOutput, /slides-grab install-skills/);
+    assert.match(installHelpOutput, /claude-code/);
   } finally {
     rmSync(packRoot, { recursive: true, force: true });
     rmSync(installRoot, { recursive: true, force: true });
