@@ -38,15 +38,78 @@ function getStyleSource(style) {
   return DESIGN_STYLES_SOURCE;
 }
 
+const DESIGN_DIVERSITY_ALIAS_MAP = {
+  'ppt-glassmorphism': 'glassmorphism',
+  'ppt-neo-brutalism': 'neo-brutalism',
+  'ppt-editorial-magazine': 'editorial-magazine',
+};
+
+const DESIGN_DIVERSITY_RELATED_MAP = {
+  'ppt-consulting-precision-grid': ['swiss-international-style', 'executive-minimal', 'corporate-blue'],
+  'ppt-mckinsey-ghost-deck': ['swiss-international-style', 'executive-minimal'],
+  'ppt-bcg-exhibit-deck': ['swiss-international-style', 'corporate-blue'],
+  'ppt-bain-results-deck': ['executive-minimal', 'corporate-blue'],
+  'ppt-keynote-minimal-fullbleed': ['monochrome-minimal', 'executive-minimal'],
+  'ppt-minimal-mono-note': ['monochrome-minimal'],
+  'ppt-monochrome-risk': ['monochrome-minimal', 'executive-minimal'],
+  'ppt-monochrome-infrastructure-deck': ['monochrome-minimal', 'executive-minimal'],
+  'ppt-dark-tech': ['modern-dark', 'cyberpunk-outline'],
+  'ppt-engineered-dark-deck': ['modern-dark'],
+  'ppt-prismatic-dark-deck': ['modern-dark', 'scifi-holographic-data'],
+  'ppt-dark-luxury-keynote': ['modern-dark', 'dark-neon-miami'],
+  'ppt-vivid-gradient-future': ['gradient-mesh', 'aurora-neon-glow'],
+  'ppt-vivid-gradient-infographic-deck': ['gradient-mesh', 'aurora-neon-glow'],
+};
+
+// reverse map: builtin id -> [dd slug] for enrichment
+const BUILTIN_ALIAS_SLUGS = Object.entries(DESIGN_DIVERSITY_ALIAS_MAP).reduce((acc, [slug, builtinId]) => {
+  (acc[builtinId] = acc[builtinId] || []).push(slug);
+  return acc;
+}, {});
+
+function classifyStyle(style) {
+  if (style.collection === 'design-diversity') {
+    const slug = style.id;
+    if (DESIGN_DIVERSITY_ALIAS_MAP[slug]) {
+      return {
+        classification: 'source-alias',
+        sourceSlug: slug,
+        aliasOf: DESIGN_DIVERSITY_ALIAS_MAP[slug],
+        relatedStyleIds: [],
+      };
+    }
+    if (DESIGN_DIVERSITY_RELATED_MAP[slug]) {
+      return {
+        classification: 'source-variant',
+        sourceSlug: slug,
+        relatedStyleIds: [...DESIGN_DIVERSITY_RELATED_MAP[slug]],
+      };
+    }
+    return {
+      classification: 'source-new',
+      sourceSlug: slug,
+      relatedStyleIds: [],
+    };
+  }
+  const extra = { classification: 'builtin', relatedStyleIds: [] };
+  if (BUILTIN_ALIAS_SLUGS[style.id]) extra.aliases = [...BUILTIN_ALIAS_SLUGS[style.id]];
+  return extra;
+}
+
 const DESIGN_STYLES = [...RAW_DESIGN_STYLES, ...RAW_DESIGN_DIVERSITY_STYLES].map((style) => Object.freeze({
   ...style,
   source: getStyleSource(style),
+  ...classifyStyle(style),
 }));
 
 const DESIGN_STYLES_BY_ID = new Map(DESIGN_STYLES.map((style) => [style.id, style]));
 
 export function listDesignStyles() {
   return DESIGN_STYLES;
+}
+
+export function listSelectableDesignStyles() {
+  return DESIGN_STYLES.filter((style) => style.classification !== 'source-alias');
 }
 
 export function getDesignStyle(styleId) {
