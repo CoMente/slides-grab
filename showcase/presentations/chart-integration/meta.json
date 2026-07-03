@@ -1,0 +1,26 @@
+{
+  "title": "Chart Integration Smoke Deck",
+  "description": "Chart.js examples used to verify slides-grab validation, viewer rendering, PNG export, and PDF export for canvas charts.",
+  "slidesDir": "slides",
+  "viewer": "slides/viewer.html",
+  "pdf": "chart-integration.pdf",
+  "pngDir": "out-png",
+  "chartLibrary": "Chart.js",
+  "charts": [
+    {
+      "slide": "slide-01.html",
+      "type": "stacked bar",
+      "canvasId": "revenueChart"
+    },
+    {
+      "slide": "slide-02.html",
+      "type": "line",
+      "canvasId": "activationChart"
+    },
+    {
+      "slide": "slide-03.html",
+      "type": "doughnut",
+      "canvasId": "portfolioChart"
+    }
+  ]
+}

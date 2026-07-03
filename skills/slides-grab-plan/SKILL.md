@@ -20,6 +20,7 @@ Produce an approved `slide-outline.md` before any slide HTML generation.
 
 ## Output
 - `slide-outline.md` (must include `style: <id>` in meta section)
+- For chart-heavy decks, explicit chart slide notes: chart type, data source, key comparison, and whether the design stage should use the default Chart.js canvas template.
 
 ## Workflow
 1. Analyze user goal and audience.
@@ -37,6 +38,7 @@ Produce an approved `slide-outline.md` before any slide HTML generation.
    - bundled style → `style: <id>`
    - converted DESIGN.slides.md → `style: ./DESIGN.slides.md`
    - free-form custom direction → leave a one-paragraph `style:` block describing it
+   - for chart slides, name the intended chart type and data payload in the slide notes so Stage 2 can build a real Chart.js canvas instead of placeholder bars or decorative pseudo-charts
 5. Present a concise summary to user.
 6. Repeat revisions until explicit approval.
 
@@ -44,6 +46,7 @@ Produce an approved `slide-outline.md` before any slide HTML generation.
 - **Do not write the outline before the user approves a style.** Style selection comes first.
 - Do not generate slide HTML (`<slides-dir>/slide-*.html`) in this stage.
 - Keep scope to structure, narrative, and style selection.
+- For quantitative stories, plan charts as evidence: identify the source values, comparison axis, baseline, and intended takeaway. Do not invent filler metrics just to fill a chart.
 - Ask for approval before moving to design.
 - Assume later stages run through the packaged `slides-grab` CLI.
 - Use the packaged CLI and bundled references only; do not depend on unpublished agent-specific files.

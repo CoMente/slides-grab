@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      width: 720pt;
+      height: 405pt;
+      overflow: hidden;
+      font-family: "Pretendard", sans-serif;
+      background: #F4F6F8;
+      color: #18202A;
+    }
+    body {
+      padding: 34pt 42pt 30pt;
+    }
+    .slide {
+      width: 100%;
+      height: 100%;
+      display: grid;
+      grid-template-columns: 1fr 258pt;
+      gap: 34pt;
+      align-items: center;
+    }
+    .eyebrow {
+      margin: 0 0 10pt;
+      font-size: 9pt;
+      font-weight: 760;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #577590;
+    }
+    h1 {
+      margin: 0;
+      padding-bottom: 4pt;
+      font-size: 30pt;
+      line-height: 1.14;
+      font-weight: 780;
+    }
+    .lead {
+      margin: 15pt 0 24pt;
+      max-width: 310pt;
+      font-size: 13.5pt;
+      line-height: 1.45;
+      color: #4D5865;
+    }
+    .share-list {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 8pt;
+      width: 230pt;
+    }
+    .share-row {
+      display: grid;
+      grid-template-columns: 18pt 1fr 34pt;
+      gap: 9pt;
+      align-items: center;
+    }
+    .swatch {
+      width: 14pt;
+      height: 14pt;
+    }
+    .enterprise { background: #277DA1; }
+    .midmarket { background: #F9C74F; }
+    .smb { background: #F9844A; }
+    .label {
+      margin: 0;
+      font-size: 11.5pt;
+      color: #3C4652;
+    }
+    .value {
+      margin: 0;
+      text-align: right;
+      font-size: 12pt;
+      font-weight: 760;
+      color: #18202A;
+    }
+    .chart-card {
+      height: 258pt;
+      position: relative;
+      background: #FFFFFF;
+      border: 1pt solid #DCE2E8;
+      padding: 20pt;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .chart-box {
+      position: relative;
+      width: 205pt;
+      height: 205pt;
+    }
+    canvas {
+      width: 100% !important;
+      height: 100% !important;
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <div class="slide">
+    <div>
+      <p class="eyebrow">Chart.js / doughnut</p>
+      <h1>Enterprise now carries the largest ARR share.</h1>
+      <p class="lead">The portfolio moved upmarket without losing the mid-market base, changing how sales capacity should be allocated.</p>
+      <div class="share-list">
+        <div class="share-row"><div class="swatch enterprise"></div><p class="label">Enterprise</p><p class="value">48%</p></div>
+        <div class="share-row"><div class="swatch midmarket"></div><p class="label">Mid-market</p><p class="value">32%</p></div>
+        <div class="share-row"><div class="swatch smb"></div><p class="label">SMB</p><p class="value">20%</p></div>
+      </div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-box">
+        <canvas id="portfolioChart"></canvas>
+      </div>
+    </div>
+  </div>
+  <script>
+    new Chart(document.getElementById('portfolioChart'), {
+      type: 'doughnut',
+      data: {
+        labels: ['Enterprise', 'Mid-market', 'SMB'],
+        datasets: [{
+          data: [48, 32, 20],
+          backgroundColor: ['#277DA1', '#F9C74F', '#F9844A'],
+          borderColor: '#FFFFFF',
+          borderWidth: 4,
+          hoverOffset: 0
+        }]
+      },
+      options: {
+        animation: false,
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: '66%',
+        plugins: {
+          legend: { display: false },
+          tooltip: { enabled: false }
+        }
+      }
+    });
+  </script>
+</body>
+</html>

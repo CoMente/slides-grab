@@ -24,6 +24,14 @@ These are the packaged design rules for installable `slides-grab` skills.
 - Avoid emoji as the default icon treatment; only use emoji when the brief explicitly calls for them.
 - Keep icons visually consistent within a deck (stroke weight, size, and color should follow the slide's design tokens).
 
+## Chart guidance
+- Use Chart.js as the default charting library for quantitative slides; `templates/chart.html` is the packaged starting point.
+- Keep chart scripts inside the relevant `slide-*.html` file and initialize charts after the target `<canvas>` exists.
+- Use `animation: false`, `responsive: true`, and `maintainAspectRatio: false` for deterministic validation, viewer preview, and export.
+- Put each `<canvas>` inside a stable fixed-size or flex-stable wrapper so the layout box and drawing buffer are non-zero.
+- Use real data from the outline/research notes, label sample data as sample/synthetic, and avoid decorative pseudo-charts for data claims.
+- Run `slides-grab validate --slides-dir <path>` and fix any `empty-canvas` error before building the viewer or exporting.
+
 ## Asset rules
 - Store deck-local assets in `<slides-dir>/assets/`
 - Reference deck-local assets as `./assets/<file>`
@@ -61,6 +69,7 @@ These are the packaged design rules for installable `slides-grab` skills.
 - Generate or edit only the needed slide files.
 - Prefer `slides-grab image` before remote image sourcing when the slide needs bespoke imagery.
 - Prefer `tldraw` for complex diagrams instead of hand-building dense diagram geometry in HTML/CSS.
+- Prefer Chart.js for charts and verify the generated `viewer.html` when a deck contains `<canvas>` charts.
 - Re-run validation after every generation/edit pass.
 - Rebuild the viewer only after validation passes.
 - Do not move to export until the user approves the reviewed deck.

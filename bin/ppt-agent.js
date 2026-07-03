@@ -370,10 +370,12 @@ program
 program
   .command('list-styles')
   .description('List bundled design styles agents and users can reference during slide generation')
-  .action(async () => {
+  .option('--all', 'Include source-alias styles that resolve to a builtin (hidden by default)')
+  .action(async (options = {}) => {
     try {
-      const { listDesignStyles } = await import('../src/design-styles.js');
-      const styles = listDesignStyles();
+      const { listDesignStyles, listSelectableDesignStyles } = await import('../src/design-styles.js');
+      const showAll = Boolean(options.all);
+      const styles = showAll ? listDesignStyles() : listSelectableDesignStyles();
 
       if (styles.length === 0) {
         console.log('No bundled design styles found.');
@@ -382,11 +384,33 @@ program
 
       console.log('Available design styles:\n');
       for (const style of styles) {
-        console.log(`  ${style.id.padEnd(22)} ${style.title}`);
+        let tag;
+        if (style.classification === 'builtin') {
+          tag = '[builtin]';
+        } else if (style.classification === 'source-variant') {
+          tag = '[variant]';
+        } else if (style.classification === 'source-alias') {
+          tag = `[alias -> ${style.aliasOf}]`;
+        } else {
+          tag = '[new]';
+        }
+        console.log(`  ${style.id.padEnd(38)} ${tag} ${style.title}`);
         console.log(`    ${style.mood} · ${style.bestFor}`);
+        if (style.classification === 'source-variant' && Array.isArray(style.relatedStyleIds) && style.relatedStyleIds.length) {
+          console.log(`    related: ${style.relatedStyleIds.join(', ')}`);
+        }
       }
 
-      console.log(`\nTotal: ${styles.length} styles`);
+      const totalResolvable = listDesignStyles().length;
+      if (!showAll) {
+        const hiddenCount = totalResolvable - styles.length;
+        console.log(`\nTotal: ${styles.length} selectable styles`);
+        console.log(`${hiddenCount} source-alias slug(s) hidden (resolve to a builtin); use --all to show all ${totalResolvable} resolvable styles`);
+      } else {
+        const selectableCount = listSelectableDesignStyles().length;
+        const aliasCount = totalResolvable - selectableCount;
+        console.log(`\nTotal: ${styles.length} resolvable styles (${selectableCount} selectable, ${aliasCount} aliases)`);
+      }
       console.log('Preview: slides-grab preview-styles [--style <id>]');
     } catch (error) {
       reportCliError(error);
@@ -495,6 +519,10 @@ program
         console.log(`Best for: ${style.bestFor}`);
         if (style.source?.repo) console.log(`Source: ${style.source.repo}`);
         if (style.source?.url) console.log(`Source URL: ${style.source.url}`);
+        if (style.classification) console.log(`Classification: ${style.classification}`);
+        if (style.aliasOf) console.log(`Alias of: ${style.aliasOf}`);
+        if (Array.isArray(style.aliases) && style.aliases.length) console.log(`Aliases: ${style.aliases.join(', ')}`);
+        if (Array.isArray(style.relatedStyleIds) && style.relatedStyleIds.length) console.log(`Related styles: ${style.relatedStyleIds.join(', ')}`);
         if (Array.isArray(style.background)) {
           console.log('\n## Background');
           for (const b of style.background) console.log(`- ${b}`);

@@ -92,13 +92,13 @@ slides-grab image --prompt "..."    # 로컬 슬라이드 이미지 생성
 slides-grab fetch-video --url <youtube-url> --slides-dir decks/my-deck  # yt-dlp로 동영상 에셋 다운로드
 slides-grab tldraw            # .tldr 다이어그램을 슬라이드 크기의 로컬 SVG로 렌더링
 slides-grab list-templates    # 사용 가능한 슬라이드 템플릿 표시
-slides-grab list-styles       # 번들된 95개 디자인 스타일 표시
+slides-grab list-styles       # 기본으로 선택 가능한 92개 디자인 스타일 표시 (3개 소스-앨리어스를 포함해 95개 해석 가능; --all로 전체 표시)
 slides-grab preview-styles    # 95개 스타일 미리보기 갤러리를 브라우저에서 열기
 ```
 
 ## 디자인 스타일 모음
 
-slides-grab은 [corazzon/pptx-design-styles](https://github.com/corazzon/pptx-design-styles)에서 파생된 30개 스타일, slides-grab 고유 스타일 5개, [epoko77-ai/design-diversity](https://github.com/epoko77-ai/design-diversity)에서 파생된 PPT 팩 60개를 포함해 총 95개 디자인 스타일을 제공합니다. 에이전트에게 특정 스타일을 요청하거나 완전히 커스텀 디자인을 요청할 수 있습니다.
+slides-grab은 [corazzon/pptx-design-styles](https://github.com/corazzon/pptx-design-styles)에서 파생된 30개 스타일, slides-grab 고유 스타일 5개, [epoko77-ai/design-diversity](https://github.com/epoko77-ai/design-diversity)에서 파생된 PPT 팩 60개를 포함해 총 95개 디자인 스타일을 제공합니다. 60개 design-diversity PPT 팩은 분류됩니다 — 직접 중복은 빌트인에 앨리어스 처리(기본 숨김)되고, 유사 중복은 `relatedStyleIds`로 연결되며, 완전히 새 팩은 추가됩니다. 따라서 92개만 기본으로 선택 가능하며 95개 모두 해석 가능합니다(`list-styles --all`로 앨리어스 확인). 에이전트에게 특정 스타일을 요청하거나 완전히 커스텀 디자인을 요청할 수 있습니다.
 
 ```bash
 slides-grab list-styles
