@@ -12,6 +12,7 @@ import {
   getDesignStyle,
   getPreviewHtmlPath,
   listDesignStyles,
+  listSelectableDesignStyles,
 } from '../../src/design-styles.js';
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
@@ -25,6 +26,9 @@ test('bundled design styles preserve upstream citation metadata', () => {
   const styles = listDesignStyles();
 
   assert.equal(styles.length, 95);
+  const selectable = listSelectableDesignStyles();
+  assert.equal(selectable.length, 92);
+  assert.ok(!selectable.some((s) => s.classification === 'source-alias'));
   assert.equal(styles[0].id, 'glassmorphism');
   assert.equal(styles[0].source.repo, 'corazzon/pptx-design-styles');
   assert.equal(DESIGN_STYLES_SOURCE.repo, 'corazzon/pptx-design-styles');
@@ -246,7 +250,7 @@ test('slides-grab list-styles shows all bundled styles including design-diversit
     assert.match(output, /ppt-consulting-precision-grid/);
     assert.match(output, /ppt-altezza-ultramodern-keynote/);
     assert.match(output, /modern-dark/);
-    assert.match(output, /Total: 95 styles/);
+    assert.match(output, /Total: 92 selectable styles/);
   } finally {
     rmSync(workspace, { recursive: true, force: true });
   }
@@ -285,4 +289,63 @@ test('slides-grab show-design reports slides-grab original source metadata', () 
   assert.match(output, /Bundled style: Executive Minimal/);
   assert.match(output, /Source: NomaDamas\/slides-grab/);
   assert.doesNotMatch(output, /Source: corazzon\/pptx-design-styles/);
+});
+test('design-diversity direct duplicates are classified as source-alias and hidden from selectable', () => {
+  const aliases = [
+    ['ppt-glassmorphism', 'glassmorphism'],
+    ['ppt-neo-brutalism', 'neo-brutalism'],
+    ['ppt-editorial-magazine', 'editorial-magazine'],
+  ];
+
+  for (const [slug, builtin] of aliases) {
+    const alias = getDesignStyle(slug);
+    assert.ok(alias);
+    assert.equal(alias.classification, 'source-alias');
+    assert.equal(alias.aliasOf, builtin);
+
+    const b = getDesignStyle(builtin);
+    assert.ok(b);
+    assert.ok(Array.isArray(b.aliases) && b.aliases.includes(slug));
+
+    assert.ok(!listSelectableDesignStyles().some((s) => s.id === slug));
+  }
+});
+
+test('design-diversity near-duplicates are source-variant with relatedStyleIds referencing existing builtins', () => {
+  for (const style of listDesignStyles().filter((s) => s.classification === 'source-variant')) {
+    assert.ok(style.relatedStyleIds.length > 0);
+    for (const id of style.relatedStyleIds) {
+      const t = getDesignStyle(id);
+      assert.ok(t, `related ${id} must exist`);
+      assert.equal(t.classification, 'builtin');
+    }
+  }
+  assert.equal(getDesignStyle('ppt-consulting-precision-grid').classification, 'source-variant');
+});
+
+test('every design-diversity pack has a classification and no web-track packs are bundled', () => {
+  for (const style of listDesignStyles()) {
+    assert.ok(['builtin', 'source-alias', 'source-variant', 'source-new'].includes(style.classification));
+    assert.ok(!style.id.startsWith('web-'));
+  }
+});
+
+test('net-new design-diversity packs are classified source-new', () => {
+  assert.equal(getDesignStyle('ppt-altezza-ultramodern-keynote').classification, 'source-new');
+});
+
+test('slides-grab list-styles --all shows all resolvable styles including aliases', () => {
+  const workspace = makeWorkspace();
+
+  try {
+    const output = execFileSync(process.execPath, [cliPath, 'list-styles', '--all'], {
+      cwd: workspace,
+      encoding: 'utf-8',
+    });
+
+    assert.match(output, /Total: 95 resolvable styles/);
+    assert.match(output, /ppt-glassmorphism/);
+  } finally {
+    rmSync(workspace, { recursive: true, force: true });
+  }
 });
