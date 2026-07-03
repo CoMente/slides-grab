@@ -433,13 +433,12 @@ export async function inspectSlide(page, fileName, slidesDir, slideMode = DEFAUL
         try {
           const imageData = context.getImageData(0, 0, canvas.width, canvas.height).data;
           const totalPixels = canvas.width * canvas.height;
-          const stride = Math.max(1, Math.ceil(totalPixels / 50000));
           let sampledPixels = 0;
           let paintedSamples = 0;
 
-          for (let pixel = 0; pixel < totalPixels; pixel += stride) {
+          for (let alphaIndex = 3; alphaIndex < imageData.length; alphaIndex += 4) {
             sampledPixels += 1;
-            if (imageData[(pixel * 4) + 3] !== 0) {
+            if (imageData[alphaIndex] !== 0) {
               paintedSamples += 1;
               break;
             }

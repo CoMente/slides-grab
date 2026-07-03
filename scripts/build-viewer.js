@@ -11,7 +11,7 @@
 import { readFileSync, writeFileSync, readdirSync } from 'fs';
 import { createRequire } from 'node:module';
 import { dirname, extname, join, resolve } from 'path';
-import { fileURLToPath, pathToFileURL } from 'url';
+import { fileURLToPath } from 'url';
 
 import { buildSlideRuntimeHtml } from '../src/image-contract.js';
 
@@ -29,8 +29,8 @@ const LOCAL_ASSET_PREFIX = './assets/';
 // Deliberate sandbox decision: allow-scripts (so Chart.js and other in-slide JS
 // render in the viewer) WITHOUT allow-same-origin. Omitting allow-same-origin gives
 // each iframe an opaque origin so first-party slide content cannot reach the parent
-// viewer document. Because relative URLs break under an opaque origin, local
-// ./assets/ references are inlined as data: URLs in loadSlides()/inlineLocalAssetsForSrcdoc.
+// viewer document. Small local image references are inlined for srcdoc portability;
+// large media such as videos remain relative to the generated viewer file.
 const SLIDE_FRAME_SANDBOX = 'allow-scripts';
 
 const MIME_BY_EXTENSION = new Map([
@@ -38,7 +38,6 @@ const MIME_BY_EXTENSION = new Map([
   ['.gif', 'image/gif'],
   ['.jpg', 'image/jpeg'],
   ['.jpeg', 'image/jpeg'],
-  ['.mp4', 'video/mp4'],
   ['.png', 'image/png'],
   ['.svg', 'image/svg+xml'],
   ['.webp', 'image/webp'],
@@ -146,14 +145,13 @@ export function escapeForSrcdoc(html) {
 }
 
 export function loadSlides(slidesDir) {
-  const slideBaseHref = pathToFileURL(`${resolve(slidesDir)}/`).href;
   return findSlideFiles(slidesDir).map((file) => {
     const slidePath = join(slidesDir, file);
     const html = inlineLocalAssetsForSrcdoc(readFileSync(slidePath, 'utf-8'), slidePath);
     return {
       file,
       html: buildSlideRuntimeHtml(html, {
-        baseHref: slideBaseHref,
+        baseHref: './',
         slideFile: file,
       }),
     };
@@ -169,6 +167,10 @@ function toDataUrl(filePath) {
   return `data:${getMimeType(filePath)};base64,${bytes.toString('base64')}`;
 }
 
+function isInlineableAsset(filePath) {
+  return getMimeType(filePath).startsWith('image/');
+}
+
 export function inlineLocalAssetsForSrcdoc(html, slidePath) {
   const resolveAsset = (source) => {
     if (!source.startsWith(LOCAL_ASSET_PREFIX)) {
@@ -176,7 +178,11 @@ export function inlineLocalAssetsForSrcdoc(html, slidePath) {
     }
 
     try {
-      return toDataUrl(resolve(dirname(slidePath), source));
+      const filePath = resolve(dirname(slidePath), source);
+      if (!isInlineableAsset(filePath)) {
+        return source;
+      }
+      return toDataUrl(filePath);
     } catch {
       return source;
     }

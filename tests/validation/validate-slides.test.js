@@ -218,6 +218,36 @@ test('validate CLI passes a painted canvas chart', () => {
   }
 });
 
+test('validate CLI passes a sparse painted canvas line chart', () => {
+  const slidesDir = mkdtempSync(path.join(tmpdir(), 'slides-grab-sparse-canvas-'));
+
+  try {
+    writeCanvasSlide(
+      slidesDir,
+      `<script>
+        const context = document.getElementById('chart').getContext('2d');
+        context.fillStyle = '#111827';
+        context.fillRect(639, 319, 1, 1);
+      </script>`,
+    );
+
+    const command = spawnSync(
+      process.execPath,
+      ['scripts/validate-slides.js', '--slides-dir', slidesDir],
+      {
+        cwd: repoRoot,
+        encoding: 'utf8',
+      },
+    );
+
+    assert.equal(command.status, 0);
+    assert.equal(command.stderr, '');
+    assert.match(command.stdout, /summary: 1 slide\(s\) checked, 1 passed, 0 failed, 0 error\(s\), 0 warning\(s\)/);
+  } finally {
+    rmSync(slidesDir, { recursive: true, force: true });
+  }
+});
+
 test('selectSlideFiles narrows validation to requested slide names', async () => {
   const slideFiles = await findSlideFiles(fixtureDeckDir);
   assert.deepEqual(selectSlideFiles(slideFiles, ['slide-03.html']), ['slide-03.html']);
