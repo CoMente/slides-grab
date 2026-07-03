@@ -1,12 +1,12 @@
 import assert from 'node:assert/strict';
-import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import test from 'node:test';
 import { chromium } from 'playwright';
 
-import { buildViewerHtml, findSlideFiles, parseCliArgs } from '../../scripts/build-viewer.js';
+import { buildViewerHtml, findSlideFiles, inlineLocalAssetsForSrcdoc, loadSlides, parseCliArgs } from '../../scripts/build-viewer.js';
 
 test('build-viewer CLI supports card-news mode', () => {
   assert.deepEqual(parseCliArgs([]), { slidesDir: 'slides', mode: 'presentation', help: false });
@@ -20,6 +20,42 @@ test('buildViewerHtml uses square frame dimensions for card-news mode', () => {
 
   assert.match(html, /width: 720pt;/);
   assert.match(html, /height: 720pt;/);
+});
+
+test('loadSlides keeps srcdoc base relative to generated viewer', async () => {
+  const tempDir = await mkdtemp(path.join(os.tmpdir(), 'build-viewer-relative-base-'));
+
+  try {
+    await writeFile(path.join(tempDir, 'slide-01.html'), '<!doctype html><html><body><h1>Slide</h1></body></html>');
+
+    const [slide] = loadSlides(tempDir);
+
+    assert.match(slide.html, /<base href="\.\/">/);
+    assert.doesNotMatch(slide.html, /file:\/\//);
+  } finally {
+    await rm(tempDir, { recursive: true, force: true });
+  }
+});
+
+test('inlineLocalAssetsForSrcdoc inlines images but leaves local videos relative', async () => {
+  const tempDir = await mkdtemp(path.join(os.tmpdir(), 'build-viewer-inline-assets-'));
+
+  try {
+    await mkdir(path.join(tempDir, 'assets'));
+    await writeFile(path.join(tempDir, 'assets', 'chart.png'), Buffer.from([0x89, 0x50, 0x4e, 0x47]));
+    await writeFile(path.join(tempDir, 'assets', 'clip.mp4'), Buffer.from([0x00, 0x00, 0x00, 0x18]));
+    const slidePath = path.join(tempDir, 'slide-01.html');
+    const html = inlineLocalAssetsForSrcdoc(
+      '<img src="./assets/chart.png"><video src="./assets/clip.mp4" poster="./assets/chart.png"></video>',
+      slidePath,
+    );
+
+    assert.match(html, /<img src="data:image\/png;base64,/);
+    assert.match(html, /poster="data:image\/png;base64,/);
+    assert.match(html, /<video src="\.\/assets\/clip\.mp4"/);
+  } finally {
+    await rm(tempDir, { recursive: true, force: true });
+  }
 });
 
 test('built viewer executes slide chart scripts without exposing parent document access', async () => {

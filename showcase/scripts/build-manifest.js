@@ -7,9 +7,9 @@
  * front-end.
  *
  * A presentation is any folder under `showcase/presentations/` that
- * contains at least one `slide-*.html` file. Optional artifacts:
- *   - viewer.html
- *   - preview-png/slide-01.png  (or slide-01.png anywhere)
+ * contains at least one `slide-*.html` file at the deck root or in
+ * `meta.json` `slidesDir`. Optional artifacts:
+ *   - viewer.html (or `meta.json` `viewer`)
  *   - slide-outline.md          (used to extract the title)
  *   - meta.json                 (override fields explicitly)
  *
@@ -22,7 +22,8 @@
  *     "viewer": "viewer.html",        // override the link target
  *     "thumbnail": "preview-png/slide-01.png",
  *     "pdf": "deck.pdf",              // optional download link
- *     "hidden": false                  // skip from gallery if true
+ *     "hidden": false,                 // skip from gallery if true
+ *     "slidesDir": "slides"           // optional slide HTML subdirectory
  *   }
  *
  * Usage:
@@ -83,12 +84,20 @@ function findPdf(deckDir) {
   return pdf ? pdf.name : null;
 }
 
-/** Count slide-*.html files at the deck root. */
-function countSlides(deckDir) {
-  const entries = fs.readdirSync(deckDir, { withFileTypes: true });
+/** Count slide-*.html files under a slide HTML directory. */
+function countSlides(slidesDir) {
+  if (!fs.existsSync(slidesDir)) return 0;
+  const entries = fs.readdirSync(slidesDir, { withFileTypes: true });
   return entries.filter(
     (e) => e.isFile() && /^slide-\d{2,}\.html$/.test(e.name)
   ).length;
+}
+
+function normalizeRelativePath(value) {
+  if (typeof value !== "string" || value.trim() === "") return "";
+  const normalized = value.trim().replace(/\\/g, "/").replace(/^\/+/, "");
+  if (normalized.split("/").includes("..")) return "";
+  return normalized;
 }
 
 /** Convert a slug to a readable Title Case fallback. */
@@ -114,20 +123,23 @@ function buildEntry(slug) {
   const stat = fs.statSync(deckDir);
   if (!stat.isDirectory()) return null;
 
-  const slideCount = countSlides(deckDir);
-  if (slideCount === 0) {
-    console.warn(`[manifest] Skipping "${slug}" — no slide-*.html files found.`);
-    return null;
-  }
-
   const meta = readJsonSafe(path.join(deckDir, "meta.json"));
   if (meta.hidden) {
     console.log(`[manifest] Skipping "${slug}" — hidden via meta.json.`);
     return null;
   }
 
+  const slidesDirRel = normalizeRelativePath(meta.slidesDir);
+  const slideRoot = slidesDirRel ? path.join(deckDir, slidesDirRel) : deckDir;
+  const slideCount = countSlides(slideRoot);
+  if (slideCount === 0) {
+    console.warn(`[manifest] Skipping "${slug}" — no slide-*.html files found.`);
+    return null;
+  }
+
   const outlineTitle = extractTitle(path.join(deckDir, "slide-outline.md"));
-  const viewerExists = fs.existsSync(path.join(deckDir, "viewer.html"));
+  const viewerRel = normalizeRelativePath(meta.viewer) || (slidesDirRel ? `${slidesDirRel}/viewer.html` : "viewer.html");
+  const viewerExists = fs.existsSync(path.join(deckDir, viewerRel));
   const thumbnail = meta.thumbnail || findThumbnail(deckDir);
   const pdf = meta.pdf || findPdf(deckDir);
 
@@ -140,8 +152,8 @@ function buildEntry(slug) {
     tags: Array.isArray(meta.tags) ? meta.tags : [],
     date: meta.date || null,
     slideCount,
-    viewer: viewerExists ? `${base}/${meta.viewer || "viewer.html"}` : null,
-    firstSlide: `${base}/slide-01.html`,
+    viewer: viewerExists ? `${base}/${viewerRel}` : null,
+    firstSlide: `${base}/${slidesDirRel ? `${slidesDirRel}/` : ""}slide-01.html`,
     thumbnail: thumbnail ? `${base}/${thumbnail}` : null,
     pdf: pdf ? `${base}/${pdf}` : null,
   };
