@@ -298,10 +298,15 @@ test('design-diversity direct duplicates are classified as source-alias and hidd
   ];
 
   for (const [slug, builtin] of aliases) {
-    const alias = getDesignStyle(slug);
+    const alias = listDesignStyles().find((s) => s.id === slug);
     assert.ok(alias);
     assert.equal(alias.classification, 'source-alias');
     assert.equal(alias.aliasOf, builtin);
+
+    const resolved = getDesignStyle(slug);
+    assert.ok(resolved);
+    assert.equal(resolved.id, builtin);
+    assert.equal(resolved.classification, 'builtin');
 
     const b = getDesignStyle(builtin);
     assert.ok(b);
@@ -321,6 +326,16 @@ test('design-diversity near-duplicates are source-variant with relatedStyleIds r
     }
   }
   assert.equal(getDesignStyle('ppt-consulting-precision-grid').classification, 'source-variant');
+  const expectedVariants = [
+    'ppt-memphis-retro-90s',
+    'ppt-botanical-organic',
+    'ppt-print-first-newspaper',
+    'ppt-expressive-soundwave-deck',
+    'ppt-cinematic-keynote-deck',
+  ];
+  for (const id of expectedVariants) {
+    assert.equal(getDesignStyle(id).classification, 'source-variant');
+  }
 });
 
 test('every design-diversity pack has a classification and no web-track packs are bundled', () => {

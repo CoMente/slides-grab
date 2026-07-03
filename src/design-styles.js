@@ -49,6 +49,9 @@ const DESIGN_DIVERSITY_RELATED_MAP = {
   'ppt-mckinsey-ghost-deck': ['swiss-international-style', 'executive-minimal'],
   'ppt-bcg-exhibit-deck': ['swiss-international-style', 'corporate-blue'],
   'ppt-bain-results-deck': ['executive-minimal', 'corporate-blue'],
+  'ppt-memphis-retro-90s': ['memphis-pop-pattern', 'retro-y2k'],
+  'ppt-botanical-organic': ['hand-crafted-organic', 'dark-forest-nature', 'nordic-minimalism'],
+  'ppt-print-first-newspaper': ['brutalist-newspaper', 'risograph-print', 'editorial-magazine'],
   'ppt-keynote-minimal-fullbleed': ['monochrome-minimal', 'executive-minimal'],
   'ppt-minimal-mono-note': ['monochrome-minimal'],
   'ppt-monochrome-risk': ['monochrome-minimal', 'executive-minimal'],
@@ -59,6 +62,8 @@ const DESIGN_DIVERSITY_RELATED_MAP = {
   'ppt-dark-luxury-keynote': ['modern-dark', 'dark-neon-miami'],
   'ppt-vivid-gradient-future': ['gradient-mesh', 'aurora-neon-glow'],
   'ppt-vivid-gradient-infographic-deck': ['gradient-mesh', 'aurora-neon-glow'],
+  'ppt-expressive-soundwave-deck': ['dark-neon-miami', 'typographic-bold'],
+  'ppt-cinematic-keynote-deck': ['modern-dark', 'art-deco-luxe'],
 };
 
 // reverse map: builtin id -> [dd slug] for enrichment
@@ -116,7 +121,11 @@ export function getDesignStyle(styleId) {
   if (!styleId) {
     return null;
   }
-  return DESIGN_STYLES_BY_ID.get(styleId) ?? null;
+  const style = DESIGN_STYLES_BY_ID.get(styleId);
+  if (style?.classification === 'source-alias') {
+    return DESIGN_STYLES_BY_ID.get(style.aliasOf) ?? style;
+  }
+  return style ?? null;
 }
 
 export function requireDesignStyle(styleId) {
