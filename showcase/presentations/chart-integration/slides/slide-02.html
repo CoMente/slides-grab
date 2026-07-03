@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      width: 720pt;
+      height: 405pt;
+      overflow: hidden;
+      font-family: "Pretendard", sans-serif;
+      background: #14213D;
+      color: #F8F5ED;
+    }
+    body {
+      padding: 34pt 40pt 30pt;
+    }
+    .slide {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+    .topline {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 24pt;
+    }
+    .eyebrow {
+      margin: 0 0 9pt;
+      font-size: 9pt;
+      font-weight: 760;
+      letter-spacing: 0.09em;
+      text-transform: uppercase;
+      color: #E9C46A;
+    }
+    h1 {
+      margin: 0;
+      padding-bottom: 4pt;
+      max-width: 430pt;
+      font-size: 29pt;
+      line-height: 1.14;
+      font-weight: 760;
+    }
+    .callout {
+      margin: 4pt 0 0;
+      width: 150pt;
+      padding: 12pt 13pt;
+      background: #F8F5ED;
+      color: #14213D;
+    }
+    .callout-value {
+      margin: 0;
+      padding-bottom: 3pt;
+      font-size: 30pt;
+      line-height: 1.16;
+      font-weight: 800;
+    }
+    .callout-label {
+      margin: 5pt 0 0;
+      font-size: 9.5pt;
+      line-height: 1.3;
+      color: #43506A;
+    }
+    .chart-row {
+      flex: 1;
+      min-height: 0;
+      margin-top: 22pt;
+      display: grid;
+      grid-template-columns: 1fr 150pt;
+      gap: 22pt;
+      align-items: stretch;
+    }
+    .chart-panel {
+      min-height: 0;
+      position: relative;
+      border-top: 1pt solid rgba(248, 245, 237, 0.25);
+      padding-top: 12pt;
+    }
+    .note-list {
+      margin: 0;
+      padding-left: 14pt;
+      align-self: end;
+    }
+    li {
+      margin: 0 0 9pt;
+      font-size: 11.5pt;
+      line-height: 1.35;
+      color: #D7D3C8;
+    }
+    canvas {
+      width: 100% !important;
+      height: 100% !important;
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <div class="slide">
+    <div class="topline">
+      <div>
+        <p class="eyebrow">Chart.js / line</p>
+        <h1>Activation bends upward after onboarding changes.</h1>
+      </div>
+      <div class="callout">
+        <p class="callout-value">64%</p>
+        <p class="callout-label">June activation rate after the new setup flow</p>
+      </div>
+    </div>
+    <div class="chart-row">
+      <div class="chart-panel">
+        <canvas id="activationChart"></canvas>
+      </div>
+      <ul class="note-list">
+        <li>April release simplified first-run setup.</li>
+        <li>Two-month lift is visible without axis truncation.</li>
+        <li>Animation is disabled for deterministic export.</li>
+      </ul>
+    </div>
+  </div>
+  <script>
+    new Chart(document.getElementById('activationChart'), {
+      type: 'line',
+      data: {
+        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+        datasets: [{
+          label: 'Activation rate',
+          data: [42, 45, 47, 56, 61, 64],
+          borderColor: '#E9C46A',
+          backgroundColor: 'rgba(233, 196, 106, 0.18)',
+          pointBackgroundColor: '#F8F5ED',
+          pointBorderColor: '#E9C46A',
+          pointRadius: 4,
+          pointHoverRadius: 4,
+          borderWidth: 3,
+          tension: 0.32,
+          fill: true
+        }]
+      },
+      options: {
+        animation: false,
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: { enabled: false }
+        },
+        scales: {
+          x: { grid: { display: false }, ticks: { color: '#D7D3C8', font: { size: 11 } } },
+          y: {
+            beginAtZero: true,
+            suggestedMax: 70,
+            grid: { color: 'rgba(248, 245, 237, 0.15)' },
+            ticks: { color: '#D7D3C8', font: { size: 10 }, callback: (value) => value + '%' }
+          }
+        }
+      }
+    });
+  </script>
+</body>
+</html>

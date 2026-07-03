@@ -29,11 +29,12 @@ Use the installed **slides-grab-design** skill.
 6. Build the viewer: `slides-grab build-viewer --slides-dir <path>`
 7. When a slide calls for bespoke imagery, prefer `slides-grab image --prompt "<prompt>" --slides-dir <path>` so the default god-tibo-imagen provider (reuses local Codex ChatGPT login — no API key required) saves a local asset under `<slides-dir>/assets/`.
 8. For complex diagrams (architecture, workflows, relationship maps, multi-node concepts), prefer `tldraw`. Render a local diagram asset with `slides-grab tldraw`, store it under `<slides-dir>/assets/`, and place it into the slide with a normal `<img>`.
-9. Keep local videos under `<slides-dir>/assets/`, prefer `poster="./assets/<file>"` thumbnails, and use `slides-grab fetch-video --url <youtube-url> --slides-dir <path>` (or `yt-dlp` directly) when the source starts on a supported web page.
-10. The default provider, god-tibo-imagen, reuses the local Codex ChatGPT login (`~/.codex/auth.json`) — run `codex login` once; no API key required. ⚠️ god-tibo-imagen uses an unsupported private Codex backend that may break without notice. Optional alternatives: `--provider codex` (Codex/OpenAI gpt-image-2 via `OPENAI_API_KEY`; maps `--aspect-ratio` to the nearest supported OpenAI image size; `--image-size 2K|4K` is Nano Banana-only) or `--provider nano-banana` (Google `gemini-3-pro-image-preview` via `GOOGLE_API_KEY` or `GEMINI_API_KEY`; supports `--image-size 2K|4K`). If credentials are unavailable, fall back to web search + download into `<slides-dir>/assets/`.
-11. Present viewer to user for review.
-12. Revise individual slides based on feedback, then re-run validation and rebuild the viewer.
-13. Optionally launch the visual editor: `slides-grab edit --slides-dir <path>`
+9. For quantitative slides, use Chart.js as the default charting library, preferably starting from `templates/chart.html`. Keep scripts in `slide-*.html`, disable animation, use stable canvas wrappers, and fix any `empty-canvas` validation error before review.
+10. Keep local videos under `<slides-dir>/assets/`, prefer `poster="./assets/<file>"` thumbnails, and use `slides-grab fetch-video --url <youtube-url> --slides-dir <path>` (or `yt-dlp` directly) when the source starts on a supported web page.
+11. The default provider, god-tibo-imagen, reuses the local Codex ChatGPT login (`~/.codex/auth.json`) — run `codex login` once; no API key required. ⚠️ god-tibo-imagen uses an unsupported private Codex backend that may break without notice. Optional alternatives: `--provider codex` (Codex/OpenAI gpt-image-2 via `OPENAI_API_KEY`; maps `--aspect-ratio` to the nearest supported OpenAI image size; `--image-size 2K|4K` is Nano Banana-only) or `--provider nano-banana` (Google `gemini-3-pro-image-preview` via `GOOGLE_API_KEY` or `GEMINI_API_KEY`; supports `--image-size 2K|4K`). If credentials are unavailable, fall back to web search + download into `<slides-dir>/assets/`.
+12. Present viewer to user for review. For Chart.js decks, specifically confirm charts render inside `viewer.html`.
+13. Revise individual slides based on feedback, then re-run validation and rebuild the viewer.
+14. Optionally launch the visual editor: `slides-grab edit --slides-dir <path>`
 
 **Do not proceed to Stage 3 without approval.**
 
@@ -57,3 +58,4 @@ Use the installed **slides-grab-export** skill.
 5. **Call out export risk clearly**: PPTX and Figma export are experimental / unstable and should be described as best-effort output.
 6. **Prefer tldraw for complex diagrams**: Use `slides-grab tldraw` for diagram-heavy slides unless the user explicitly wants another rendering path.
 7. **Prefer Codex/OpenAI for bespoke imagery**: Use `slides-grab image` when a slide benefits from generated imagery, and keep the result as a local asset under `<slides-dir>/assets/`.
+8. **Prefer Chart.js for charts**: Use real canvas charts for quantitative claims and require validation plus viewer review before export.

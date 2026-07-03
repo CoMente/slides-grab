@@ -362,6 +362,10 @@ export async function inspectSlide(page, fileName, slidesDir, slideMode = DEFAUL
     if (document.fonts?.ready) {
       await document.fonts.ready;
     }
+
+    await new Promise((resolve) => {
+      requestAnimationFrame(() => requestAnimationFrame(resolve));
+    });
   });
 
   const inspection = await page.evaluate(
@@ -404,6 +408,61 @@ export async function inspectSlide(page, fileName, slidesDir, slideMode = DEFAUL
           right: round(right),
           bottom: round(bottom),
         };
+      };
+
+      const inspectCanvasPaint = (canvas) => {
+        const rect = canvas.getBoundingClientRect();
+        const context = canvas.getContext('2d');
+        const metrics = {
+          layoutWidth: round(rect.width),
+          layoutHeight: round(rect.height),
+          bufferWidth: canvas.width,
+          bufferHeight: canvas.height,
+          sampledPixels: 0,
+          paintedSamples: 0,
+        };
+
+        if (!context || canvas.width <= 0 || canvas.height <= 0) {
+          return {
+            empty: true,
+            reason: !context ? '2d-context-unavailable' : 'zero-size-drawing-buffer',
+            metrics,
+          };
+        }
+
+        try {
+          const imageData = context.getImageData(0, 0, canvas.width, canvas.height).data;
+          const totalPixels = canvas.width * canvas.height;
+          const stride = Math.max(1, Math.ceil(totalPixels / 50000));
+          let sampledPixels = 0;
+          let paintedSamples = 0;
+
+          for (let pixel = 0; pixel < totalPixels; pixel += stride) {
+            sampledPixels += 1;
+            if (imageData[(pixel * 4) + 3] !== 0) {
+              paintedSamples += 1;
+              break;
+            }
+          }
+
+          metrics.sampledPixels = sampledPixels;
+          metrics.paintedSamples = paintedSamples;
+
+          return {
+            empty: paintedSamples === 0,
+            reason: paintedSamples === 0 ? 'transparent-drawing-buffer' : '',
+            metrics,
+          };
+        } catch (error) {
+          return {
+            empty: true,
+            reason: 'drawing-buffer-unreadable',
+            metrics: {
+              ...metrics,
+              detail: error instanceof Error ? error.message : String(error),
+            },
+          };
+        }
       };
 
       const elementPath = (element) => {
@@ -584,6 +643,23 @@ export async function inspectSlide(page, fileName, slidesDir, slideMode = DEFAUL
             clientHeight: element.clientHeight,
           },
           bbox: normalizeRect(element.getBoundingClientRect()),
+        });
+      }
+
+      const canvases = Array.from(document.querySelectorAll('canvas'));
+      for (const canvas of canvases) {
+        if (!isVisible(canvas)) continue;
+
+        const result = inspectCanvasPaint(canvas);
+        if (!result.empty) continue;
+
+        critical.push({
+          code: 'empty-canvas',
+          message: 'Canvas has visible layout size but no painted pixels. Chart.js and other canvas charts must render before validation.',
+          element: elementPath(canvas),
+          detail: result.reason,
+          metrics: result.metrics,
+          bbox: normalizeRect(canvas.getBoundingClientRect()),
         });
       }
 

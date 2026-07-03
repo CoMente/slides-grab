@@ -10,8 +10,8 @@
 
 import { readFileSync, writeFileSync, readdirSync } from 'fs';
 import { createRequire } from 'node:module';
-import { join, resolve } from 'path';
-import { fileURLToPath } from 'url';
+import { dirname, extname, join, resolve } from 'path';
+import { fileURLToPath, pathToFileURL } from 'url';
 
 import { buildSlideRuntimeHtml } from '../src/image-contract.js';
 
@@ -24,6 +24,25 @@ const {
 } = require('../src/slide-mode.cjs');
 
 const DEFAULT_SLIDES_DIR = 'slides';
+const LOCAL_ASSET_PREFIX = './assets/';
+
+// Deliberate sandbox decision: allow-scripts (so Chart.js and other in-slide JS
+// render in the viewer) WITHOUT allow-same-origin. Omitting allow-same-origin gives
+// each iframe an opaque origin so first-party slide content cannot reach the parent
+// viewer document. Because relative URLs break under an opaque origin, local
+// ./assets/ references are inlined as data: URLs in loadSlides()/inlineLocalAssetsForSrcdoc.
+const SLIDE_FRAME_SANDBOX = 'allow-scripts';
+
+const MIME_BY_EXTENSION = new Map([
+  ['.avif', 'image/avif'],
+  ['.gif', 'image/gif'],
+  ['.jpg', 'image/jpeg'],
+  ['.jpeg', 'image/jpeg'],
+  ['.mp4', 'video/mp4'],
+  ['.png', 'image/png'],
+  ['.svg', 'image/svg+xml'],
+  ['.webp', 'image/webp'],
+]);
 
 function printUsage() {
   process.stdout.write(
@@ -127,16 +146,59 @@ export function escapeForSrcdoc(html) {
 }
 
 export function loadSlides(slidesDir) {
+  const slideBaseHref = pathToFileURL(`${resolve(slidesDir)}/`).href;
   return findSlideFiles(slidesDir).map((file) => {
-    const html = readFileSync(join(slidesDir, file), 'utf-8');
+    const slidePath = join(slidesDir, file);
+    const html = inlineLocalAssetsForSrcdoc(readFileSync(slidePath, 'utf-8'), slidePath);
     return {
       file,
       html: buildSlideRuntimeHtml(html, {
-        baseHref: './',
+        baseHref: slideBaseHref,
         slideFile: file,
       }),
     };
   });
+}
+
+function getMimeType(filePath) {
+  return MIME_BY_EXTENSION.get(extname(filePath).toLowerCase()) || 'application/octet-stream';
+}
+
+function toDataUrl(filePath) {
+  const bytes = readFileSync(filePath);
+  return `data:${getMimeType(filePath)};base64,${bytes.toString('base64')}`;
+}
+
+export function inlineLocalAssetsForSrcdoc(html, slidePath) {
+  const resolveAsset = (source) => {
+    if (!source.startsWith(LOCAL_ASSET_PREFIX)) {
+      return source;
+    }
+
+    try {
+      return toDataUrl(resolve(dirname(slidePath), source));
+    } catch {
+      return source;
+    }
+  };
+
+  return html
+    .replace(/\b(src|poster)=("([^"]*)"|'([^']*)')/gi, (match, attribute, quoted, doubleValue, singleValue) => {
+      const value = doubleValue ?? singleValue ?? '';
+      const nextValue = resolveAsset(value);
+      if (nextValue === value) {
+        return match;
+      }
+      const quote = quoted.startsWith("'") ? "'" : '"';
+      return `${attribute}=${quote}${nextValue}${quote}`;
+    })
+    .replace(/url\(\s*(['"]?)(\.\/assets\/[^'")]+)\1\s*\)/gi, (match, quote, source) => {
+      const nextValue = resolveAsset(source);
+      if (nextValue === source) {
+        return match;
+      }
+      return `url("${nextValue}")`;
+    });
 }
 
 export function buildViewerHtml(slides, { slideMode = DEFAULT_SLIDE_MODE } = {}) {
@@ -261,7 +323,7 @@ export function buildViewerHtml(slides, { slideMode = DEFAULT_SLIDE_MODE } = {})
 
     <div class="slide-viewport" id="viewport">
       <div class="slide-scaler" id="scaler">
-${slides.map((s, i) => `        <iframe class="slide-frame${i === 0 ? ' active' : ''}" data-slide="${i + 1}" srcdoc="${escapeForSrcdoc(s.html)}" sandbox="allow-same-origin"></iframe>`).join('\n')}
+${slides.map((s, i) => `        <iframe class="slide-frame${i === 0 ? ' active' : ''}" data-slide="${i + 1}" srcdoc="${escapeForSrcdoc(s.html)}" sandbox="${SLIDE_FRAME_SANDBOX}"></iframe>`).join('\n')}
       </div>
     </div>
   </div>

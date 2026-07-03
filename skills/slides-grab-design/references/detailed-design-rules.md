@@ -42,12 +42,21 @@
 - Do not default to emoji for iconography; reserve emoji for cases where the brief explicitly wants a playful or native-emoji tone.
 - Keep icon sizing, stroke weight, and color aligned with the deck's approved design tokens.
 
+## Chart Usage Rules
+- Prefer Chart.js for bar, line, pie, doughnut, and mixed quantitative slides.
+- Start from `templates/chart.html` when a chart slide needs a proven structure.
+- Keep the `<canvas>` in a stable wrapper and set Chart.js options to `animation: false`, `responsive: true`, and `maintainAspectRatio: false`.
+- Match chart colors to the approved style tokens; avoid rainbow palettes unless the data categories require distinct hues.
+- Direct-label the key data point or keep legends short. Do not let chart legends compete with the slide headline.
+- `slides-grab validate` treats a visible unpainted canvas as `empty-canvas`; fix script loading, target ids, sizing, or data before review/export.
+
 ## Workflow (Stage 2: Design + Human Review)
 - After slide generation or edits, run `slides-grab validate --slides-dir <path>`.
 - After validation passes, run `slides-grab build-viewer --slides-dir <path>`.
 - Edit only the relevant HTML file during revision loops.
 - When the brief explicitly calls for an image, the user requests one, or the slide clearly benefits from it, prefer `slides-grab image` before falling back to remote image sourcing.
 - Prefer `slides-grab tldraw` + local exported assets for architecture, workflow, relationship, and other complex diagrams.
+- For Chart.js decks, open the generated viewer and confirm charts render inside `viewer.html`, not only as standalone slide files.
 - Keep local videos and their poster thumbnails together under `<slides-dir>/assets/`.
 - Never start PPTX conversion without explicit approval.
 - Never forget to build the viewer after slide changes.
