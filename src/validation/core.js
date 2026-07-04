@@ -9,6 +9,8 @@ import {
   classifyImageSource,
   resolveSlideSourcePath,
 } from '../image-contract.js';
+import { TemplatePackError, loadTemplatePackFromSlidesDir } from '../template-pack.js';
+import { checkLayoutDensity } from '../template-layout.js';
 
 const require = createRequire(import.meta.url);
 const {
@@ -735,12 +737,90 @@ export async function inspectSlide(page, fileName, slidesDir, slideMode = DEFAUL
         })
         .filter((entry) => entry.urls.length > 0);
 
+      const templateMetadata = (() => {
+        const commentNodes = [
+          ...Array.from(document.head?.childNodes || []),
+          ...Array.from(document.body?.childNodes || []),
+        ].filter((node) => node.nodeType === 8);
+        for (const node of commentNodes) {
+          const text = node.nodeValue || '';
+          const match = text.match(/slides-grab-template:\s*(\{[\s\S]*?\})/);
+          if (!match) continue;
+          try {
+            const parsed = JSON.parse(match[1]);
+            if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+              return {
+                layoutId: parsed.layoutId ?? parsed.layout_id ?? null,
+                layoutKind: parsed.layoutKind ?? parsed.layout_kind ?? null,
+              };
+            }
+          } catch {
+            // Ignore malformed template metadata comments so legacy slides stay untouched.
+          }
+        }
+        return null;
+      })();
+
+      const templateRoleText = {};
+      const normalizeTemplateRole = (role) => {
+        const value = typeof role === 'string' ? role.trim() : '';
+        return /^[a-z][a-z0-9_-]{0,63}$/i.test(value) ? value : '';
+      };
+      const textForRoleElement = (element) => {
+        const listItems = Array.from(element.querySelectorAll?.('li') || [])
+          .map((item) => (item.textContent || '').trim())
+          .filter(Boolean);
+        if (listItems.length > 0) return listItems;
+        return (element.textContent || '').trim();
+      };
+      const addTemplateRoleText = (role, value) => {
+        const normalizedRole = normalizeTemplateRole(role);
+        if (!normalizedRole) return;
+        const values = Array.isArray(value)
+          ? value.map((entry) => (entry || '').trim()).filter(Boolean)
+          : [(value || '').trim()].filter(Boolean);
+        if (values.length === 0) return;
+        const existing = templateRoleText[normalizedRole];
+        if (existing === undefined) {
+          templateRoleText[normalizedRole] = values.length === 1 ? values[0] : values;
+          return;
+        }
+        const existingValues = Array.isArray(existing) ? existing : [existing];
+        const merged = [...existingValues];
+        for (const entry of values) {
+          if (!merged.includes(entry)) merged.push(entry);
+        }
+        templateRoleText[normalizedRole] = merged.length === 1 ? merged[0] : merged;
+      };
+      if (templateMetadata) {
+        for (const element of Array.from(document.body.querySelectorAll('[data-template-role]'))) {
+          addTemplateRoleText(element.getAttribute('data-template-role'), textForRoleElement(element));
+        }
+        for (const element of Array.from(document.body.querySelectorAll('[class]'))) {
+          const value = textForRoleElement(element);
+          for (const className of Array.from(element.classList)) {
+            addTemplateRoleText(className, value);
+          }
+        }
+        const title = document.querySelector('h1') || document.querySelector('h2');
+        addTemplateRoleText('title', title ? title.textContent || '' : '');
+        const subtitle = document.querySelector('h2') || document.querySelector('.subtitle');
+        addTemplateRoleText('subtitle', subtitle ? subtitle.textContent || '' : '');
+        addTemplateRoleText('bullets', Array.from(document.querySelectorAll('li'))
+          .map((item) => (item.textContent || '').trim())
+          .filter(Boolean));
+      }
+
       return {
         critical,
         warning,
         images,
         videos,
         backgrounds,
+        template: {
+          metadata: templateMetadata,
+          roleText: templateRoleText,
+        },
       };
     },
     {
@@ -763,6 +843,32 @@ export async function inspectSlide(page, fileName, slidesDir, slideMode = DEFAUL
   inspection.warning.push(...imageContractIssues.warning);
   inspection.critical.push(...videoContractIssues.critical);
   inspection.warning.push(...videoContractIssues.warning);
+  const templateMetadata = inspection.template?.metadata;
+  if (templateMetadata) {
+    try {
+      const pack = loadTemplatePackFromSlidesDir(slidesDir, { optional: true });
+      if (pack && Array.isArray(pack.layouts)) {
+        const selectedLayout = pack.layouts.find(
+          (layout) => layout && layout.layoutId === templateMetadata.layoutId,
+        );
+        if (selectedLayout) {
+          const roleText = inspection.template?.roleText || {};
+          const densityWarnings = checkLayoutDensity(roleText, selectedLayout);
+          inspection.warning.push(...densityWarnings);
+        }
+      }
+    } catch (error) {
+      if (error instanceof TemplatePackError) {
+        inspection.warning.push(buildIssue(
+          'template-pack-invalid',
+          'Template pack could not be loaded for density checks; fix .slides-grab/template-pack.json to enable template validation.',
+          { detail: error.message },
+        ));
+      } else {
+        throw error;
+      }
+    }
+  }
 
   const summary = {
     criticalCount: inspection.critical.length,
