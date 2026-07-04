@@ -1,7 +1,7 @@
 // editor-send.js — API submission (applyChanges), updateSendState
 
 import { state, runsById, activeRunBySlide, pendingRequestBySlide } from './editor-state.js';
-import { slideStatusChip, btnSend, btnClearBboxes, promptInput, modelSelect } from './editor-dom.js';
+import { slideStatusChip, btnSend, btnClearBboxes, promptInput, modelSelect, applyModeSelect, imageProviderSection, imageProviderSelect } from './editor-dom.js';
 import { currentSlideFile, getSlideState, getLatestRunForSlide, normalizeBoxStatus, normalizeModelName, setStatus } from './editor-utils.js';
 import { addChatMessage, renderRunsList } from './editor-chat.js';
 import { renderBboxes, extractTargetsForBox } from './editor-bbox.js';
@@ -44,6 +44,11 @@ export function updateSendState() {
   const blocked = pendingRequestBySlide.has(slide) || activeRunBySlide.has(slide);
   const model = normalizeModelName(ss.model);
 
+  const applyMode = applyModeSelect?.value === 'image' ? 'image' : 'html';
+  state.applyMode = applyMode;
+  state.imageProvider = imageProviderSelect?.value || 'dry-run';
+  if (imageProviderSection) imageProviderSection.hidden = applyMode !== 'image';
+  btnSend.title = applyMode === 'image' ? 'Regenerate slide image' : 'Run HTML edit';
   btnSend.disabled = !prompt || pendingCount === 0 || blocked || !model;
   btnClearBboxes.disabled = ss.boxes.length === 0 || blocked;
   updateSlideStatusChip();
@@ -60,6 +65,10 @@ export async function applyChanges() {
   const pendingBoxes = ss.boxes.filter((box) => normalizeBoxStatus(box.status) === 'pending');
   const model = normalizeModelName(ss.model) || state.selectedModel || state.defaultModel;
 
+  const applyMode = applyModeSelect?.value === 'image' ? 'image' : 'html';
+  const imageProvider = imageProviderSelect?.value || 'dry-run';
+  state.applyMode = applyMode;
+  state.imageProvider = imageProvider;
   if (!prompt) return;
   if (pendingBoxes.length === 0) {
     setStatus('No pending (red) bbox to run. Draw a new box or click Rerun on a green box.');
@@ -77,13 +86,13 @@ export async function applyChanges() {
     targets: extractTargetsForBox(box),
   }));
 
-  addChatMessage('user', `[${slide}] [${model}] ${prompt}`, slide);
+  addChatMessage('user', `[${slide}] [${applyMode === 'image' ? `image:${imageProvider}` : model}] ${prompt}`, slide);
 
   pendingRequestBySlide.add(slide);
   ss.prompt = '';
   promptInput.value = '';
   updateSendState();
-  const engineLabel = model.startsWith('claude-') ? 'Claude' : 'Codex';
+  const engineLabel = applyMode === 'image' ? `Image ${imageProvider}` : model.startsWith('claude-') ? 'Claude' : 'Codex';
   setStatus(`Submitting ${slide} to ${engineLabel}...`);
 
   try {
@@ -95,6 +104,8 @@ export async function applyChanges() {
         prompt,
         model,
         selections,
+        mode: applyMode,
+        provider: imageProvider,
       }),
     });
 
