@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import test from 'node:test';
 
@@ -128,6 +128,132 @@ test('scanSlides returns stable issue codes for regression fixtures', async () =
     );
   } finally {
     await browser.close();
+  }
+});
+
+test('scanSlides warns when slide metadata exceeds selected template layout schema', async () => {
+  const slidesDir = mkdtempSync(path.join(tmpdir(), 'slides-grab-template-density-'));
+  const browser = await chromium.launch({ headless: true });
+  const context = await browser.newContext({ viewport: { width: 1920, height: 1080 } });
+  const page = await context.newPage();
+
+  try {
+    mkdirSync(path.join(slidesDir, '.slides-grab'), { recursive: true });
+    writeFileSync(path.join(slidesDir, '.slides-grab', 'template-pack.json'), JSON.stringify({
+      version: 1,
+      name: 'Validation Template',
+      layouts: [{
+        layout_id: 'cover-tight',
+        layout_kind: 'cover',
+        fields: [{ role: 'title', maxChars: 12 }],
+      }],
+    }), 'utf8');
+    writeFileSync(path.join(slidesDir, 'slide-01.html'), `<!doctype html>
+<html><head><meta charset="utf-8"><style>
+html, body { margin: 0; width: 720pt; height: 405pt; overflow: hidden; }
+h1 { font-size: 32pt; margin: 40pt; }
+</style></head><body>
+<!-- slides-grab-template: {"layoutId":"cover-tight","layoutKind":"cover"} -->
+<h1>Long title beyond schema</h1>
+</body></html>`, 'utf8');
+
+    const slides = await scanSlides(page, slidesDir, ['slide-01.html']);
+    assert.equal(slides[0].status, 'pass');
+    assert.ok(slides[0].warning.some((issue) => issue.code === 'template-field-overflow'));
+  } finally {
+    await browser.close();
+    rmSync(slidesDir, { recursive: true, force: true });
+  }
+});
+
+test('scanSlides checks density for custom template roles from metadata-bearing slides', async () => {
+  const slidesDir = mkdtempSync(path.join(tmpdir(), 'slides-grab-template-custom-role-'));
+  const browser = await chromium.launch({ headless: true });
+  const context = await browser.newContext({ viewport: { width: 1920, height: 1080 } });
+  const page = await context.newPage();
+
+  try {
+    mkdirSync(path.join(slidesDir, '.slides-grab'), { recursive: true });
+    writeFileSync(path.join(slidesDir, '.slides-grab', 'template-pack.json'), JSON.stringify({
+      version: 1,
+      name: 'Custom Role Template',
+      layouts: [{
+        layout_id: 'body-tight',
+        layout_kind: 'content',
+        fields: [{ role: 'body', maxChars: 10 }],
+      }],
+    }), 'utf8');
+    writeFileSync(path.join(slidesDir, 'slide-01.html'), `<!doctype html>
+<html><head><meta charset="utf-8"><style>
+html, body { margin: 0; width: 720pt; height: 405pt; overflow: hidden; }
+p { font-size: 18pt; margin: 40pt; }
+</style></head><body>
+<!-- slides-grab-template: {"layoutId":"body-tight","layoutKind":"content"} -->
+<p data-template-role="body">Body copy exceeds the imported layout schema.</p>
+</body></html>`, 'utf8');
+
+    const slides = await scanSlides(page, slidesDir, ['slide-01.html']);
+    assert.equal(slides[0].status, 'pass');
+    assert.ok(slides[0].warning.some((issue) => issue.code === 'template-field-overflow' && issue.role === 'body'));
+  } finally {
+    await browser.close();
+    rmSync(slidesDir, { recursive: true, force: true });
+  }
+});
+
+test('scanSlides keeps legacy slides without template metadata unchanged', async () => {
+  const slidesDir = mkdtempSync(path.join(tmpdir(), 'slides-grab-template-legacy-'));
+  const browser = await chromium.launch({ headless: true });
+  const context = await browser.newContext({ viewport: { width: 1920, height: 1080 } });
+  const page = await context.newPage();
+
+  try {
+    mkdirSync(path.join(slidesDir, '.slides-grab'), { recursive: true });
+    writeFileSync(path.join(slidesDir, '.slides-grab', 'template-pack.json'), JSON.stringify({
+      version: 1,
+      name: 'Validation Template',
+      layouts: [{ layout_id: 'cover-tight', layout_kind: 'cover', fields: [{ role: 'title', maxChars: 4 }] }],
+    }), 'utf8');
+    writeFileSync(path.join(slidesDir, 'slide-01.html'), `<!doctype html>
+<html><head><meta charset="utf-8"><style>
+html, body { margin: 0; width: 720pt; height: 405pt; overflow: hidden; }
+h1 { font-size: 32pt; margin: 40pt; }
+</style></head><body><h1>Legacy slide title is not checked</h1></body></html>`, 'utf8');
+
+    const slides = await scanSlides(page, slidesDir, ['slide-01.html']);
+    assert.equal(slides[0].status, 'pass');
+    assert.equal(slides[0].warning.some((issue) => issue.code === 'template-field-overflow'), false);
+  } finally {
+    await browser.close();
+    rmSync(slidesDir, { recursive: true, force: true });
+  }
+});
+
+test('scanSlides warns but does not fail when template metadata references a malformed pack', async () => {
+  const slidesDir = mkdtempSync(path.join(tmpdir(), 'slides-grab-template-malformed-'));
+  const browser = await chromium.launch({ headless: true });
+  const context = await browser.newContext({ viewport: { width: 1920, height: 1080 } });
+  const page = await context.newPage();
+
+  try {
+    mkdirSync(path.join(slidesDir, '.slides-grab'), { recursive: true });
+    writeFileSync(path.join(slidesDir, '.slides-grab', 'template-pack.json'), '{not-json', 'utf8');
+    writeFileSync(path.join(slidesDir, 'slide-01.html'), `<!doctype html>
+<html><head><meta charset="utf-8"><style>
+html, body { margin: 0; width: 720pt; height: 405pt; overflow: hidden; }
+h1 { font-size: 32pt; margin: 40pt; }
+</style></head><body>
+<!-- slides-grab-template: {"layoutId":"cover-tight","layoutKind":"cover"} -->
+<h1>Template metadata remains non-blocking</h1>
+</body></html>`, 'utf8');
+
+    const slides = await scanSlides(page, slidesDir, ['slide-01.html']);
+    assert.equal(slides[0].status, 'pass');
+    assert.ok(slides[0].warning.some((issue) => issue.code === 'template-pack-invalid'));
+    assert.equal(slides[0].critical.some((issue) => issue.code === 'slide-validation-error'), false);
+  } finally {
+    await browser.close();
+    rmSync(slidesDir, { recursive: true, force: true });
   }
 });
 
