@@ -105,6 +105,33 @@ slides-grab list-styles
 slides-grab preview-styles
 ```
 
+## 레퍼런스 템플릿 및 이미지 네이티브 작업 흐름
+
+기존 회사 덱, 채워진 예시 슬라이드, HTML 레퍼런스 화면, 브랜드 이미지를 새 덱의 기준으로 삼으려면 `slides-grab import-template`를 사용하세요. **채워진 대표 덱**을 빈 마스터 템플릿보다 우선하세요. 채워진 슬라이드는 실제 텍스트 밀도, 스키마 제한, 폰트 fallback, 이미지 처리, 레이아웃 스트레스 상황을 보여 줍니다. 빈 마스터 템플릿은 실제 콘텐츠에서 디자인이 어떻게 무너지는지 보여 주지 못하므로 단독으로는 충분하지 않습니다.
+
+```bash
+slides-grab import-template \
+  --input references/acme-qbr.pptx \
+  --input references/acme-product-page.html \
+  --slides-dir decks/acme-qbr
+```
+
+이 명령은 `<slides-dir>/.slides-grab/template-pack.json`과 미리보기 에셋을 씁니다. Stage 1에서는 `slide-outline.md`에 `style: template-pack`을 기록하고, Stage 2에서는 template pack의 역할, bbox/스키마 제한, 색상, 폰트, 미리보기 레이아웃 계열을 따라 HTML 슬라이드를 생성하세요. 내보내기 전에는 `slides-grab validate --slides-dir <path>`와 `slides-grab design-gate`를 실행합니다.
+
+이미지 중심 덱은 테스트에서 결정적인 `--provider dry-run`을 쓰거나 운영에서 실제 provider를 지정해 `slides-grab generate-images`로 만들 수 있습니다.
+
+```bash
+slides-grab generate-images \
+  --outline slide-outline.md \
+  --slides-dir decks/acme-image \
+  --template-pack decks/acme-qbr/.slides-grab/template-pack.json \
+  --provider dry-run
+```
+
+이미지 네이티브 슬라이드는 래스터 wrapper이며 생성된 PNG 에셋을 감쌉니다. 빠른 시각 탐색이나 이미지 주도 콘셉트에는 유용하지만 HTML보다 편집 가능성이 낮습니다. 텍스트나 레이아웃을 바꾸려면 semantic HTML을 직접 수정하기보다 `slides-grab edit`의 `Image Regenerate` 모드를 다시 실행해야 하는 경우가 많습니다. 덱을 계속 쉽게 편집, 접근성 유지, 검색, 변환해야 한다면 HTML 모드를 쓰고, 시각적 구성이 후속 편집성보다 중요할 때 이미지 네이티브 모드를 쓰세요.
+
+OpenAI 호환 이미지 provider는 슬라이드 파일을 바꾸지 않고 설정할 수 있습니다. 예: `slides-grab image --provider codex --base-url <url> --api-key-env <ENV_NAME>`, 또는 `OPENAI_IMAGE_API_KEY`, `OPENAI_IMAGE_BASE_URL`, `OPENAI_BASE_URL` 환경 변수. 테스트와 fixture는 `--provider dry-run` 또는 mock provider 응답을 사용해야 하며 외부 이미지 API 자격 증명이 필요하면 안 됩니다.
+
 ## 에셋 규칙
 
 슬라이드에서 사용하는 로컬 이미지와 동영상은 `<slides-dir>/assets/`에 저장하고 각 `slide-XX.html`에서는 `./assets/<file>` 형식으로 참조하세요.
