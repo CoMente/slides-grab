@@ -13,6 +13,7 @@ import {
   writeDeck,
 } from '../helpers/design-gate-cli.js';
 import { createPassAReport, createPassBReport } from '../helpers/design-gate-fixtures.js';
+import { buildTemplateFidelityReport } from '../../src/template-fidelity.js';
 
 test('slides-grab pdf blocks export when no fresh Proceed design gate exists', () => {
   const root = mkdtempSync(join(tmpdir(), 'slides-grab-gate-block-'));
@@ -65,6 +66,82 @@ test('slides-grab design-gate records Proceed evidence, unblocks export, and tur
     writeFileSync(join(slidesDir, 'slide-01.html'), createSlideHtml('Changed after gate'), 'utf-8');
     const staleError = captureSlidesGrabFailure(['pdf', '--slides-dir', slidesDir, '--output', join(root, 'stale.pdf')]);
     assert.match(String(staleError.stderr), /stale|changed/i);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('slides-grab design-gate records template fidelity evidence when a template pack is active', { timeout: 90000 }, () => {
+  const root = mkdtempSync(join(tmpdir(), 'slides-grab-template-fidelity-'));
+  const slidesDir = join(root, 'slides');
+  const passAPath = join(root, 'pass-a.md');
+  const passBPath = join(root, 'pass-b.md');
+
+  try {
+    writeTemplateDeck(slidesDir);
+    writeFileSync(passAPath, createPassAReport(slidesDir), 'utf-8');
+    writeFileSync(passBPath, createPassBReport(slidesDir), 'utf-8');
+
+    runSlidesGrabCli(designGateArgs(slidesDir, passAPath, passBPath));
+
+    const state = JSON.parse(readFileSync(join(slidesDir, '.slides-grab', 'design-gate.json'), 'utf-8'));
+    assert.equal(state.templateFidelity.status, 'passed');
+    assert.equal(state.templateFidelity.slides[0].layoutId, 'cover-tight');
+    assert.match(state.templateFidelity.slides[0].generatedPreview, /gate-preview\/slide-01\.png$/);
+    assert.equal(state.templateFidelity.slides[0].referencePreview, '.slides-grab/template-previews/cover-tight.png');
+
+    const report = readFileSync(join(slidesDir, '.slides-grab', 'design-gate-report.md'), 'utf-8');
+    assert.match(report, /## Template Fidelity Report/);
+    assert.match(report, /cover-tight/);
+    assert.match(report, /gate-preview\/slide-01\.png/);
+    assert.match(report, /template-previews\/cover-tight\.png/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('slides-grab design-gate blocks proceed when template fidelity reference previews are missing', { timeout: 90000 }, () => {
+  const root = mkdtempSync(join(tmpdir(), 'slides-grab-template-fidelity-missing-'));
+  const slidesDir = join(root, 'slides');
+  const passAPath = join(root, 'pass-a.md');
+  const passBPath = join(root, 'pass-b.md');
+
+  try {
+    writeTemplateDeck(slidesDir, { writePreview: false });
+    writeFileSync(passAPath, createPassAReport(slidesDir), 'utf-8');
+    writeFileSync(passBPath, createPassBReport(slidesDir), 'utf-8');
+
+    const error = captureSlidesGrabFailure(designGateArgs(slidesDir, passAPath, passBPath));
+
+    assert.match(String(error.stderr), /template fidelity|reference preview|cover-tight/i);
+    assert.equal(existsSync(join(slidesDir, '.slides-grab', 'design-gate.json')), false);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('template fidelity report keeps mixed template and legacy slides non-blocking', async () => {
+  const root = mkdtempSync(join(tmpdir(), 'slides-grab-template-fidelity-mixed-'));
+  const slidesDir = join(root, 'slides');
+
+  try {
+    writeTemplateDeck(slidesDir);
+    writeFileSync(join(slidesDir, 'slide-02.html'), createSlideHtml('Legacy slide without template metadata'), 'utf-8');
+    const previewDir = join(slidesDir, '.slides-grab', 'gate-preview');
+    mkdirSync(previewDir, { recursive: true });
+    writeFileSync(join(previewDir, 'slide-01.png'), 'generated preview 1', 'utf-8');
+    writeFileSync(join(previewDir, 'slide-02.png'), 'generated preview 2', 'utf-8');
+
+    const report = await buildTemplateFidelityReport({
+      slidesDir,
+      slideFiles: ['slide-01.html', 'slide-02.html'],
+      previewRelativeDir: '.slides-grab/gate-preview',
+    });
+
+    assert.equal(report.status, 'passed');
+    assert.equal(report.findings.some((finding) => finding.code === 'template-metadata-missing'), false);
+    assert.equal(report.slides[1].layoutId, null);
+    assert.match(report.slides[1].notes.join(' '), /not template-governed/i);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -324,4 +401,56 @@ function createSlideHtmlWithAsset(title) {
 
 function createBoxSvg(color) {
   return `<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160" viewBox="0 0 160 160"><rect width="160" height="160" fill="${color}"/></svg>`;
+}
+
+function writeTemplateDeck(slidesDir, { writePreview = true } = {}) {
+  const gateDir = join(slidesDir, '.slides-grab');
+  const previewDir = join(gateDir, 'template-previews');
+  mkdirSync(previewDir, { recursive: true });
+  if (writePreview) {
+    writeFileSync(join(previewDir, 'cover-tight.png'), Buffer.from(
+      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAFgwJ/l5GczwAAAABJRU5ErkJggg==',
+      'base64',
+    ));
+  }
+  writeFileSync(join(gateDir, 'template-pack.json'), JSON.stringify({
+    version: 1,
+    name: 'Template Fidelity Fixture',
+    designTokens: {
+      colors: [{ value: '#ffffff', kind: 'background' }, { value: '#111111', kind: 'text' }],
+      fonts: [{ family: 'Pretendard' }],
+    },
+    layouts: [{
+      layout_id: 'cover-tight',
+      layout_kind: 'cover',
+      preview: '.slides-grab/template-previews/cover-tight.png',
+      fields: [{ role: 'title', maxChars: 64 }],
+    }],
+  }, null, 2), 'utf-8');
+  writeFileSync(join(slidesDir, 'slide-01.html'), `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      width: 720pt;
+      height: 405pt;
+      margin: 0;
+      padding: 36pt;
+      font-family: Pretendard, sans-serif;
+      background: #ffffff;
+      color: #111111;
+      overflow: hidden;
+    }
+    h1 { margin: 0 0 12pt; font-size: 24pt; }
+    p { margin: 0; font-size: 14pt; line-height: 1.4; }
+  </style>
+</head>
+<body>
+  <!-- slides-grab-template: {"layoutId":"cover-tight","layoutKind":"cover"} -->
+  <h1 data-template-role="title">Template fidelity fixture</h1>
+  <p>All text is in semantic tags and the slide fits the required frame.</p>
+</body>
+</html>`, 'utf-8');
 }
