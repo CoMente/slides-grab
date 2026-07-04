@@ -431,6 +431,23 @@ program
   });
 
 program
+  .command('import-template')
+  .description('Import one or more template/reference source files (.pptx, .pdf, .html/.htm, image) into a local template pack under <slides-dir>/.slides-grab/. Local analysis only — no network, no LLM. PPTX/PDF are accepted as metadata/visual-reference dispatch with warnings; full rendering is not performed locally.')
+  .option('--input <path>', 'Template source file (repeatable)', collectRepeatedOption, [])
+  .option('--slides-dir <path>', 'Slide directory', 'slides')
+  .option('--name <name>', 'Optional template pack display name')
+  .action(async (options = {}) => {
+    const args = ['--slides-dir', options.slidesDir];
+    for (const input of options.input || []) {
+      args.push('--input', String(input));
+    }
+    if (options.name) {
+      args.push('--name', String(options.name));
+    }
+    await runCommand('scripts/import-template.js', args);
+  });
+
+program
   .command('import-design')
   .description('Fetch a remote DESIGN.md (https only) and save it locally as a custom slide design source')
   .argument('<url>', 'HTTPS URL to a DESIGN.md / markdown design system file')
