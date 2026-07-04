@@ -25,7 +25,7 @@ Produce an approved `slide-outline.md` before any slide HTML generation.
 ## Workflow
 1. Analyze user goal and audience.
 2. **Style selection (mandatory, before outline):** Four paths are accepted, in priority order:
-   a. **Imported template pack** — when the user provides a corporate deck, reference slides, HTML examples, or brand images, run `slides-grab import-template --input <path> --slides-dir <slides-dir>` (repeat `--input` for multiple examples). Confirm the generated `<slides-dir>/.slides-grab/template-pack.json` is the intended reference source. Record as `style: template-pack`.
+   a. **Imported template pack** — when the user provides a corporate deck, reference slides, HTML examples, or brand images, run `slides-grab import-template --input <path> --slides-dir <slides-dir>` (repeat `--input` for multiple examples). Prefer filled representative decks/examples over empty master templates: filled examples reveal density, schema field limits, font resolution, and layout stress cases; an empty master alone is insufficient. Confirm the generated `<slides-dir>/.slides-grab/template-pack.json` is the intended reference source. Record as `style: template-pack`.
    b. **Bundled style** — run `slides-grab list-styles`, shortlist 2–3 styles, and get explicit user approval. Optionally offer `slides-grab preview-styles` for visual preview. Record as `style: <id>`.
    c. **Custom DESIGN.md path** — if a local `DESIGN.md` exists (e.g. provided directly or fetched via `slides-grab import-design <https-url>`), inspect it with `slides-grab show-design ./DESIGN.md` and confirm with the user.
    d. **Free-form custom direction** — if neither imported template pack, bundled style, nor DESIGN.md fits, propose a written custom direction and get approval.

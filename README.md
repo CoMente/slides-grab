@@ -115,6 +115,33 @@ slides-grab preview-styles  # Local HTML preview
 
 Tell the agent which style to use (or ask for something custom) — no config files needed.
 
+## Reference-template and Image-native Workflows
+
+Use `slides-grab import-template` when you have an existing corporate deck, filled example slides, HTML reference screens, or brand images that should drive a new deck. Prefer **filled representative decks** over empty master templates: filled slides reveal real text density, schema limits, font fallback behavior, image treatment, and layout stress cases. Empty master templates are insufficient by themselves because they do not show how the design behaves under real content.
+
+```bash
+slides-grab import-template \
+  --input references/acme-qbr.pptx \
+  --input references/acme-product-page.html \
+  --slides-dir decks/acme-qbr
+```
+
+The import writes `<slides-dir>/.slides-grab/template-pack.json` plus preview assets. In Stage 1, record `style: template-pack` in `slide-outline.md`; in Stage 2, generate HTML slides that follow the template pack roles, bbox/schema limits, colors, fonts, and previewed layout families. Run `slides-grab validate --slides-dir <path>` and `slides-grab design-gate` before export.
+
+For image-first decks, use `slides-grab generate-images` with a deterministic `--provider dry-run` in tests or real providers in production:
+
+```bash
+slides-grab generate-images \
+  --outline slide-outline.md \
+  --slides-dir decks/acme-image \
+  --template-pack decks/acme-qbr/.slides-grab/template-pack.json \
+  --provider dry-run
+```
+
+Image-native slides are raster wrappers around generated PNG assets. They are useful for fast visual exploration or image-led concepts, but they are less editable than HTML: text and layout changes usually require `Image Regenerate` in `slides-grab edit`, not direct semantic HTML edits. Use HTML mode when the deck must remain highly editable, accessible, searchable, or easy to convert; use image-native mode when visual composition matters more than downstream editability.
+
+OpenAI-compatible image providers can be configured without changing slide files: `slides-grab image --provider codex --base-url <url> --api-key-env <ENV_NAME>`, or environment variables `OPENAI_IMAGE_API_KEY`, `OPENAI_IMAGE_BASE_URL`, and `OPENAI_BASE_URL`. Tests and fixtures should use `--provider dry-run` or mocked provider responses and must not require external image API credentials.
+
 ## Asset Contract
 
 Slides should store local image and video files in `<slides-dir>/assets/` and reference them as `./assets/<file>` from each `slide-XX.html`.
