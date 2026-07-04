@@ -28,6 +28,7 @@ import {
   runEditSubprocess,
 } from '../src/editor/edit-subprocess.js';
 import { buildSlideRuntimeHtml } from '../src/image-contract.js';
+import { regenerateImageNativeSlide } from '../src/image-native.js';
 
 const require = createRequire(import.meta.url);
 const {
@@ -63,6 +64,23 @@ const PORT_PROBE_IGNORED_CODES = new Set(['EAFNOSUPPORT', 'EADDRNOTAVAIL']);
 const MAX_RUNS = 200;
 const MAX_LOG_CHARS = 800_000;
 const EDIT_TIMEOUT_MS = parseEditTimeoutMs();
+const IMAGE_REGEN_DELAY_MS = Number.parseInt(process.env.PPT_AGENT_IMAGE_REGEN_DELAY_MS || '0', 10) || 0;
+
+function waitForImageRegenerationDelay(signal) {
+  if (IMAGE_REGEN_DELAY_MS <= 0) return Promise.resolve();
+  return new Promise((resolvePromise, rejectPromise) => {
+    const timer = setTimeout(resolvePromise, IMAGE_REGEN_DELAY_MS);
+    signal?.addEventListener('abort', () => {
+      clearTimeout(timer);
+      rejectPromise(new Error('Image regeneration was aborted.'));
+    }, { once: true });
+  });
+}
+
+function isImageNativeSlideHtml(html) {
+  return /<meta\s+name=["']slides-grab-image-native["']\s+content=["']true["']/i.test(html) &&
+    /<meta\s+name=["']slides-grab-image-native-metadata["']\s+content=["'][^"']+["']/i.test(html);
+}
 
 function printUsage() {
   process.stdout.write(`Usage: slides-grab edit [options]\n\n`);
@@ -723,7 +741,7 @@ async function startServer(opts) {
   });
 
   app.post('/api/apply', async (req, res) => {
-    const { slide, prompt, selections, model } = req.body ?? {};
+    const { slide, prompt, selections, model, mode, provider, baseUrl } = req.body ?? {};
 
     if (!slide || typeof slide !== 'string' || !SLIDE_FILE_PATTERN.test(slide)) {
       return res.status(400).json({ error: 'Missing or invalid `slide`.' });
@@ -733,11 +751,17 @@ async function startServer(opts) {
       return res.status(400).json({ error: 'Missing or invalid `prompt`.' });
     }
 
+    const applyMode = mode === 'image' ? 'image' : 'html';
+
     let selectedModel;
-    try {
-      selectedModel = normalizeModel(model);
-    } catch (error) {
-      return res.status(400).json({ error: error.message });
+    if (applyMode === 'image') {
+      selectedModel = typeof model === 'string' && model.trim() ? model.trim() : 'dry-run-image';
+    } else {
+      try {
+        selectedModel = normalizeModel(model);
+      } catch (error) {
+        return res.status(400).json({ error: error.message });
+      }
     }
 
     if (runStore.hasActiveRunForSlide(slide)) {
@@ -754,6 +778,15 @@ async function startServer(opts) {
       return res.status(400).json({ error: error.message });
     }
 
+    if (applyMode === 'image') {
+      const slideHtml = await readFile(join(slidesDirectory, slide), 'utf8').catch(() => '');
+      if (!isImageNativeSlideHtml(slideHtml)) {
+        return res.status(400).json({
+          error: `${slide} is not an image-native slide. Run slides-grab generate-images first or use HTML Edit mode.`,
+        });
+      }
+    }
+
     const runId = randomRunId();
 
     const runSummary = runStore.startRun({
@@ -762,12 +795,14 @@ async function startServer(opts) {
       prompt: prompt.trim(),
       selectionsCount: normalizedSelections.length,
       model: selectedModel,
+      mode: applyMode,
     });
 
     broadcastSSE('applyStarted', {
       runId,
       slide,
       model: selectedModel,
+      mode: applyMode,
       selectionsCount: normalizedSelections.length,
       selectionBoxes: normalizedSelections.map((selection) => selection.bbox),
     });
@@ -790,6 +825,51 @@ async function startServer(opts) {
     res.on('close', handleClientClose);
 
     try {
+      if (applyMode === 'image') {
+        await waitForImageRegenerationDelay(abortController.signal);
+        const imageResult = await regenerateImageNativeSlide({
+          slidesDir: slidesDirectory,
+          slideFile: slide,
+          prompt,
+          selections: normalizedSelections,
+          signal: abortController.signal,
+          provider: provider || 'dry-run',
+          model: selectedModel,
+          baseUrl: typeof baseUrl === 'string' ? baseUrl : '',
+          env: process.env,
+          fetchImpl: globalThis.fetch,
+        });
+        runStore.finishRun(runId, {
+          status: 'success',
+          code: 0,
+          message: 'Image regeneration completed.',
+        });
+        broadcastSSE('applyFinished', {
+          runId,
+          slide,
+          model: selectedModel,
+          mode: applyMode,
+          success: true,
+          aborted: false,
+          code: 0,
+          message: 'Image regeneration completed.',
+        });
+        broadcastRunsSnapshot();
+        if (!clientDisconnected && !res.writableEnded) {
+          res.json({
+            ...runSummary,
+            success: true,
+            aborted: false,
+            runId,
+            model: selectedModel,
+            mode: applyMode,
+            code: 0,
+            message: 'Image regeneration completed.',
+            image: imageResult,
+          });
+        }
+        return;
+      }
       await withScreenshotPage(async (page) => {
         await screenshotMod.captureSlideScreenshot(
           page,
@@ -880,9 +960,10 @@ async function startServer(opts) {
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
+      const abortedBySignal = clientDisconnected || abortController.signal.aborted;
 
       runStore.finishRun(runId, {
-        status: clientDisconnected ? 'aborted' : 'failed',
+        status: abortedBySignal ? 'aborted' : 'failed',
         code: -1,
         message,
       });
@@ -892,7 +973,7 @@ async function startServer(opts) {
         slide,
         model: selectedModel,
         success: false,
-        aborted: clientDisconnected,
+        aborted: abortedBySignal,
         code: -1,
         message,
       });

@@ -1628,6 +1628,22 @@
               <textarea id="prompt-input" class="sidebar-textarea" placeholder="Describe the edit for red bboxes..." rows="3"></textarea>
             </div>
             <div class="sidebar-section">
+              <span class="sidebar-label">Edit mode</span>
+              <select id="apply-mode-select" class="model-select" aria-label="Editor apply mode">
+                <option value="html">HTML Edit</option>
+                <option value="image">Image Regenerate</option>
+              </select>
+            </div>
+            <div class="sidebar-section" id="image-provider-section" hidden>
+              <span class="sidebar-label">Image provider</span>
+              <select id="image-provider-select" class="model-select" aria-label="Image regeneration provider">
+                <option value="dry-run">dry-run</option>
+                <option value="god-tibo">god-tibo</option>
+                <option value="codex">codex</option>
+                <option value="nano-banana">nano-banana</option>
+              </select>
+            </div>
+            <div class="sidebar-section">
               <span class="sidebar-label">Model</span>
               <select id="model-select" class="model-select">
                 <option value="gpt-5.5">gpt-5.5</option>

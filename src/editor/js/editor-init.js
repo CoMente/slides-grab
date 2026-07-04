@@ -3,6 +3,7 @@
 import { state, TOOL_MODE_DRAW, TOOL_MODE_SELECT, setSlideFrame } from './editor-state.js';
 import {
   btnPrev, btnNext, slideIframe, slideWrapper, drawLayer, promptInput, modelSelect,
+  applyModeSelect, imageProviderSelect, imageProviderSection,
   btnSend, btnClearBboxes, slideCounter,
   toggleBold, toggleItalic, toggleUnderline, toggleStrike,
   alignLeft, alignCenter, alignRight,
@@ -89,6 +90,19 @@ modelSelect.addEventListener('change', () => {
   saveSelectedModel(state.selectedModel);
   updateSendState();
   setStatus(`Model selected: ${state.selectedModel}`);
+});
+
+applyModeSelect?.addEventListener('change', () => {
+  state.applyMode = applyModeSelect.value === 'image' ? 'image' : 'html';
+  if (imageProviderSection) imageProviderSection.hidden = state.applyMode !== 'image';
+  updateSendState();
+  setStatus(state.applyMode === 'image' ? 'Image Regenerate mode selected.' : 'HTML Edit mode selected.');
+});
+
+imageProviderSelect?.addEventListener('change', () => {
+  state.imageProvider = imageProviderSelect.value || 'dry-run';
+  updateSendState();
+  setStatus(`Image provider selected: ${state.imageProvider}`);
 });
 
 // Prompt input

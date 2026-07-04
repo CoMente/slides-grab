@@ -321,3 +321,105 @@ export async function generateImageNativeSlides({
     slides: generatedSlides,
   };
 }
+
+function extractImageNativeMetadataRef(html) {
+  const match = html.match(/<meta\s+name=["']slides-grab-image-native-metadata["']\s+content=["']([^"']+)["']/i);
+  return match?.[1] ?? null;
+}
+
+function ensureImageNativeHtml(html, slideFile) {
+  if (!/<meta\s+name=["']slides-grab-image-native["']\s+content=["']true["']/i.test(html)) {
+    throw new Error(`${slideFile} is not an image-native slide. Run slides-grab generate-images first or choose HTML Edit mode.`);
+  }
+  const metadataRef = extractImageNativeMetadataRef(html);
+  if (!metadataRef) {
+    throw new Error(`${slideFile} is missing image-native regeneration metadata.`);
+  }
+  return metadataRef;
+}
+
+function buildRegenerationPrompt({ metadata, prompt, selections = [] }) {
+  const boxes = selections
+    .map((selection, index) => `- Region ${index + 1}: x=${selection.bbox.x}, y=${selection.bbox.y}, width=${selection.bbox.width}, height=${selection.bbox.height}`)
+    .join('\n');
+  return [
+    'Regenerate this existing image-native slide as a complete replacement full-slide image.',
+    'Keep the original slide intent and template constraints, but apply the user critique.',
+    '',
+    `User critique: ${prompt}`,
+    boxes ? `Selected bbox feedback regions (slide coordinate space):\n${boxes}` : 'Selected bbox feedback regions: none.',
+    '',
+    'Original generation prompt:',
+    metadata.prompt,
+  ].join('\n');
+}
+
+function throwIfImageRegenerationAborted(signal) {
+  if (signal?.aborted) {
+    throw new Error('Image regeneration was aborted.');
+  }
+}
+
+export async function regenerateImageNativeSlide({
+  slidesDir,
+  slideFile,
+  prompt,
+  selections = [],
+  provider = IMAGE_NATIVE_PROVIDER_DRY_RUN,
+  model = '',
+  baseUrl = '',
+  env = process.env,
+  fetchImpl = globalThis.fetch,
+  generateImageImpl = null,
+  signal = null,
+} = {}) {
+  if (!slidesDir) throw new Error('regenerateImageNativeSlide requires slidesDir.');
+  if (!slideFile) throw new Error('regenerateImageNativeSlide requires slideFile.');
+  if (typeof prompt !== 'string' || prompt.trim() === '') throw new Error('regenerateImageNativeSlide requires a prompt.');
+
+  const absoluteSlidesDir = resolve(slidesDir);
+  const htmlPath = join(absoluteSlidesDir, slideFile);
+  const html = await readFile(htmlPath, 'utf8');
+  const metadataRef = ensureImageNativeHtml(html, slideFile);
+  const metadataPath = join(absoluteSlidesDir, metadataRef);
+  const metadata = JSON.parse(await readFile(metadataPath, 'utf8'));
+  const normalizedProvider = normalizeProvider(provider || metadata.provider || IMAGE_NATIVE_PROVIDER_DRY_RUN);
+  const resolvedModel = model || metadata.model || (normalizedProvider === IMAGE_NATIVE_PROVIDER_DRY_RUN ? DEFAULT_DRY_RUN_MODEL : '');
+  const regenerationPrompt = buildRegenerationPrompt({ metadata, prompt: prompt.trim(), selections });
+  throwIfImageRegenerationAborted(signal);
+
+  const generated = generateImageImpl
+    ? await generateImageImpl({ prompt: regenerationPrompt, metadata, selections, provider: normalizedProvider, model: resolvedModel })
+    : await defaultGenerateImage({ prompt: regenerationPrompt, provider: normalizedProvider, model: resolvedModel, env, baseUrl, fetchImpl });
+  throwIfImageRegenerationAborted(signal);
+
+  const assetPath = join(absoluteSlidesDir, metadata.assetRef.replace(/^\.\//, ''));
+  await writeFile(assetPath, generated.bytes);
+
+  const historyEntry = {
+    at: new Date().toISOString(),
+    prompt: prompt.trim(),
+    provider: normalizedProvider,
+    model: resolvedModel,
+    selections,
+    previousPrompt: metadata.prompt,
+  };
+  const nextMetadata = {
+    ...metadata,
+    prompt: regenerationPrompt,
+    provider: normalizedProvider,
+    model: resolvedModel,
+    regenerationHistory: [...(Array.isArray(metadata.regenerationHistory) ? metadata.regenerationHistory : []), historyEntry],
+  };
+  await writeFile(metadataPath, `${JSON.stringify(nextMetadata, null, 2)}\n`, 'utf8');
+
+  return {
+    slideFile,
+    assetRef: metadata.assetRef,
+    metadataFile: metadataRef,
+    provider: normalizedProvider,
+    model: resolvedModel,
+    prompt: regenerationPrompt,
+    regenerationHistoryLength: nextMetadata.regenerationHistory.length,
+  };
+}
