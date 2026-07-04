@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 
 import {
   DEFAULT_CODEX_IMAGE_MODEL,
+  DEFAULT_CODEX_IMAGE_BASE_URL,
   DEFAULT_CODEX_IMAGE_SIZE,
   DEFAULT_GOD_TIBO_MODEL,
   DEFAULT_IMAGE_PROVIDER,
@@ -15,6 +16,7 @@ import {
   IMAGE_PROVIDER_GOD_TIBO,
   IMAGE_PROVIDER_NANO_BANANA,
   buildCodexImageApiRequest,
+  buildCodexImageEndpoint,
   buildNanoBananaApiRequest,
   extractCodexGeneratedImage,
   extractGeneratedImage,
@@ -26,6 +28,7 @@ import {
   normalizeImageProvider,
   parseNanoBananaCliArgs,
   resolveCodexApiKey,
+  resolveCodexBaseUrl,
   resolveNanoBananaApiKey,
   resolveNanoBananaOutputPath,
   runNanoBananaCli,
@@ -43,6 +46,7 @@ import {
 } from '../src/god-tibo-imagen.js';
 
 export {
+  DEFAULT_CODEX_IMAGE_BASE_URL,
   DEFAULT_CODEX_IMAGE_MODEL,
   DEFAULT_CODEX_IMAGE_SIZE,
   DEFAULT_GOD_TIBO_MODEL,
@@ -58,6 +62,7 @@ export {
   IMAGE_PROVIDER_GOD_TIBO,
   IMAGE_PROVIDER_NANO_BANANA,
   buildCodexImageApiRequest,
+  buildCodexImageEndpoint,
   buildNanoBananaApiRequest,
   extractCodexGeneratedImage,
   extractGeneratedImage,
@@ -73,6 +78,7 @@ export {
   parseNanoBananaCliArgs,
   resolveCodexApiKey,
   resolveGodTiboConfig,
+  resolveCodexBaseUrl,
   resolveNanoBananaApiKey,
   resolveNanoBananaOutputPath,
   runNanoBananaCli,

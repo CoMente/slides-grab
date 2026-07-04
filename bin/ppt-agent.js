@@ -311,12 +311,14 @@ program
   .option('--model <id>', 'Model id (default: gpt-5.4 for god-tibo, gpt-image-2 for codex, gemini-3-pro-image-preview for nano-banana)')
   .option('--aspect-ratio <ratio>', 'Aspect ratio; for god-tibo it is injected as a prompt hint, for codex it maps to the nearest supported OpenAI size (default: 16:9)')
   .option('--image-size <size>', 'Nano Banana image size preset: 2K or 4K (default: 4K)')
+  .option('--base-url <url>', 'Codex/OpenAI-compatible base URL (default: OPENAI_IMAGE_BASE_URL, OPENAI_BASE_URL, then OpenAI)')
+  .option('--api-key-env <name>', 'Env var to read for Codex/OpenAI-compatible provider API key')
   .addHelpText('after', [
     '',
     'Auth:',
     '  Default (god-tibo): run `codex login` once to populate ~/.codex/auth.json. No OpenAI/Google API key required;',
     '                      requires a Codex/ChatGPT account entitled to image generation.',
-    '  Codex/OpenAI provider: set OPENAI_API_KEY.',
+    '  Codex/OpenAI provider: set OPENAI_API_KEY. Compatible endpoints may use --base-url, OPENAI_IMAGE_BASE_URL, OPENAI_BASE_URL, and --api-key-env.',
     '  Nano Banana provider: set GOOGLE_API_KEY or GEMINI_API_KEY.',
     '',
     'WARNING: god-tibo-imagen calls an unsupported private Codex backend that may break without notice.',
@@ -330,6 +332,8 @@ program
     if (options.model) args.push('--model', String(options.model));
     if (options.aspectRatio) args.push('--aspect-ratio', String(options.aspectRatio));
     if (options.imageSize) args.push('--image-size', String(options.imageSize));
+    if (options.baseUrl) args.push('--base-url', String(options.baseUrl));
+    if (options.apiKeyEnv) args.push('--api-key-env', String(options.apiKeyEnv));
     await runCommand('scripts/generate-image.js', args);
   });
 
