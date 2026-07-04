@@ -159,6 +159,18 @@ test('slides-grab design skill keeps the packaged style-discovery CLI guidance',
   assert.match(text, /GOOGLE_API_KEY|GEMINI_API_KEY/);
 });
 
+test('slides-grab plan and design skills document imported template pack workflow', () => {
+  const planSkill = readFileSync('skills/slides-grab-plan/SKILL.md', 'utf-8');
+  const designSkill = readFileSync('skills/slides-grab-design/SKILL.md', 'utf-8');
+
+  assert.match(planSkill, /slides-grab import-template/);
+  assert.match(planSkill, /template-pack\.json/);
+  assert.match(planSkill, /style: template-pack/i);
+  assert.match(designSkill, /template-pack\.json/);
+  assert.match(designSkill, /BEGIN UNTRUSTED TEMPLATE PACK DATA/);
+  assert.match(designSkill, /DESIGN\.slides\.md.*template pack/s);
+});
+
 test('slides-grab design rules keep packaged style, image, and video asset commands', () => {
   const text = readFileSync('skills/slides-grab-design/references/design-rules.md', 'utf-8');
 
