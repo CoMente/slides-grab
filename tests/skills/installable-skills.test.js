@@ -114,6 +114,8 @@ test('packed npm install exposes the packaged image CLI command', () => {
     assert.match(helpOutput, /--aspect-ratio <ratio>/);
     assert.match(helpOutput, /Nano Banana image size preset/);
     assert.match(helpOutput, /--prompt <text>/);
+    assert.match(helpOutput, /--base-url <url>/);
+    assert.match(helpOutput, /--api-key-env <name>/);
     assert.doesNotMatch(helpOutput, /Cannot find module/);
 
     const gateHelpOutput = execFileSync(cliPath, ['design-gate', '--help'], {

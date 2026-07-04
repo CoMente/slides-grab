@@ -15,6 +15,7 @@ import {
   IMAGE_PROVIDER_GOD_TIBO,
   IMAGE_PROVIDER_NANO_BANANA,
   buildCodexImageApiRequest,
+  buildCodexImageEndpoint,
   buildNanoBananaApiRequest,
   extractGeneratedImage,
   getCodexFallbackMessage,
@@ -22,6 +23,7 @@ import {
   normalizeImageProvider,
   parseNanoBananaCliArgs,
   resolveCodexApiKey,
+  resolveCodexBaseUrl,
   resolveNanoBananaApiKey,
   resolveNanoBananaOutputPath,
 } from '../../src/nano-banana.js';
@@ -42,6 +44,8 @@ test('parseNanoBananaCliArgs applies god-tibo image generation defaults', () => 
     model: DEFAULT_GOD_TIBO_MODEL,
     aspectRatio: DEFAULT_NANO_BANANA_ASPECT_RATIO,
     imageSize: DEFAULT_NANO_BANANA_IMAGE_SIZE,
+    baseUrl: '',
+    apiKeyEnv: '',
     help: false,
   });
 });
@@ -66,6 +70,23 @@ test('parseNanoBananaCliArgs accepts openai alias and resolves to codex', () => 
   const parsed = parseNanoBananaCliArgs(['--prompt', 'tiny test', '--provider', 'openai']);
   assert.equal(parsed.provider, IMAGE_PROVIDER_CODEX);
   assert.equal(parsed.model, DEFAULT_CODEX_IMAGE_MODEL);
+});
+
+test('parseNanoBananaCliArgs accepts Codex-compatible endpoint options', () => {
+  const parsed = parseNanoBananaCliArgs([
+    '--prompt', 'tiny test',
+    '--provider', 'codex',
+    '--base-url', 'https://gateway.example/openai/v1',
+    '--api-key-env', 'COMPAT_IMAGE_KEY',
+  ]);
+
+  assert.equal(parsed.provider, IMAGE_PROVIDER_CODEX);
+  assert.equal(parsed.baseUrl, 'https://gateway.example/openai/v1');
+  assert.equal(parsed.apiKeyEnv, 'COMPAT_IMAGE_KEY');
+  assert.throws(
+    () => parseNanoBananaCliArgs(['--prompt', 'tiny test', '--provider', 'codex', '--api-key-env', 'NOT-A-NAME']),
+    /--api-key-env/i,
+  );
 });
 
 test('parseNanoBananaCliArgs reads explicit options and rejects invalid values', () => {
@@ -96,6 +117,8 @@ test('parseNanoBananaCliArgs reads explicit options and rejects invalid values',
       model: 'gemini-3-pro-image-preview',
       aspectRatio: '1:1',
       imageSize: '2K',
+      baseUrl: '',
+      apiKeyEnv: '',
       help: false,
     },
   );
@@ -279,6 +302,31 @@ test('resolveCodexApiKey reads OPENAI_API_KEY for the default provider', () => {
   });
 });
 
+test('resolveCodexApiKey supports compatible provider env precedence', () => {
+  assert.deepEqual(resolveCodexApiKey({ COMPAT_KEY: 'compat-key', OPENAI_API_KEY: 'openai-key' }, { apiKeyEnv: 'COMPAT_KEY' }), {
+    apiKey: 'compat-key',
+    source: 'COMPAT_KEY',
+  });
+  assert.deepEqual(resolveCodexApiKey({ OPENAI_IMAGE_API_KEY: 'image-key', OPENAI_API_KEY: 'openai-key' }), {
+    apiKey: 'image-key',
+    source: 'OPENAI_IMAGE_API_KEY',
+  });
+});
+
+test('resolveCodexBaseUrl and buildCodexImageEndpoint normalize OpenAI-compatible endpoints', () => {
+  assert.deepEqual(resolveCodexBaseUrl({ env: { OPENAI_IMAGE_BASE_URL: 'https://images.example/openai/v1', OPENAI_BASE_URL: 'https://api.example/v1' } }), {
+    baseUrl: 'https://images.example/openai/v1',
+    source: 'OPENAI_IMAGE_BASE_URL',
+  });
+  assert.deepEqual(resolveCodexBaseUrl({ baseUrl: 'https://cli.example/v1', env: { OPENAI_IMAGE_BASE_URL: 'https://images.example/v1' } }), {
+    baseUrl: 'https://cli.example/v1',
+    source: '--base-url',
+  });
+  assert.equal(buildCodexImageEndpoint('https://gateway.example/openai/v1'), 'https://gateway.example/openai/v1/images/generations');
+  assert.equal(buildCodexImageEndpoint('https://gateway.example/openai/v1/images/generations'), 'https://gateway.example/openai/v1/images/generations');
+  assert.equal(buildCodexImageEndpoint('https://gateway.example/openai'), 'https://gateway.example/openai/v1/images/generations');
+});
+
 test('resolveNanoBananaApiKey prefers GOOGLE_API_KEY and falls back to GEMINI_API_KEY', () => {
   assert.deepEqual(resolveNanoBananaApiKey({ GOOGLE_API_KEY: 'google-key', GEMINI_API_KEY: 'gemini-key' }), {
     apiKey: 'google-key',
@@ -448,6 +496,8 @@ test('getCodexFallbackMessage includes API key, Nano Banana fallback, and web se
   assert.match(message, /GOOGLE_API_KEY|GEMINI_API_KEY/i);
   assert.match(message, /web search/i);
   assert.match(message, /\.\/assets\//);
+  assert.match(message, /OPENAI_IMAGE_BASE_URL|OPENAI_BASE_URL|--base-url/i);
+  assert.match(message, /--api-key-env/i);
 });
 
 test('getNanoBananaFallbackMessage tells the agent to ask for a key or fall back to web search', () => {
@@ -511,6 +561,44 @@ test('main with explicit --provider codex generates Codex image into slides/asse
     const files = await readFile(path.join(assetDir, 'codex-studio-portrait-of-a-founder-with-warm-rim-light.png'));
     assert.equal(files.toString(), 'fake-image-bytes');
     assert.match(output.join(''), /\.\/assets\/codex-studio-portrait-of-a-founder-with-warm-rim-light\.png/);
+  } finally {
+    await rm(workspace, { recursive: true, force: true });
+  }
+});
+
+test('main with --provider codex uses OpenAI-compatible endpoint and key options', async () => {
+  const workspace = await mkdtemp(path.join(os.tmpdir(), 'codex-compatible-image-test-'));
+  const calls = [];
+
+  try {
+    await main(
+      [
+        '--prompt', 'A compatible gateway render',
+        '--slides-dir', workspace,
+        '--provider', 'codex',
+        '--base-url', 'https://gateway.example/openai/v1/',
+        '--api-key-env', 'COMPAT_IMAGE_KEY',
+      ],
+      {
+        env: { COMPAT_IMAGE_KEY: 'compat-key', OPENAI_API_KEY: 'wrong-key' },
+        fetchImpl: async (url, init) => {
+          calls.push({ url, init });
+          return {
+            ok: true,
+            status: 200,
+            async json() {
+              return { data: [{ b64_json: Buffer.from('compatible-image-bytes').toString('base64') }] };
+            },
+          };
+        },
+        stdout: { write() {} },
+      },
+    );
+
+    assert.equal(calls[0].url, 'https://gateway.example/openai/v1/images/generations');
+    assert.equal(calls[0].init.headers.Authorization, 'Bearer compat-key');
+    const files = await readFile(path.join(workspace, 'assets', 'codex-a-compatible-gateway-render.png'));
+    assert.equal(files.toString(), 'compatible-image-bytes');
   } finally {
     await rm(workspace, { recursive: true, force: true });
   }
