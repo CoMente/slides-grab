@@ -8,6 +8,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import { ensureSlidesPassValidation } from './validate-slides.js';
 import { assertProceedReportsComplete } from '../src/design-gate-report.js';
+import { assertTemplateFidelityPass, buildTemplateFidelityReport } from '../src/template-fidelity.js';
 import {
   buildDesignGatePaths,
   buildDesignGateReport,
@@ -195,6 +196,16 @@ export async function main(argv = process.argv.slice(2)) {
     relative(paths.slidesDir, passB.resolvedPath),
   ];
 
+  const templateFidelity = await buildTemplateFidelityReport({
+    slidesDir: paths.slidesDir,
+    slideFiles,
+    previewRelativeDir,
+  });
+  if (options.verdict === 'proceed') {
+    assertTemplateFidelityPass(templateFidelity);
+  }
+  const templateReferenceFingerprintFiles = templateFidelity.referencePreviewFiles || [];
+
   if (options.verdict === 'proceed') {
     gateValidation = assertProceedReportsComplete({
       passAReport: passA.report,
@@ -215,6 +226,12 @@ export async function main(argv = process.argv.slice(2)) {
     gateValidation,
     passReportFingerprints: await collectFileFingerprints(paths.slidesDir, passReportFingerprintFiles),
     previewFingerprints: await collectFileFingerprints(paths.slidesDir, previewFingerprintFiles),
+    templateFidelity: {
+      status: templateFidelity.status,
+      slides: templateFidelity.slides,
+      findings: templateFidelity.findings,
+      referencePreviewFingerprints: await collectFileFingerprints(paths.slidesDir, templateReferenceFingerprintFiles),
+    },
   });
   const report = buildDesignGateReport(state, passA.report, passB.report);
   await writeDesignGateState(paths.slidesDir, state, report);
