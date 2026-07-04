@@ -7,6 +7,7 @@ import sharp from 'sharp';
 import { getPackageRoot } from '../resolve.js';
 import { detectLocalDesignMarkdown } from '../design-styles.js';
 import { parseDesignMarkdownFile, renderDesignStyleForPrompt } from '../design-md-parser.js';
+import { loadTemplatePackPromptBlock } from '../template-pack.js';
 
 const require = createRequire(import.meta.url);
 const {
@@ -435,12 +436,17 @@ export function buildCodexEditPrompt({ slideFile, slidePath, userPrompt, slideMo
     baseDir: designBaseDir ?? process.cwd(),
   });
   const designMarkdownLines = designMarkdownBlock ? [designMarkdownBlock] : [];
+  const templatePackBlock = loadTemplatePackPromptBlock({
+    slidesDir: designBaseDir ?? process.cwd(),
+  });
+  const templatePackLines = templatePackBlock ? [templatePackBlock] : [];
 
   return [
     `Edit ${normalizedSlidePath} only.`,
     '',
     ...editorPromptLines,
     ...designMarkdownLines,
+    ...templatePackLines,
     'User edit request (this is the primary objective — follow it faithfully):',
     sanitizedPrompt,
     '',
