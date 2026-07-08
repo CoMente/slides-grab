@@ -3,6 +3,7 @@
 import { state, TOOL_MODE_DRAW, TOOL_MODE_SELECT, setSlideFrame } from './editor-state.js';
 import {
   btnPrev, btnNext, slideIframe, slideWrapper, drawLayer, promptInput, modelSelect,
+  objectLayer,
   btnSend, btnClearBboxes, slideCounter,
   toggleBold, toggleItalic, toggleUnderline, toggleStrike,
   alignLeft, alignCenter, alignRight,
@@ -22,9 +23,11 @@ import {
   setToolMode, updateToolModeUI, renderObjectSelection, updateObjectEditorControls,
   getSelectedObjectElement, setSelectedObjectXPath, updateHoveredObjectFromPointer,
   clearHoveredObject, getSelectableTargetAt, readSelectedObjectStyleState,
+  initObjectInteractionEvents, setObjectTransformCommitHandler,
 } from './editor-select.js';
 import {
   mutateSelectedObject, applyTextDecorationToken,
+  scheduleDirectSave,
 } from './editor-direct-edit.js';
 import { updateSendState, applyChanges } from './editor-send.js';
 import { goToSlide } from './editor-navigation.js';
@@ -56,6 +59,8 @@ drawLayer.addEventListener('mousemove', (event) => {
 drawLayer.addEventListener('mouseleave', clearHoveredObject);
 drawLayer.addEventListener('click', (event) => {
   if (state.toolMode !== TOOL_MODE_SELECT) return;
+  if (event.target && event.target.closest && event.target.closest('.object-handle')) return;
+  if (event.target && event.target.closest && event.target.closest('#object-selected-box')) return;
   const target = getSelectableTargetAt(event.clientX, event.clientY);
   if (!target) {
     setSelectedObjectXPath('', 'No selectable object at this point.');
@@ -65,8 +70,36 @@ drawLayer.addEventListener('click', (event) => {
   const xpath = getXPath(target);
   setSelectedObjectXPath(xpath, `Object selected on ${currentSlideFile()}.`);
 });
+if (objectLayer) {
+  objectLayer.addEventListener('mousemove', (event) => {
+    if (state.toolMode !== TOOL_MODE_SELECT) return;
+    updateHoveredObjectFromPointer(event.clientX, event.clientY);
+  });
+  objectLayer.addEventListener('mouseleave', clearHoveredObject);
+  objectLayer.addEventListener('click', (event) => {
+    if (state.toolMode !== TOOL_MODE_SELECT) return;
+    const target = event.target;
+    if (!(target instanceof HTMLElement)) return;
+    if (target.closest('.object-handle')) return;
+    if (target.closest('#object-selected-box')) return;
+
+    const selectable = getSelectableTargetAt(event.clientX, event.clientY);
+    if (!selectable) {
+      setSelectedObjectXPath('', 'No selectable object at this point.');
+      return;
+    }
+
+    const xpath = getXPath(selectable);
+    setSelectedObjectXPath(xpath, `Object selected on ${currentSlideFile()}.`);
+  });
+}
 window.addEventListener('mousemove', moveDrawing);
 window.addEventListener('mouseup', endDrawing);
+
+initObjectInteractionEvents();
+setObjectTransformCommitHandler(() => {
+  scheduleDirectSave(300, 'Object geometry updated and saved.');
+});
 
 // Send
 btnSend.addEventListener('click', applyChanges);
