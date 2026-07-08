@@ -17,10 +17,13 @@ import {
 import { renderBboxes, scaleSlide, clientToSlidePoint, getXPath } from './editor-bbox.js';
 
 const MIN_OBJECT_SIZE = 16;
+const OBJECT_MOVE_EPSILON = 4;
+const SLIDE_BACKGROUND_AREA_RATIO = 0.85;
 const RESIZE_HANDLE_STYLES = new Set(['nw', 'n', 'ne', 'w', 'e', 'sw', 's', 'se', 'move']);
 
 let objectTransform = null;
 let commitObjectTransform = () => {};
+let suppressNextObjectClick = false;
 
 export function setObjectTransformCommitHandler(callback) {
   commitObjectTransform = typeof callback === 'function' ? callback : (() => {});
@@ -92,11 +95,82 @@ function clampObjectGeometry(base, dx, dy, handle = 'move') {
   return next;
 }
 
+function getObjectHandleAnchor(rect, handleType) {
+  const hasWest = handleType.includes('w');
+  const hasEast = handleType.includes('e');
+  const hasNorth = handleType.includes('n');
+  const hasSouth = handleType.includes('s');
+
+  if (hasWest && !hasEast) {
+    return {
+      x: rect.x,
+      y: rect.y + (hasNorth ? 0 : hasSouth ? rect.height : rect.height / 2),
+    };
+  }
+
+  if (hasEast && !hasWest) {
+    return {
+      x: rect.x + rect.width,
+      y: rect.y + (hasNorth ? 0 : hasSouth ? rect.height : rect.height / 2),
+    };
+  }
+
+  if (hasNorth) {
+    return {
+      x: rect.x + rect.width / 2,
+      y: rect.y,
+    };
+  }
+
+  if (hasSouth) {
+    return {
+      x: rect.x + rect.width / 2,
+      y: rect.y + rect.height,
+    };
+  }
+
+  return {
+    x: rect.x,
+    y: rect.y,
+  };
+}
+
+function getOffsetParentOrigin(element) {
+  const offsetParent = element.offsetParent;
+  if (!isElementNode(offsetParent)) {
+    return { x: 0, y: 0 };
+  }
+
+  const tag = offsetParent.tagName.toLowerCase();
+  const frameWindow = slideIframe.contentWindow;
+  const styles = frameWindow?.getComputedStyle ? frameWindow.getComputedStyle(offsetParent) : null;
+  if ((tag === 'body' || tag === 'html') && styles?.position === 'static') {
+    return { x: 0, y: 0 };
+  }
+
+  const rect = offsetParent.getBoundingClientRect();
+  return {
+    x: rect.left + parsePixelValue(styles?.borderLeftWidth, 0),
+    y: rect.top + parsePixelValue(styles?.borderTopWidth, 0),
+  };
+}
+
+function serializeObjectTransformDocument(doc) {
+  if (!doc?.documentElement) return '';
+  const doctype = doc.doctype ? `<!DOCTYPE ${doc.doctype.name}>` : '<!DOCTYPE html>';
+  return `${doctype}\n${doc.documentElement.outerHTML}`;
+}
+
 function applyObjectGeometryToElement(element, rect) {
   element.style.position = element.style.position || 'absolute';
+  element.style.boxSizing = 'border-box';
 
-  element.style.left = `${Math.round(rect.x)}px`;
-  element.style.top = `${Math.round(rect.y)}px`;
+  const origin = getOffsetParentOrigin(element);
+  const localX = rect.x - origin.x;
+  const localY = rect.y - origin.y;
+
+  element.style.left = `${Math.round(localX)}px`;
+  element.style.top = `${Math.round(localY)}px`;
   element.style.width = `${Math.round(rect.width)}px`;
   element.style.height = `${Math.round(rect.height)}px`;
   element.style.maxWidth = 'none';
@@ -105,6 +179,18 @@ function applyObjectGeometryToElement(element, rect) {
 
 function isElementNode(node) {
   return Boolean(node) && node.nodeType === Node.ELEMENT_NODE;
+}
+
+function isSlideBackgroundElement(el) {
+  const rect = el.getBoundingClientRect();
+  const areaRatio = (rect.width * rect.height) / (SLIDE_W * SLIDE_H);
+  return areaRatio >= SLIDE_BACKGROUND_AREA_RATIO && el.children.length > 0;
+}
+
+export function consumeObjectTransformClickSuppression() {
+  if (!suppressNextObjectClick) return false;
+  suppressNextObjectClick = false;
+  return true;
 }
 
 export function resolveXPath(doc, xpath) {
@@ -152,7 +238,8 @@ export function getSelectableTargetAt(clientX, clientY) {
   while (node && !isSelectableElement(node)) {
     node = node.parentElement;
   }
-  return isElementNode(node) ? node : null;
+  if (!isElementNode(node)) return null;
+  return isSlideBackgroundElement(node) ? null : node;
 }
 
 export function elementToSlideRect(el) {
@@ -301,31 +388,58 @@ function beginObjectTransform(event) {
   if (!selected) return;
 
   const start = clientToSlidePoint(event.clientX, event.clientY);
+  const anchor = getObjectHandleAnchor(selected.rect, handleType);
   objectTransform = {
     element: selected.element,
-    startX: start.x,
-    startY: start.y,
     startRect: selected.rect,
+    nextRect: selected.rect,
+    startHtml: serializeObjectTransformDocument(slideIframe.contentDocument),
+    hasMoved: false,
+    pointerDownX: start.x,
+    pointerDownY: start.y,
     handleType,
+    anchorX: anchor.x,
+    anchorY: anchor.y,
+    pointerOffsetX: start.x - anchor.x,
+    pointerOffsetY: start.y - anchor.y,
   };
 
   event.preventDefault();
   event.stopPropagation();
-
-  applyObjectGeometryToElement(selected.element, selected.rect);
   objectSelectedBox.style.cursor = handleType === 'move' ? 'move' : 'grabbing';
 }
 
 function continueObjectTransform(event) {
   if (!isObjectTransformActive()) return;
-  const { element, startX, startY, startRect, handleType } = objectTransform;
+  const {
+    element,
+    startRect,
+    handleType,
+    anchorX,
+    anchorY,
+    pointerOffsetX,
+    pointerOffsetY,
+    pointerDownX,
+    pointerDownY,
+    hasMoved,
+  } = objectTransform;
   if (!element || !objectSelectedBox) return;
 
   const cursor = clientToSlidePoint(event.clientX, event.clientY);
-  const dx = cursor.x - startX;
-  const dy = cursor.y - startY;
+  const adjustedCursorX = cursor.x - pointerOffsetX;
+  const adjustedCursorY = cursor.y - pointerOffsetY;
+  const dx = adjustedCursorX - anchorX;
+  const dy = adjustedCursorY - anchorY;
+
+  if (!hasMoved && Math.abs(cursor.x - pointerDownX) <= OBJECT_MOVE_EPSILON && Math.abs(cursor.y - pointerDownY) <= OBJECT_MOVE_EPSILON) {
+    return;
+  }
+
+  objectTransform.hasMoved = true;
+
   const nextRect = clampObjectGeometry(startRect, dx, dy, handleType);
 
+  objectTransform.nextRect = nextRect;
   applyObjectGeometryToElement(element, nextRect);
   applyOverlayRect(objectSelectedBox, nextRect);
 }
@@ -341,16 +455,25 @@ function endObjectTransform() {
 
   const snapshotRect = stateSnapshot?.startRect;
   const element = stateSnapshot?.element;
-  if (element && snapshotRect) {
-    const currentRect = elementToSlideRect(element);
-    if (currentRect && (
-      currentRect.x !== snapshotRect.x ||
-      currentRect.y !== snapshotRect.y ||
-      currentRect.width !== snapshotRect.width ||
-      currentRect.height !== snapshotRect.height
-    )) {
-      applyObjectGeometryToElement(element, currentRect);
-      commitObjectTransform();
+  const finalRect = stateSnapshot?.nextRect || snapshotRect;
+  const hasMoved = Boolean(stateSnapshot?.hasMoved);
+
+  if (!hasMoved) return;
+
+  suppressNextObjectClick = true;
+  window.setTimeout(() => {
+    suppressNextObjectClick = false;
+  }, 0);
+
+  if (element && finalRect && snapshotRect) {
+    if (
+      finalRect.x !== snapshotRect.x ||
+      finalRect.y !== snapshotRect.y ||
+      finalRect.width !== snapshotRect.width ||
+      finalRect.height !== snapshotRect.height
+    ) {
+      applyObjectGeometryToElement(element, finalRect);
+      commitObjectTransform({ beforeHtml: stateSnapshot?.startHtml || '' });
     }
   }
 }

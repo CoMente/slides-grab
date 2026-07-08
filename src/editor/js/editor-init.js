@@ -23,11 +23,12 @@ import {
   setToolMode, updateToolModeUI, renderObjectSelection, updateObjectEditorControls,
   getSelectedObjectElement, setSelectedObjectXPath, updateHoveredObjectFromPointer,
   clearHoveredObject, getSelectableTargetAt, readSelectedObjectStyleState,
-  initObjectInteractionEvents, setObjectTransformCommitHandler,
+  initObjectInteractionEvents, setObjectTransformCommitHandler, consumeObjectTransformClickSuppression,
 } from './editor-select.js';
 import {
   mutateSelectedObject, applyTextDecorationToken,
-  scheduleDirectSave,
+  scheduleDirectSave, recordDirectEditHistory, undoDirectEdit, redoDirectEdit, clearDirectEditHistory,
+  consumeInternalDocumentRestore,
 } from './editor-direct-edit.js';
 import { updateSendState, applyChanges } from './editor-send.js';
 import { goToSlide } from './editor-navigation.js';
@@ -59,8 +60,8 @@ drawLayer.addEventListener('mousemove', (event) => {
 drawLayer.addEventListener('mouseleave', clearHoveredObject);
 drawLayer.addEventListener('click', (event) => {
   if (state.toolMode !== TOOL_MODE_SELECT) return;
+  if (consumeObjectTransformClickSuppression()) return;
   if (event.target && event.target.closest && event.target.closest('.object-handle')) return;
-  if (event.target && event.target.closest && event.target.closest('#object-selected-box')) return;
   const target = getSelectableTargetAt(event.clientX, event.clientY);
   if (!target) {
     setSelectedObjectXPath('', 'No selectable object at this point.');
@@ -78,10 +79,10 @@ if (objectLayer) {
   objectLayer.addEventListener('mouseleave', clearHoveredObject);
   objectLayer.addEventListener('click', (event) => {
     if (state.toolMode !== TOOL_MODE_SELECT) return;
+    if (consumeObjectTransformClickSuppression()) return;
     const target = event.target;
     if (!(target instanceof HTMLElement)) return;
     if (target.closest('.object-handle')) return;
-    if (target.closest('#object-selected-box')) return;
 
     const selectable = getSelectableTargetAt(event.clientX, event.clientY);
     if (!selectable) {
@@ -97,7 +98,8 @@ window.addEventListener('mousemove', moveDrawing);
 window.addEventListener('mouseup', endDrawing);
 
 initObjectInteractionEvents();
-setObjectTransformCommitHandler(() => {
+setObjectTransformCommitHandler(({ beforeHtml } = {}) => {
+  recordDirectEditHistory(beforeHtml);
   scheduleDirectSave(300, 'Object geometry updated and saved.');
 });
 
@@ -240,9 +242,27 @@ alignRight.addEventListener('click', () => {
 // Global keyboard
 document.addEventListener('keydown', (event) => {
   const inEditableField = hasEditableFocus();
+  const key = event.key.toLowerCase();
 
   if (state.toolMode === TOOL_MODE_SELECT && (event.ctrlKey || event.metaKey) && !inEditableField) {
-    const key = event.key.toLowerCase();
+    if (key === 'z') {
+      event.preventDefault();
+      if (event.shiftKey) {
+        redoDirectEdit();
+      } else {
+        undoDirectEdit();
+      }
+      return;
+    }
+
+    if (key === 'y') {
+      event.preventDefault();
+      redoDirectEdit();
+      return;
+    }
+  }
+
+  if (state.toolMode === TOOL_MODE_SELECT && (event.ctrlKey || event.metaKey) && !inEditableField) {
     if (key === 'b') { event.preventDefault(); if (!toggleBold.disabled) toggleBold.click(); return; }
     if (key === 'i') { event.preventDefault(); if (!toggleItalic.disabled) toggleItalic.click(); return; }
     if (key === 'u') { event.preventDefault(); if (!toggleUnderline.disabled) toggleUnderline.click(); return; }
@@ -277,6 +297,9 @@ window.addEventListener('resize', scaleSlide);
 slideIframe.addEventListener('load', () => {
   const slide = currentSlideFile();
   if (slide) {
+    if (!consumeInternalDocumentRestore(slide)) {
+      clearDirectEditHistory(slide);
+    }
     const ss = getSlideState(slide);
     if (ss.selectedObjectXPath && !getSelectedObjectElement(slide)) {
       ss.selectedObjectXPath = '';
