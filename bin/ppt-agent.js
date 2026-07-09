@@ -187,12 +187,17 @@ program
   .option('--slides-dir <path>', 'Slide directory', 'slides')
   .option('--output <path>', 'Output PPTX file')
   .option('--mode <mode>', 'Slide mode: presentation or card-news', 'presentation')
-  .option('--resolution <preset>', 'Raster size preset: 720p, 1080p, 1440p, 2160p, or 4k (default: 2160p)')
+  .option('--resolution <preset>', 'Raster size preset: 720p, 1080p, 1440p, 2160p, or 4k (default: 2160p, raster engine only)')
+  .option('--engine <engine>', 'Export engine: raster (screenshot-based, default, most reliable visual fidelity) or text (real editable text boxes/tables via DOM extraction; more experimental, no table/canvas/svg support, may throw on unwrapped text in <div>)', 'raster')
   .action(async (options = {}) => {
     if (!(await ensureDesignGateForExport(options.slidesDir, 'PPTX export'))) return;
     const args = ['--slides-dir', options.slidesDir, '--mode', options.mode];
     if (options.output) {
       args.push('--output', String(options.output));
+    }
+    if (options.engine === 'text') {
+      await runCommand('scripts/html2pptx.js', args);
+      return;
     }
     if (options.resolution) {
       args.push('--resolution', String(options.resolution));
