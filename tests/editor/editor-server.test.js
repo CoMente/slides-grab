@@ -161,9 +161,6 @@ test('/api/models exposes the GPT-5.6 family with Sol as default and removes gpt
       'gpt-5.6-sol',
       'gpt-5.6-terra',
       'gpt-5.6-luna',
-      'gpt-5.4',
-      'gpt-5.3-codex',
-      'gpt-5.3-codex-spark',
       'claude-opus-4-8',
       'claude-sonnet-4-6',
     ]);
@@ -174,31 +171,33 @@ test('/api/models exposes the GPT-5.6 family with Sol as default and removes gpt
   }
 });
 
-test('/api/apply rejects the removed gpt-5.5 identifier and advertises the GPT-5.6 family (issue #122)', async () => {
+test('/api/apply rejects removed GPT-5.5, GPT-5.4, and GPT-5.3 identifiers', async () => {
   const workspace = await createWorkspace();
   const port = await getAvailablePort();
   const server = spawnEditorServer(workspace, port);
 
   try {
     await waitForServerReady(port, server.child, server.output);
-    const applyRes = await fetch(`http://localhost:${port}/api/apply`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        slide: 'slide-01.html',
-        prompt: 'Reject the removed model.',
-        model: 'gpt-5.5',
-        selections: [{ x: 40, y: 60, width: 320, height: 180, targets: [] }],
-      }),
-    });
+    for (const model of ['gpt-5.5', 'gpt-5.4', 'gpt-5.3-codex', 'gpt-5.3-codex-spark']) {
+      const applyRes = await fetch(`http://localhost:${port}/api/apply`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          slide: 'slide-01.html',
+          prompt: 'Reject the removed model.',
+          model,
+          selections: [{ x: 40, y: 60, width: 320, height: 180, targets: [] }],
+        }),
+      });
 
-    const body = await applyRes.json();
-    assert.equal(applyRes.status, 400, JSON.stringify(body));
-    assert.match(body.error || '', /Invalid `model`/);
-    assert.match(body.error || '', /gpt-5\.6-sol/);
-    assert.match(body.error || '', /gpt-5\.6-terra/);
-    assert.match(body.error || '', /gpt-5\.6-luna/);
-    assert.doesNotMatch(body.error || '', /gpt-5\.5/);
+      const body = await applyRes.json();
+      assert.equal(applyRes.status, 400, `model=${model} body=${JSON.stringify(body)}`);
+      assert.match(body.error || '', /Invalid `model`/);
+      assert.match(body.error || '', /gpt-5\.6-sol/);
+      assert.match(body.error || '', /gpt-5\.6-terra/);
+      assert.match(body.error || '', /gpt-5\.6-luna/);
+      assert.doesNotMatch(body.error || '', /gpt-5\.(?:5|4|3)/);
+    }
   } finally {
     await stopChild(server.child);
     await rm(workspace, { recursive: true, force: true });

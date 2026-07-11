@@ -243,7 +243,7 @@ test('keeps bbox prompt draft and model state per slide session', { concurrency:
       const counter = document.querySelector('#slide-counter');
       return counter && /2\s*\/\s*2/.test(counter.textContent || '');
     });
-    await page.selectOption('#model-select', 'gpt-5.3-codex');
+    await page.selectOption('#model-select', 'gpt-5.6-terra');
     await page.fill('#prompt-input', 'slide-02 prompt');
 
     // back to slide-01
@@ -265,7 +265,7 @@ test('keeps bbox prompt draft and model state per slide session', { concurrency:
     });
     const slide2Model = await page.$eval('#model-select', (el) => el.value);
     const slide2Prompt = await page.$eval('#prompt-input', (el) => el.value);
-    assert.equal(slide2Model, 'gpt-5.3-codex');
+    assert.equal(slide2Model, 'gpt-5.6-terra');
     assert.equal(slide2Prompt, 'slide-02 prompt');
 
   } finally {
