@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { mkdtemp, mkdir, writeFile, rm } from 'node:fs/promises';
+import { mkdtemp, mkdir, readFile, writeFile, rm } from 'node:fs/promises';
 import os from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -74,7 +74,7 @@ async function withEditorPage(prefix, callback) {
 
     const drawLayer = await page.locator('#draw-layer').boundingBox();
     assert.ok(drawLayer, 'draw layer not found');
-    await callback(page, drawLayer);
+    await callback(page, drawLayer, workspace);
   } finally {
     if (browser) await browser.close().catch(() => {});
     server.kill('SIGTERM');
@@ -148,7 +148,7 @@ async function dragCenter(page, box, dx, dy, steps = 4) {
 }
 
 test('keeps nested objects cursor-aligned when clicking, dragging, and resizing in select mode', { concurrency: false }, async () => {
-  await withEditorPage('editor-object-transform-e2e-', async (page, drawLayer) => {
+  await withEditorPage('editor-object-transform-e2e-', async (page, drawLayer, workspace) => {
     await page.mouse.click(drawLayer.x + 160, drawLayer.y + 126);
     await page.waitForFunction(() => getComputedStyle(document.querySelector('#object-selected-box')).display !== 'none');
 
@@ -189,6 +189,11 @@ test('keeps nested objects cursor-aligned when clicking, dragging, and resizing 
     assert.ok(escapedBox, 'escaped object box not found');
     await dragCenter(page, escapedBox, 220, 160, 6);
     await waitForTargetRect(page, { x: 232, y: 172, width: 150, height: 100 });
+
+    await page.waitForTimeout(600);
+    const savedHtml = await readFile(join(workspace, 'slides', 'slide-01.html'), 'utf8');
+    assert.match(savedHtml, /background-color: rgb\(34, 197, 94\)/);
+    assert.doesNotMatch(savedHtml, /data-slides-grab-runtime|\[slides-grab:image\]|<base href="\/slides\/">/);
 
     await page.evaluate(async () => {
       const frame = document.querySelector('#slide-iframe');
