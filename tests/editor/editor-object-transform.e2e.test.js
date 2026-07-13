@@ -97,6 +97,22 @@ async function readTargetRect(page) {
   });
 }
 
+async function readTargetBackground(page) {
+  return page.$eval('#slide-iframe', (frame) => {
+    const target = frame.contentDocument?.querySelector('.target');
+    return target ? frame.contentWindow.getComputedStyle(target).backgroundColor : '';
+  });
+}
+
+async function waitForTargetBackground(page, expected) {
+  await page.waitForFunction((wanted) => {
+    const frame = document.querySelector('#slide-iframe');
+    const target = frame?.contentDocument?.querySelector('.target');
+    return target ? frame.contentWindow.getComputedStyle(target).backgroundColor === wanted : false;
+  }, expected);
+  assert.equal(await readTargetBackground(page), expected);
+}
+
 async function waitForTargetRect(page, expected) {
   await page.waitForFunction((wanted) => {
     const frame = document.querySelector('#slide-iframe');
@@ -156,6 +172,13 @@ test('keeps nested objects cursor-aligned when clicking, dragging, and resizing 
     assert.ok(seHandle, 'south-east handle not found');
     await dragCenter(page, seHandle, 30, 20);
     await waitForTargetRect(page, { x: 192, y: 142, width: 150, height: 100 });
+
+    await page.locator('#popover-bg-color-input').fill('#22c55e');
+    await waitForTargetBackground(page, 'rgb(34, 197, 94)');
+    await page.keyboard.press('Control+Z');
+    await waitForTargetBackground(page, 'rgb(96, 165, 250)');
+    await page.keyboard.press('Control+Y');
+    await waitForTargetBackground(page, 'rgb(34, 197, 94)');
 
     const resizedBox = await page.locator('#object-selected-box').boundingBox();
     assert.ok(resizedBox, 'resized object box not found');

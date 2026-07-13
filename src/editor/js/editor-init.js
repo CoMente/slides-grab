@@ -243,8 +243,9 @@ alignRight.addEventListener('click', () => {
 document.addEventListener('keydown', (event) => {
   const inEditableField = hasEditableFocus();
   const key = event.key.toLowerCase();
+  const canHandleHistoryShortcut = !inEditableField || document.activeElement?.matches?.('input[type="color"]');
 
-  if (state.toolMode === TOOL_MODE_SELECT && (event.ctrlKey || event.metaKey) && !inEditableField) {
+  if (state.toolMode === TOOL_MODE_SELECT && (event.ctrlKey || event.metaKey) && canHandleHistoryShortcut) {
     if (key === 'z') {
       event.preventDefault();
       if (event.shiftKey) {

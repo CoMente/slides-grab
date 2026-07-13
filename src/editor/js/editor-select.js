@@ -1,4 +1,4 @@
-// editor-select.js ??Object selection, hover, tool mode UI
+// editor-select.js — Object selection, hover, tool mode UI
 
 import { state, TOOL_MODE_DRAW, TOOL_MODE_SELECT, SLIDE_W, SLIDE_H, NON_SELECTABLE_TAGS, DIRECT_TEXT_TAGS } from './editor-state.js';
 import {

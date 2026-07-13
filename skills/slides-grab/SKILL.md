@@ -55,7 +55,7 @@ Use the installed **slides-grab-export** skill.
    - Card-news / Instagram-style decks → `slides-grab png --slides-dir <path> --slide-mode card-news --resolution 2160p` (see `slides-grab-card-news`).
    - Widescreen decks → `slides-grab pdf --slides-dir <path> --output <name>.pdf`.
 3. Per-slide PNG (any mode): `slides-grab png --slides-dir <path> --output-dir <path>/out-png --resolution 2160p`.
-4. PPTX (optional, **experimental / unstable**): `slides-grab convert --slides-dir <path> --output <name>.pptx`.
+4. PPTX (optional, **experimental / unstable**): use `slides-grab convert --slides-dir <path> --output <name>.pptx --engine raster` for visual fidelity (default), or `--engine text` for best-effort editable text.
 5. Figma-importable PPTX (optional, **experimental / unstable**): `slides-grab figma --slides-dir <path> --output <name>-figma.pptx`.
 6. Report results.
 
