@@ -18,7 +18,7 @@ import {
   DEFAULT_EDIT_TIMEOUT_MS,
   parseEditTimeoutMs,
 } from '../../src/editor/edit-subprocess.js';
-import { DEFAULT_MODELS } from '../../src/editor/js/editor-state.js';
+import { DEFAULT_MODELS, state } from '../../src/editor/js/editor-state.js';
 
 const DETAILED_DESIGN_RULES_URL = new URL(
   '../../skills/slides-grab-design/references/detailed-design-rules.md',
@@ -27,6 +27,12 @@ const DETAILED_DESIGN_RULES_URL = new URL(
 
 async function importFreshCodexEditModule() {
   const moduleUrl = new URL('../../src/editor/codex-edit.js', import.meta.url);
+  moduleUrl.searchParams.set('t', `${Date.now()}-${Math.random()}`);
+  return import(moduleUrl.href);
+}
+
+async function importFreshEditorStateModule() {
+  const moduleUrl = new URL('../../src/editor/js/editor-state.js', import.meta.url);
   moduleUrl.searchParams.set('t', `${Date.now()}-${Math.random()}`);
   return import(moduleUrl.href);
 }
@@ -96,6 +102,24 @@ test('scaleSelectionToScreenshot maps slide bbox to screenshot pixels', () => {
     width: 800,
     height: 450,
   });
+});
+
+test('editor state falls back to html in Node and reads the server-authored browser mode', async () => {
+  assert.equal(state.editorType, 'html');
+
+  const originalDocument = globalThis.document;
+  globalThis.document = { body: { dataset: { editorType: 'image' } } };
+
+  try {
+    const browserStateModule = await importFreshEditorStateModule();
+    assert.equal(browserStateModule.state.editorType, 'image');
+  } finally {
+    if (originalDocument === undefined) {
+      delete globalThis.document;
+    } else {
+      globalThis.document = originalDocument;
+    }
+  }
 });
 
 test('buildCodexEditPrompt includes user prompt, bbox, and XPath targets', () => {
@@ -197,7 +221,7 @@ test('getPptDesignSkillPrompt loads bundled ppt design skill guidance', () => {
   assert.match(skillPrompt, /local videos/i);
   assert.match(skillPrompt, /fetch-video|yt-dlp/i);
   assert.match(skillPrompt, /slides-grab image/i);
-  assert.match(skillPrompt, /god-tibo-imagen/i);
+  assert.match(skillPrompt, /codex-imagen/i);
   assert.match(skillPrompt, /codex login/i);
   assert.match(skillPrompt, /Nano Banana/i);
 });
@@ -249,7 +273,7 @@ test('getDetailedDesignSkillPrompt loads only relevant detailed design sections'
   assert.match(detailedPrompt, /Would this still feel premium without shadows, cards, or extra chrome\?/i);
   assert.match(detailedPrompt, /local videos/i);
   assert.match(detailedPrompt, /fetch-video|yt-dlp/i);
-  assert.match(detailedPrompt, /god-tibo-imagen/i);
+  assert.match(detailedPrompt, /codex-imagen/i);
   assert.match(detailedPrompt, /codex login/i);
   assert.match(detailedPrompt, /Nano Banana/i);
   assert.doesNotMatch(detailedPrompt, /## Core Design Philosophy/);

@@ -82,10 +82,11 @@ There are many AI tools that generate slide HTML. Almost none let you **visually
 
 Workflow commands support `--slides-dir <path>` (default: `slides`).
 
-On a fresh clone, the discovery commands (`--help`, `list-templates`, `list-styles`, and `preview-styles`) work without a deck. `edit`, `build-viewer`, `validate`, `png`, and `design-gate` require an existing slides workspace containing `slide-*.html`; `convert`, `pdf`, and `figma` additionally require a fresh `Proceed` design gate.
+On a fresh clone, the discovery commands (`--help`, `list-templates`, `list-styles`, and `preview-styles`) work without a deck. `edit`, `edit-image`, `build-viewer`, `validate`, `png`, and `design-gate` require an existing slides workspace containing `slide-*.html`; `convert`, `pdf`, and `figma` additionally require a fresh `Proceed` design gate.
 
 ```bash
-slides-grab edit              # Launch visual slide editor
+slides-grab edit              # Launch HTML slide editor
+slides-grab edit-image        # Launch image-native slide editor
 slides-grab build-viewer      # Build single-file viewer.html
 slides-grab validate          # Validate slide HTML (Playwright-based)
 slides-grab convert           # Export to experimental / unstable PPTX
@@ -97,7 +98,7 @@ slides-grab pdf --resolution 2160p  # Higher-resolution image-backed PDF export
 slides-grab pdf --mode print  # Export searchable/selectable text PDF
 slides-grab png               # Render one PNG per slide (default 2160p)
 slides-grab png --slide-mode card-news  # Render square 1:1 PNGs for Instagram
-slides-grab image --prompt "..."    # Generate a local slide image with god-tibo-imagen by default (uses your local Codex ChatGPT login — no API key required)
+slides-grab image --prompt "..."    # Generate a local slide image with codex-imagen by default (uses your local Codex ChatGPT login — no API key required)
 slides-grab fetch-video --url <youtube-url> --slides-dir decks/my-deck  # Download a local video asset with yt-dlp
 slides-grab tldraw           # Render a .tldr diagram into a slide-sized local SVG asset
 slides-grab list-templates    # Show available slide templates
@@ -116,6 +117,34 @@ slides-grab preview-styles  # Local HTML preview
 
 Tell the agent which style to use (or ask for something custom) — no config files needed.
 
+## Reference-template and Image-native Workflows
+
+Use `slides-grab import-template` when you have an existing corporate deck, filled example slides, HTML reference screens, or brand images that should drive a new deck. Prefer **filled representative decks** over empty master templates: filled slides reveal real text density, schema limits, font fallback behavior, image treatment, and layout stress cases. Empty master templates are insufficient by themselves because they do not show how the design behaves under real content.
+
+```bash
+slides-grab import-template \
+  --input references/acme-qbr.pptx \
+  --input references/acme-product-page.html \
+  --slides-dir decks/acme-qbr
+```
+
+The import writes `<slides-dir>/.slides-grab/template-pack.json` plus preview assets. In Stage 1, record `style: template-pack` in `slide-outline.md`; in Stage 2, generate HTML slides that follow the template pack roles, bbox/schema limits, colors, fonts, and previewed layout families. Run `slides-grab validate --slides-dir <path>` and `slides-grab design-gate` before export.
+
+For image-first decks, generate each image-native slide with `slides-grab image --image-native --name slide-XX --reference <template-page.png> --slides-dir <path>`. The command writes the generated PNG, `slide-XX.html` wrapper, and regeneration metadata required by `slides-grab edit-image` together. Reuse imported template page preview PNGs as `--reference` inputs for style/layout guidance:
+
+```bash
+slides-grab image \
+  --image-native \
+  --name slide-01 \
+  --prompt "<whole-slide prompt>" \
+  --slides-dir decks/acme-image \
+  --reference decks/acme-qbr/.slides-grab/template-previews/page-01.png
+```
+
+Image-native slides are raster wrappers around generated PNG assets. They are useful for fast visual exploration or image-led concepts, but they are less editable than HTML: revise them with `slides-grab edit-image --slides-dir <path>`, not direct semantic HTML edits. Use HTML mode when the deck must remain highly editable, accessible, searchable, or easy to convert; use image-native mode when visual composition matters more than downstream editability.
+
+OpenAI-compatible image providers can be configured without changing slide files: `slides-grab image --provider openai --base-url <url> --api-key-env <ENV_NAME>`, or environment variables `OPENAI_IMAGE_API_KEY`, `OPENAI_IMAGE_BASE_URL`, and `OPENAI_BASE_URL`. Tests and fixtures should use mocked provider responses (injected `generateImageImpl` or `PPT_AGENT_MOCK_IMAGE_PROVIDER=1` for the editor server) and must not require external image API credentials.
+
 ## Asset Contract
 
 Slides should store local image and video files in `<slides-dir>/assets/` and reference them as `./assets/<file>` from each `slide-XX.html`.
@@ -127,7 +156,7 @@ Slides should store local image and video files in `<slides-dir>/assets/` and re
 - Unsupported: absolute filesystem paths such as `/Users/...` or `C:\\...`
 - Unsupported for saved slides: remote video URLs; download them into `<slides-dir>/assets/` first
 
-For bespoke generated imagery, slides-grab bundles **god-tibo-imagen** as the default provider. It reuses your local Codex ChatGPT login (`~/.codex/auth.json`), so **no separate OpenAI/Google API key is required** — you only need a Codex CLI ChatGPT login on an account that is entitled to image generation:
+For bespoke generated imagery, slides-grab bundles **codex-imagen** as the default provider. It reuses your local Codex ChatGPT login (`~/.codex/auth.json`), so **no separate OpenAI/Google API key is required** — you only need a Codex CLI ChatGPT login on an account that is entitled to image generation:
 
 ```bash
 codex login            # one-time setup if not already logged in
@@ -136,14 +165,14 @@ slides-grab image --slides-dir decks/my-deck --prompt "Editorial hero image of a
 
 The command saves the result into `<slides-dir>/assets/` and prints the portable `./assets/<file>` reference to use from slide HTML.
 
-> ⚠️ **WARNING**: god-tibo-imagen calls an unsupported private Codex backend that may break without notice. It also requires a Codex/ChatGPT account that is entitled to image generation; not all ChatGPT accounts have this entitlement.
+> ⚠️ **WARNING**: codex-imagen calls an unsupported private Codex backend that may break without notice. It also requires a Codex/ChatGPT account that is entitled to image generation; not all ChatGPT accounts have this entitlement.
 
 Optional alternative providers via `--provider`:
 
-- `--provider codex` (alias `openai`): Codex/OpenAI `gpt-image-2`. Requires `OPENAI_API_KEY`. Maps `--aspect-ratio` to the nearest supported OpenAI image size (`16:9` defaults to a landscape `1536x1024` request).
+- `--provider openai`: OpenAI `gpt-image-2`. Requires `OPENAI_API_KEY`. Maps `--aspect-ratio` to the nearest supported OpenAI image size (`16:9` defaults to a landscape `1536x1024` request).
 - `--provider nano-banana` (alias `gemini`): Google `gemini-3-pro-image-preview`. Requires `GOOGLE_API_KEY` (or `GEMINI_API_KEY`). Supports `--image-size 2K|4K`.
 
-If the default god-tibo-imagen call fails, slides-grab automatically falls back to whichever optional provider has credentials available; otherwise it asks you to fall back to web search + local download into `assets/`.
+If the default codex-imagen call fails, slides-grab automatically falls back to whichever optional provider has credentials available; otherwise it asks you to fall back to web search + local download into `assets/`.
 
 Run `slides-grab validate --slides-dir <path>` before export to catch missing local assets and discouraged path forms.
 
@@ -174,6 +203,7 @@ Prerequisite: create or generate a deck in `decks/my-deck/` first.
 
 ```bash
 slides-grab edit       --slides-dir decks/my-deck
+slides-grab edit-image --slides-dir decks/my-deck
 slides-grab validate   --slides-dir decks/my-deck
 slides-grab pdf        --slides-dir decks/my-deck --output decks/my-deck.pdf
 slides-grab pdf        --slides-dir decks/my-deck --mode print --output decks/my-deck-searchable.pdf
@@ -190,7 +220,7 @@ slides-grab figma      --slides-dir decks/my-deck --output decks/my-deck-figma.p
 Instagram-style card news uses a 720pt × 720pt frame end-to-end. Pass `--mode card-news` (or `--slide-mode card-news` for `pdf`/`png`) at every stage and prefer `slides-grab png` as the primary export so each card becomes an Instagram-ready PNG.
 
 ```bash
-slides-grab edit     --slides-dir decks/my-cards --mode card-news
+slides-grab edit     --slides-dir decks/my-cards --mode card-news  # HTML card-news editor
 slides-grab validate --slides-dir decks/my-cards --mode card-news
 slides-grab png      --slides-dir decks/my-cards --slide-mode card-news --resolution 2160p
 # Optional extras (PPTX / Figma remain experimental / unstable)

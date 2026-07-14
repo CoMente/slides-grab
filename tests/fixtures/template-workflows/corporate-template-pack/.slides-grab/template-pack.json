@@ -1,0 +1,58 @@
+{
+  "version": 1,
+  "name": "Fixture Corporate Template Pack",
+  "sourceMetadata": {
+    "originalFiles": ["fixture-qbr-cover.html", "fixture-qbr-content.html"],
+    "importedAt": "2026-07-04T00:00:00.000Z",
+    "sourceTypes": ["html", "image"],
+    "warnings": [
+      "Use filled representative examples; an empty master template is insufficient for density and schema extraction."
+    ]
+  },
+  "designTokens": {
+    "colors": [
+      { "role": "primary", "value": "#173B57" },
+      { "role": "accent", "value": "#F3A712" },
+      { "role": "surface", "value": "#FFFFFF" }
+    ],
+    "fonts": [
+      { "role": "display", "family": "Pretendard" },
+      { "role": "body", "family": "Pretendard" }
+    ],
+    "spacing": [
+      { "role": "outer-margin", "value": "42pt" }
+    ],
+    "brandAssets": [
+      { "role": "logo", "path": "./assets/fixture-logo.svg" }
+    ],
+    "imageTreatment": ["warm duotone photo crop", "thin navy keyline"]
+  },
+  "layouts": [
+    {
+      "layout_id": "cover-fixture",
+      "layout_kind": "cover",
+      "preview": ".slides-grab/template-previews/cover-fixture.png",
+      "frame": { "width": 720, "height": 405, "unit": "pt" },
+      "recurringRegions": [
+        { "role": "logo", "bbox": { "x": 604, "y": 28, "width": 74, "height": 24 } }
+      ],
+      "fields": [
+        { "role": "title", "bbox": { "x": 48, "y": 84, "width": 420, "height": 88 }, "minChars": 8, "maxChars": 58 },
+        { "role": "subtitle", "bbox": { "x": 50, "y": 188, "width": 360, "height": 44 }, "maxChars": 72 },
+        { "role": "bullets", "bbox": { "x": 50, "y": 258, "width": 392, "height": 72 }, "listLimits": { "maxItems": 3, "maxCharsPerItem": 42 } }
+      ]
+    },
+    {
+      "layout_id": "metric-fixture",
+      "layout_kind": "content",
+      "preview": ".slides-grab/template-previews/metric-fixture.png",
+      "frame": { "width": 720, "height": 405, "unit": "pt" },
+      "fields": [
+        { "role": "title", "bbox": { "x": 42, "y": 36, "width": 430, "height": 46 }, "maxChars": 64 },
+        { "role": "kpi", "bbox": { "x": 64, "y": 126, "width": 154, "height": 98 }, "maxChars": 16 },
+        { "role": "bullets", "bbox": { "x": 310, "y": 126, "width": 320, "height": 160 }, "listLimits": { "maxItems": 4, "maxCharsPerItem": 38 } }
+      ]
+    }
+  ],
+  "promptSafeStyleSummary": "Use navy and warm amber, generous left margins, large concise headlines, and no more than three proof bullets per slide."
+}

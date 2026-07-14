@@ -109,13 +109,14 @@ test('packed npm install exposes the packaged image CLI command', () => {
     });
 
     assert.match(helpOutput, /slides-grab image/);
-    assert.match(helpOutput, /Codex\/OpenAI/);
+    assert.match(helpOutput, /OpenAI-compatible/);
     assert.match(helpOutput, /--provider <name>/);
     assert.match(helpOutput, /--aspect-ratio <ratio>/);
     assert.match(helpOutput, /Nano Banana image size preset/);
     assert.match(helpOutput, /--prompt <text>/);
+    assert.match(helpOutput, /--base-url <url>/);
+    assert.match(helpOutput, /--api-key-env <name>/);
     assert.doesNotMatch(helpOutput, /Cannot find module/);
-
     const gateHelpOutput = execFileSync(cliPath, ['design-gate', '--help'], {
       cwd: installRoot,
       encoding: 'utf-8',
@@ -154,9 +155,21 @@ test('slides-grab design skill keeps the packaged style-discovery CLI guidance',
   assert.match(text, /slides-grab list-styles/);
   assert.match(text, /slides-grab preview-styles/);
   assert.match(text, /slides-grab image/i);
-  assert.match(text, /Codex\/OpenAI/i);
+  assert.match(text, /OpenAI gpt-image-2/i);
   assert.match(text, /OPENAI_API_KEY/);
   assert.match(text, /GOOGLE_API_KEY|GEMINI_API_KEY/);
+});
+
+test('slides-grab plan and design skills document imported template pack workflow', () => {
+  const planSkill = readFileSync('skills/slides-grab-plan/SKILL.md', 'utf-8');
+  const designSkill = readFileSync('skills/slides-grab-design/SKILL.md', 'utf-8');
+
+  assert.match(planSkill, /slides-grab import-template/);
+  assert.match(planSkill, /template-pack\.json/);
+  assert.match(planSkill, /style: template-pack/i);
+  assert.match(designSkill, /template-pack\.json/);
+  assert.match(designSkill, /BEGIN UNTRUSTED TEMPLATE PACK DATA/);
+  assert.match(designSkill, /DESIGN\.slides\.md.*template pack/s);
 });
 
 test('slides-grab design rules keep packaged style, image, and video asset commands', () => {
@@ -179,7 +192,7 @@ test('slides-grab workflow reference keeps packaged stage commands and image fal
   assert.match(text, /slides-grab-export/);
   assert.match(text, /slides-grab build-viewer/);
   assert.match(text, /slides-grab image/i);
-  assert.match(text, /god-tibo-imagen/i);
+  assert.match(text, /codex-imagen/i);
   assert.match(text, /codex login/i);
   assert.match(text, /OPENAI_API_KEY/);
   assert.match(text, /GOOGLE_API_KEY|GEMINI_API_KEY/);
@@ -189,11 +202,26 @@ test('slides-grab workflow reference keeps packaged stage commands and image fal
   assert.match(text, /web search/i);
 });
 
+test('installable presentation skills document disjoint HTML and image-native editor commands', () => {
+  const htmlSkill = readFileSync('skills/slides-grab-html/SKILL.md', 'utf-8');
+  const imageSkill = readFileSync('skills/slides-grab-image/SKILL.md', 'utf-8');
+  const designSkill = readFileSync('skills/slides-grab-design/SKILL.md', 'utf-8');
+
+  assert.match(htmlSkill, /slides-grab\s+edit\s+--slides-dir/);
+  assert.doesNotMatch(htmlSkill, /edit-image/);
+  assert.match(imageSkill, /slides-grab\s+edit-image\s+--slides-dir/);
+  assert.match(imageSkill, /slides-grab\s+image\s+--image-native\s+--name\s+slide-XX/);
+  assert.doesNotMatch(imageSkill, /Image Regenerate/);
+  assert.match(designSkill, /slides-grab\s+edit\s+--slides-dir/);
+  assert.match(designSkill, /slides-grab\s+edit-image\s+--slides-dir/);
+  assert.doesNotMatch(designSkill, /Image Regenerate/);
+});
+
 test('slides-grab orchestration skill keeps packaged style/image/video workflows without duplicate rules', () => {
   const text = readFileSync('skills/slides-grab/SKILL.md', 'utf-8');
 
   assert.match(text, /slides-grab image/i);
-  assert.match(text, /god-tibo-imagen/i);
+  assert.match(text, /codex-imagen/i);
   assert.match(text, /codex login/i);
   assert.match(text, /fetch-video|yt-dlp/i);
   assert.match(text, /slides-grab list-styles/);

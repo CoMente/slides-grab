@@ -74,10 +74,11 @@ npx slides-grab install-skills --target all --scope user
 
 워크플로 명령은 `--slides-dir <path>`를 지원하며 기본값은 `slides`입니다.
 
-새 클론에서는 `--help`, `list-templates`, `list-styles`, `preview-styles` 같은 탐색 명령은 덱 없이도 동작합니다. `edit`, `build-viewer`, `validate`, `png`, `design-gate`는 `slide-*.html` 파일이 들어 있는 슬라이드 작업공간이 필요하고, `convert`, `pdf`, `figma`는 추가로 최신 `Proceed` design gate가 필요합니다.
+새 클론에서는 `--help`, `list-templates`, `list-styles`, `preview-styles` 같은 탐색 명령은 덱 없이도 동작합니다. `edit`, `edit-image`, `build-viewer`, `validate`, `png`, `design-gate`는 `slide-*.html` 파일이 들어 있는 슬라이드 작업공간이 필요하고, `convert`, `pdf`, `figma`는 추가로 최신 `Proceed` design gate가 필요합니다.
 
 ```bash
-slides-grab edit              # 시각적 슬라이드 편집기 실행
+slides-grab edit              # HTML 슬라이드 편집기 실행
+slides-grab edit-image        # 이미지 네이티브 슬라이드 편집기 실행
 slides-grab build-viewer      # 단일 viewer.html 생성
 slides-grab validate          # Playwright 기반 슬라이드 HTML 검증
 slides-grab convert           # 실험적/불안정한 PPTX로 내보내기
@@ -106,6 +107,34 @@ slides-grab list-styles
 slides-grab preview-styles
 ```
 
+## 레퍼런스 템플릿 및 이미지 네이티브 작업 흐름
+
+기존 회사 덱, 채워진 예시 슬라이드, HTML 레퍼런스 화면, 브랜드 이미지를 새 덱의 기준으로 삼으려면 `slides-grab import-template`를 사용하세요. **채워진 대표 덱**을 빈 마스터 템플릿보다 우선하세요. 채워진 슬라이드는 실제 텍스트 밀도, 스키마 제한, 폰트 fallback, 이미지 처리, 레이아웃 스트레스 상황을 보여 줍니다. 빈 마스터 템플릿은 실제 콘텐츠에서 디자인이 어떻게 무너지는지 보여 주지 못하므로 단독으로는 충분하지 않습니다.
+
+```bash
+slides-grab import-template \
+  --input references/acme-qbr.pptx \
+  --input references/acme-product-page.html \
+  --slides-dir decks/acme-qbr
+```
+
+이 명령은 `<slides-dir>/.slides-grab/template-pack.json`과 미리보기 에셋을 씁니다. Stage 1에서는 `slide-outline.md`에 `style: template-pack`을 기록하고, Stage 2에서는 template pack의 역할, bbox/스키마 제한, 색상, 폰트, 미리보기 레이아웃 계열을 따라 HTML 슬라이드를 생성하세요. 내보내기 전에는 `slides-grab validate --slides-dir <path>`와 `slides-grab design-gate`를 실행합니다.
+
+이미지 중심 덱은 슬라이드별로 `slides-grab image --image-native --name slide-XX --reference <template-page.png> --slides-dir <path>`를 실행하세요. 이 명령은 생성 PNG, `slide-XX.html` wrapper, `slides-grab edit-image`에 필요한 재생성 메타데이터를 함께 기록합니다. 가져온 템플릿 페이지 미리보기 PNG를 `--reference` 입력으로 재사용해 스타일/레이아웃 가이드로 활용하세요:
+
+```bash
+slides-grab image \
+  --image-native \
+  --name slide-01 \
+  --prompt "<whole-slide prompt>" \
+  --slides-dir decks/acme-image \
+  --reference decks/acme-qbr/.slides-grab/template-previews/page-01.png
+```
+
+이미지 네이티브 슬라이드는 래스터 wrapper이며 생성된 PNG 에셋을 감쌉니다. 빠른 시각 탐색이나 이미지 주도 콘셉트에는 유용하지만 HTML보다 편집 가능성이 낮습니다. 텍스트나 레이아웃을 바꾸려면 semantic HTML을 직접 수정하지 말고 `slides-grab edit-image --slides-dir <path>`를 사용하세요. 덱을 계속 쉽게 편집, 접근성 유지, 검색, 변환해야 한다면 HTML 모드를 쓰고, 시각적 구성이 후속 편집성보다 중요할 때 이미지 네이티브 모드를 쓰세요.
+
+OpenAI 호환 이미지 provider는 슬라이드 파일을 바꾸지 않고 설정할 수 있습니다. 예: `slides-grab image --provider openai --base-url <url> --api-key-env <ENV_NAME>`, 또는 `OPENAI_IMAGE_API_KEY`, `OPENAI_IMAGE_BASE_URL`, `OPENAI_BASE_URL` 환경 변수. 테스트와 fixture는 mock provider 응답(주입된 `generateImageImpl` 또는 에디터 서버의 `PPT_AGENT_MOCK_IMAGE_PROVIDER=1`)을 사용해야 하며 외부 이미지 API 자격 증명이 필요하면 안 됩니다.
+
 ## 에셋 규칙
 
 슬라이드에서 사용하는 로컬 이미지와 동영상은 `<slides-dir>/assets/`에 저장하고 각 `slide-XX.html`에서는 `./assets/<file>` 형식으로 참조하세요.
@@ -132,7 +161,7 @@ codex login
 slides-grab image --slides-dir decks/my-deck --prompt "Editorial hero image of a robotics warehouse at dawn"
 ```
 
-기본 이미지 생성 공급자는 로컬 Codex ChatGPT 로그인(`~/.codex/auth.json`)을 재사용할 수 있습니다. 선택적으로 `--provider codex`에는 `OPENAI_API_KEY`, `--provider nano-banana`에는 `GOOGLE_API_KEY` 또는 `GEMINI_API_KEY`가 필요할 수 있습니다.
+기본 이미지 생성 공급자는 로컬 Codex ChatGPT 로그인(`~/.codex/auth.json`)을 재사용할 수 있습니다. 선택적으로 `--provider openai`에는 `OPENAI_API_KEY`, `--provider nano-banana`에는 `GOOGLE_API_KEY` 또는 `GEMINI_API_KEY`가 필요할 수 있습니다.
 
 > 경고: 일부 이미지 생성 경로는 지원되지 않는 비공개 백엔드 또는 계정 권한에 의존할 수 있으므로, 실패하면 웹 검색과 로컬 다운로드 방식으로 대체하세요.
 
@@ -165,6 +194,7 @@ slides-grab fetch-video \
 
 ```bash
 slides-grab edit       --slides-dir decks/my-deck
+slides-grab edit-image --slides-dir decks/my-deck
 slides-grab validate   --slides-dir decks/my-deck
 slides-grab pdf        --slides-dir decks/my-deck --output decks/my-deck.pdf
 slides-grab pdf        --slides-dir decks/my-deck --mode print --output decks/my-deck-searchable.pdf
@@ -181,7 +211,7 @@ slides-grab figma      --slides-dir decks/my-deck --output decks/my-deck-figma.p
 인스타그램식 카드뉴스는 720pt × 720pt 정사각형 프레임을 사용합니다. 모든 단계에서 `--mode card-news` 또는 `--slide-mode card-news`를 맞춰 사용하고, 최종 배포물은 `slides-grab png`를 우선 권장합니다.
 
 ```bash
-slides-grab edit     --slides-dir decks/my-cards --mode card-news
+slides-grab edit     --slides-dir decks/my-cards --mode card-news  # HTML 카드뉴스 편집기
 slides-grab validate --slides-dir decks/my-cards --mode card-news
 slides-grab png      --slides-dir decks/my-cards --slide-mode card-news --resolution 2160p
 slides-grab pdf      --slides-dir decks/my-cards --slide-mode card-news --output decks/my-cards.pdf

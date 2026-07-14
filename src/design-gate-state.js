@@ -3,6 +3,7 @@ import { existsSync } from 'node:fs';
 import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
 import { basename, join, relative, resolve } from 'node:path';
 import { classifyImageSource, extractCssUrls } from './image-contract.js';
+import { buildTemplateFidelityMarkdown, templatePackExists } from './template-fidelity.js';
 
 const SLIDE_FILE_PATTERN = /^slide-.*\.html$/i;
 const GATE_DIR_NAME = '.slides-grab';
@@ -120,6 +121,7 @@ export async function createDesignGateState(options) {
     localAssetFingerprints: options.localAssetFingerprints || await collectLocalAssetFingerprints(slidesDir),
     passReportFingerprints: options.passReportFingerprints || [],
     previewFingerprints: options.previewFingerprints || [],
+    templateFidelity: normalizeTemplateFidelity(options.templateFidelity),
   };
 }
 
@@ -192,6 +194,27 @@ export async function assertDesignGateReady(slidesDir, options = {}) {
     throw new Error(`${label} blocked: design gate is stale because rendered evidence changed: ${stalePreviewFiles.join(', ')}.`);
   }
 
+  const templateFidelity = state.templateFidelity || null;
+  if (templatePackExists(paths.slidesDir)) {
+    if (!templateFidelity || templateFidelity.status === 'not-applicable') {
+      throw new Error(`${label} blocked: template pack is active but the design gate is missing template fidelity evidence; rerun slides-grab design-gate.`);
+    }
+    if (templateFidelity.status !== 'passed') {
+      throw new Error(`${label} blocked: template fidelity did not pass.`);
+    }
+    const referencePreviewFingerprints = Array.isArray(templateFidelity.referencePreviewFingerprints)
+      ? templateFidelity.referencePreviewFingerprints
+      : [];
+    const currentReferencePreviewFingerprints = await collectFileFingerprints(
+      paths.slidesDir,
+      referencePreviewFingerprints.map((entry) => entry.file),
+    );
+    const staleReferencePreviews = diffFingerprints(referencePreviewFingerprints, currentReferencePreviewFingerprints);
+    if (staleReferencePreviews.length > 0) {
+      throw new Error(`${label} blocked: design gate is stale because template reference previews changed: ${staleReferencePreviews.join(', ')}.`);
+    }
+  }
+
   return state;
 }
 
@@ -211,6 +234,7 @@ export function buildDesignGateReport(state, passAReport, passBReport) {
     '## Pass B: Audience Impact / Expressive Readability',
     '',
     passBReport.trim(),
+    buildTemplateFidelityMarkdown(state.templateFidelity).trim() || '## Template Fidelity Report\n\nStatus: not-applicable',
     '',
     '## Slide Fingerprints',
     '',
@@ -229,6 +253,17 @@ function normalizeEvidence(value = {}) {
     checks: Array.isArray(value.checks) ? value.checks : [],
     evidenceFiles: Array.isArray(value.evidenceFiles) ? value.evidenceFiles : [],
     slideFingerprints: Array.isArray(value.slideFingerprints) ? value.slideFingerprints : [],
+  };
+}
+
+function normalizeTemplateFidelity(value = {}) {
+  return {
+    status: value.status || 'not-applicable',
+    slides: Array.isArray(value.slides) ? value.slides : [],
+    findings: Array.isArray(value.findings) ? value.findings : [],
+    referencePreviewFingerprints: Array.isArray(value.referencePreviewFingerprints)
+      ? value.referencePreviewFingerprints
+      : [],
   };
 }
 

@@ -3,6 +3,7 @@
 import { state, TOOL_MODE_DRAW, TOOL_MODE_SELECT, setSlideFrame } from './editor-state.js';
 import {
   btnPrev, btnNext, slideIframe, slideWrapper, drawLayer, promptInput, modelSelect,
+  imageProviderSelect,
   objectLayer,
   btnSend, btnClearBboxes, slideCounter,
   toggleBold, toggleItalic, toggleUnderline, toggleStrike,
@@ -33,6 +34,7 @@ import {
 import { updateSendState, applyChanges } from './editor-send.js';
 import { goToSlide } from './editor-navigation.js';
 import { connectSSE, loadRunsInitial } from './editor-sse.js';
+import { configureEditorClient, getEditorClient, updateEditorClientLabels } from './editor-type.js';
 
 // Late-binding: connect bbox changes to updateSendState
 onBboxChange(updateSendState);
@@ -45,8 +47,14 @@ btnPrev.addEventListener('click', () => { void goToSlide(state.currentIndex - 1)
 btnNext.addEventListener('click', () => { void goToSlide(state.currentIndex + 1); });
 
 // Tool modes
-toolModeDrawBtn.addEventListener('click', () => setToolMode(TOOL_MODE_DRAW));
-toolModeSelectBtn.addEventListener('click', () => setToolMode(TOOL_MODE_SELECT));
+toolModeDrawBtn.addEventListener('click', () => {
+  setToolMode(TOOL_MODE_DRAW);
+  updateEditorClientLabels();
+});
+toolModeSelectBtn.addEventListener('click', () => {
+  setToolMode(TOOL_MODE_SELECT);
+  updateEditorClientLabels();
+});
 
 // Clear bboxes
 btnClearBboxes.addEventListener('click', clearBboxesForCurrentSlide);
@@ -124,6 +132,12 @@ modelSelect.addEventListener('change', () => {
   saveSelectedModel(state.selectedModel);
   updateSendState();
   setStatus(`Model selected: ${state.selectedModel}`);
+});
+
+imageProviderSelect?.addEventListener('change', () => {
+  state.imageProvider = imageProviderSelect.value || 'codex';
+  updateSendState();
+  setStatus(`Image provider selected: ${state.imageProvider}`);
 });
 
 // Prompt input
@@ -325,21 +339,28 @@ function applySlideFrameCss(width, height) {
 }
 
 async function loadEditorConfig() {
+  const serverAuthoredType = state.editorType;
+  configureEditorClient(serverAuthoredType);
+  let cfg = {};
   try {
     const res = await fetch('/api/config');
-    if (!res.ok) return;
-    const cfg = await res.json();
-    const w = cfg?.framePx?.width;
-    const h = cfg?.framePx?.height;
-    if (w && h) {
-      setSlideFrame(w, h);
-      applySlideFrameCss(w, h);
-    }
-    if (cfg?.slideMode && document?.body) {
-      document.body.dataset.slideMode = cfg.slideMode;
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    cfg = await res.json();
+    if (cfg?.editorType !== serverAuthoredType) {
+      throw new Error(`Editor type mismatch: page=${serverAuthoredType}, config=${cfg?.editorType || 'missing'}`);
     }
   } catch {
-    // Defaults (960x540) stay in effect.
+    // Keep the server-authored editor type and default frame dimensions.
+  }
+
+  const w = cfg?.framePx?.width;
+  const h = cfg?.framePx?.height;
+  if (w && h) {
+    setSlideFrame(w, h);
+    applySlideFrameCss(w, h);
+  }
+  if (cfg?.slideMode) {
+    document.body.dataset.slideMode = cfg.slideMode;
   }
 }
 
@@ -363,14 +384,18 @@ async function init() {
       return;
     }
 
-    await loadModelOptions();
+    const editorClient = getEditorClient();
+    if (editorClient.usesModel) await loadModelOptions();
     updateToolModeUI();
+    updateEditorClientLabels();
     await goToSlide(0);
     scaleSlide();
     await loadRunsInitial();
     connectSSE();
 
-    setStatus(`Ready. Model: ${state.selectedModel}. Draw red pending bboxes, run Codex, then review green bboxes.`);
+    setStatus(editorClient.usesModel
+      ? `Ready. Model: ${state.selectedModel}. Draw red pending bboxes, run Codex, then review green bboxes.`
+      : `Ready. Image provider: ${state.imageProvider}. Draw red pending bboxes, then regenerate the image.`);
   } catch (error) {
     setStatus(`Error loading slides: ${error.message}`);
     console.error('Init error:', error);
